@@ -3,10 +3,14 @@
 require_once __DIR__ . '/../Repositories/OrderRepository.php';
 require_once __DIR__ . '/../Repositories/ServiceRepository.php';
 require_once __DIR__ . '/../Repositories/PaymentRepository.php';
+require_once __DIR__ . '/../Repositories/UserRepository.php';
+require_once __DIR__ . '/../Repositories/NotificationRepository.php';
 require_once __DIR__ . '/../Validators/OrderValidator.php';
 require_once __DIR__ . '/PaymentService.php';
 require_once __DIR__ . '/EmailService.php';
 require_once __DIR__ . '/FileService.php';
+require_once __DIR__ . '/NotificationService.php';
+require_once __DIR__ . '/MailService.php';
 
 /**
  * Order Service
@@ -17,10 +21,12 @@ class OrderService
 {
     private OrderRepository $orderRepository;
     private ServiceRepository $serviceRepository;
+    private UserRepository $userRepository;
     private OrderValidator $validator;
     private PaymentService $paymentService;
     private EmailService $emailService;
     private FileService $fileService;
+    private NotificationService $notificationService;
 
     public function __construct(OrderRepository $orderRepository, ServiceRepository $serviceRepository, PaymentService $paymentService = null)
     {
@@ -30,9 +36,15 @@ class OrderService
         $this->emailService      = new EmailService();
         $this->fileService       = new FileService();
 
+        // Initialize repositories and services
+        $db                        = $orderRepository->getDb();
+        $this->userRepository      = new UserRepository($db);
+        $mailService               = new MailService();
+        $notificationRepository    = new NotificationRepository($db);
+        $this->notificationService = new NotificationService($mailService, $notificationRepository);
+
         // Initialize PaymentService if not provided
         if ($paymentService === null) {
-            $db                   = $orderRepository->getDb();
             $paymentRepository    = new PaymentRepository($db);
             $this->paymentService = new PaymentService($paymentRepository, $db);
         } else {
@@ -326,13 +338,19 @@ class OrderService
                 'delivery_files'   => $uploadedFiles,
             ]);
 
-            // TODO: Send notification to client (will be implemented in task 13)
-            // For now, we'll just log it
-            $this->emailService->sendOrderDeliveredNotification($order, [
-                'email' => $order['client_email'],
-                'name'  => $order['client_name'],
-            ]);
-            error_log("Order #{$orderId} delivered by student #{$studentId}");
+            // Send notification to client about order delivery
+            try {
+                $client  = $this->userRepository->findById($order['client_id']);
+                $student = $this->userRepository->findById($order['student_id']);
+                $service = $this->serviceRepository->findById($order['service_id']);
+
+                if ($client && $student && $service) {
+                    $updatedOrder = $this->orderRepository->findById($orderId);
+                    $this->notificationService->notifyOrderDelivered($updatedOrder, $client, $student, $service);
+                }
+            } catch (Exception $e) {
+                error_log('Failed to send order delivered notification: ' . $e->getMessage());
+            }
 
             // Commit transaction
             $this->orderRepository->commit();
@@ -410,10 +428,19 @@ class OrderService
             // Update student profile total_orders counter
             $this->orderRepository->incrementStudentOrderCount($order['student_id']);
 
-            // TODO: Send notifications to both parties (will be implemented in task 13)
-            // For now, we'll just log it
+            // Send notifications to both parties about order completion
+            try {
+                $client  = $this->userRepository->findById($order['client_id']);
+                $student = $this->userRepository->findById($order['student_id']);
+                $service = $this->serviceRepository->findById($order['service_id']);
 
-            error_log("Order #{$orderId} completed by client #{$clientId}. Student #{$order['student_id']} credited $" . number_format($studentEarnings, 2));
+                if ($client && $student && $service) {
+                    $updatedOrder = $this->orderRepository->findById($orderId);
+                    $this->notificationService->notifyOrderCompleted($updatedOrder, $client, $student, $service, $studentEarnings);
+                }
+            } catch (Exception $e) {
+                error_log('Failed to send order completed notification: ' . $e->getMessage());
+            }
 
             // Commit transaction
             $this->orderRepository->commit();
@@ -504,7 +531,18 @@ class OrderService
             // In a full implementation, this would be stored in a revisions table or messages
             error_log("Order #{$orderId} revision requested by client #{$clientId}. Reason: {$reason}. Revision count: {$newRevisionCount}/{$maxRevisions}");
 
-            // TODO: Send notification to student (will be implemented in task 13)
+            // Send notification to student about revision request
+            try {
+                $student = $this->userRepository->findById($order['student_id']);
+                $service = $this->serviceRepository->findById($order['service_id']);
+
+                if ($student && $service) {
+                    $updatedOrder = $this->orderRepository->findById($orderId);
+                    $this->notificationService->notifyRevisionRequested($updatedOrder, $student, $service, $reason);
+                }
+            } catch (Exception $e) {
+                error_log('Failed to send revision requested notification: ' . $e->getMessage());
+            }
 
             // Commit transaction
             $this->orderRepository->commit();

@@ -2,7 +2,12 @@
 
 require_once __DIR__ . '/../Repositories/ReviewRepository.php';
 require_once __DIR__ . '/../Repositories/OrderRepository.php';
+require_once __DIR__ . '/../Repositories/UserRepository.php';
+require_once __DIR__ . '/../Repositories/ServiceRepository.php';
+require_once __DIR__ . '/../Repositories/NotificationRepository.php';
 require_once __DIR__ . '/EmailService.php';
+require_once __DIR__ . '/NotificationService.php';
+require_once __DIR__ . '/MailService.php';
 
 /**
  * Review Service
@@ -13,13 +18,23 @@ class ReviewService
 {
     private ReviewRepository $reviewRepository;
     private OrderRepository $orderRepository;
+    private UserRepository $userRepository;
+    private ServiceRepository $serviceRepository;
     private EmailService $emailService;
+    private NotificationService $notificationService;
+    private PDO $db;
 
     public function __construct(ReviewRepository $reviewRepository, OrderRepository $orderRepository)
     {
-        $this->reviewRepository = $reviewRepository;
-        $this->orderRepository  = $orderRepository;
-        $this->emailService     = new EmailService();
+        $this->reviewRepository    = $reviewRepository;
+        $this->orderRepository     = $orderRepository;
+        $this->emailService        = new EmailService();
+        $this->db                  = $orderRepository->getDb();
+        $this->userRepository      = new UserRepository($this->db);
+        $this->serviceRepository   = new ServiceRepository($this->db);
+        $mailService               = new MailService();
+        $notificationRepository    = new NotificationRepository($this->db);
+        $this->notificationService = new NotificationService($mailService, $notificationRepository);
     }
 
     /**
@@ -109,19 +124,24 @@ class ReviewService
             // Update student average_rating and total_reviews
             $this->reviewRepository->updateStudentRating($order['student_id']);
 
-            // Send notification to student
-            $this->emailService->sendReviewSubmittedNotification($order, [
-                'email'   => $order['student_email'],
-                'name'    => $order['student_name'],
-                'rating'  => $rating,
-                'comment' => $comment,
-            ]);
+            // Get the created review
+            $review = $this->reviewRepository->findById($reviewId);
+
+            // Send notification to student about new review
+            try {
+                $student = $this->userRepository->findById($order['student_id']);
+                $client  = $this->userRepository->findById($order['client_id']);
+                $service = $this->serviceRepository->findById($order['service_id']);
+
+                if ($student && $client && $service) {
+                    $this->notificationService->notifyReviewSubmitted($review, $student, $client, $service, $orderId);
+                }
+            } catch (Exception $e) {
+                error_log('Failed to send review submitted notification: ' . $e->getMessage());
+            }
 
             // Commit transaction
             $this->reviewRepository->commit();
-
-            // Get the created review
-            $review = $this->reviewRepository->findById($reviewId);
 
             return [
                 'success'   => true,

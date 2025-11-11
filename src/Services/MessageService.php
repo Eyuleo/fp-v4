@@ -2,8 +2,13 @@
 
 require_once __DIR__ . '/../Repositories/MessageRepository.php';
 require_once __DIR__ . '/../Repositories/OrderRepository.php';
+require_once __DIR__ . '/../Repositories/UserRepository.php';
+require_once __DIR__ . '/../Repositories/ServiceRepository.php';
+require_once __DIR__ . '/../Repositories/NotificationRepository.php';
 require_once __DIR__ . '/EmailService.php';
 require_once __DIR__ . '/FileService.php';
+require_once __DIR__ . '/NotificationService.php';
+require_once __DIR__ . '/MailService.php';
 
 /**
  * Message Service
@@ -14,8 +19,12 @@ class MessageService
 {
     private MessageRepository $messageRepository;
     private OrderRepository $orderRepository;
+    private UserRepository $userRepository;
+    private ServiceRepository $serviceRepository;
     private EmailService $emailService;
     private FileService $fileService;
+    private NotificationService $notificationService;
+    private PDO $db;
 
     // Patterns that suggest off-platform communication
     private array $suspiciousPatterns = [
@@ -37,10 +46,16 @@ class MessageService
 
     public function __construct(MessageRepository $messageRepository, OrderRepository $orderRepository)
     {
-        $this->messageRepository = $messageRepository;
-        $this->orderRepository   = $orderRepository;
-        $this->emailService      = new EmailService();
-        $this->fileService       = new FileService();
+        $this->messageRepository   = $messageRepository;
+        $this->orderRepository     = $orderRepository;
+        $this->emailService        = new EmailService();
+        $this->fileService         = new FileService();
+        $this->db                  = $orderRepository->getDb();
+        $this->userRepository      = new UserRepository($this->db);
+        $this->serviceRepository   = new ServiceRepository($this->db);
+        $mailService               = new MailService();
+        $notificationRepository    = new NotificationRepository($this->db);
+        $this->notificationService = new NotificationService($mailService, $notificationRepository);
     }
 
     /**
@@ -116,14 +131,28 @@ class MessageService
 
         // Determine recipient
         $recipientId = $order['client_id'] == $senderId ? $order['student_id'] : $order['client_id'];
-        $recipient   = [
-            'id'    => $recipientId,
-            'email' => $order['client_id'] == $senderId ? $order['student_email'] : $order['client_email'],
-            'name'  => $order['client_id'] == $senderId ? $order['student_name'] : $order['client_name'],
-        ];
 
-        // Send notification to recipient
-        $this->emailService->sendMessageReceivedNotification($order, $recipient, $content);
+        // Send notification to recipient about new message
+        try {
+            $recipient = $this->userRepository->findById($recipientId);
+            $sender    = $this->userRepository->findById($senderId);
+            $service   = $this->serviceRepository->findById($order['service_id']);
+
+            if ($recipient && $sender && $service) {
+                // Create message array for notification
+                $message = [
+                    'id'          => $messageId,
+                    'content'     => $content,
+                    'attachments' => $uploadedFiles,
+                    'sender_id'   => $senderId,
+                    'order_id'    => $orderId,
+                ];
+
+                $this->notificationService->notifyMessageReceived($message, $recipient, $sender, $order, $service);
+            }
+        } catch (Exception $e) {
+            error_log('Failed to send message received notification: ' . $e->getMessage());
+        }
 
         return [
             'success'    => true,

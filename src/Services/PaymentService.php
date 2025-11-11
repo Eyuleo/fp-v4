@@ -2,7 +2,13 @@
 
 require_once __DIR__ . '/../../vendor/autoload.php';
 require_once __DIR__ . '/../Repositories/PaymentRepository.php';
+require_once __DIR__ . '/../Repositories/UserRepository.php';
+require_once __DIR__ . '/../Repositories/ServiceRepository.php';
+require_once __DIR__ . '/../Repositories/OrderRepository.php';
+require_once __DIR__ . '/../Repositories/NotificationRepository.php';
 require_once __DIR__ . '/WithdrawalService.php';
+require_once __DIR__ . '/NotificationService.php';
+require_once __DIR__ . '/MailService.php';
 
 /**
  * Payment Service
@@ -13,6 +19,10 @@ class PaymentService
 {
     private PaymentRepository $repository;
     private WithdrawalService $withdrawalService;
+    private NotificationService $notificationService;
+    private UserRepository $userRepository;
+    private ServiceRepository $serviceRepository;
+    private OrderRepository $orderRepository;
     private PDO $db;
     private string $stripeSecretKey;
     private string $stripeWebhookSecret;
@@ -22,6 +32,12 @@ class PaymentService
         $this->repository          = $repository;
         $this->db                  = $db;
         $this->withdrawalService   = new WithdrawalService($db);
+        $this->userRepository      = new UserRepository($db);
+        $this->serviceRepository   = new ServiceRepository($db);
+        $this->orderRepository     = new OrderRepository($db);
+        $mailService               = new MailService();
+        $notificationRepository    = new NotificationRepository($db);
+        $this->notificationService = new NotificationService($mailService, $notificationRepository);
         $this->stripeSecretKey     = getenv('STRIPE_SECRET_KEY') ?: '';
         $this->stripeWebhookSecret = getenv('STRIPE_WEBHOOK_SECRET') ?: '';
 
@@ -223,6 +239,21 @@ class PaymentService
 
         // Update order status to pending (payment confirmed, awaiting student acceptance)
         $this->repository->updateOrderStatus($orderId, 'pending');
+
+        // Send notification to student about new order
+        try {
+            $order   = $this->orderRepository->findById($orderId);
+            $student = $this->userRepository->findById($order['student_id']);
+            $client  = $this->userRepository->findById($order['client_id']);
+            $service = $this->serviceRepository->findById($order['service_id']);
+
+            if ($order && $student && $client && $service) {
+                $this->notificationService->notifyOrderPlaced($order, $student, $client, $service);
+            }
+        } catch (Exception $e) {
+            // Log error but don't fail the payment processing
+            error_log('Failed to send order placed notification: ' . $e->getMessage());
+        }
     }
 
     /**
