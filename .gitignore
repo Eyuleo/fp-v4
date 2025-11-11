@@ -1,0 +1,30 @@
+# Environment configuration
+.env
+
+# Logs
+logs/*.log
+logs/*.txt
+!logs/.gitkeep
+
+# Uploaded files
+storage/uploads/*
+!storage/uploads/.gitkeep
+
+# Vendor dependencies
+vendor/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.bak
+*.cache

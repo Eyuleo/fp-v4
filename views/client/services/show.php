@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><?php echo e($service['title']) ?> - Student Skills Marketplace</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <style>
+        [x-cloak] { display: none !important; }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <a href="/" class="text-xl font-bold text-blue-600">Student Skills Marketplace</a>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <a href="/services/search" class="text-gray-700 hover:text-gray-900">Browse Services</a>
+                    <?php if (isset($_SESSION['user_id'])): ?>
+                        <a href="/<?php echo e($_SESSION['user_role']) ?>/dashboard" class="text-gray-700 hover:text-gray-900">Dashboard</a>
+                        <a href="/auth/logout" class="text-gray-700 hover:text-gray-900">Logout</a>
+                    <?php else: ?>
+                        <a href="/auth/login" class="text-gray-700 hover:text-gray-900">Login</a>
+                        <a href="/auth/register" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Sign Up</a>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Breadcrumb -->
+        <nav class="mb-6 text-sm">
+            <ol class="flex items-center space-x-2 text-gray-600">
+                <li><a href="/" class="hover:text-blue-600">Home</a></li>
+                <li><span class="mx-2">/</span></li>
+                <li><a href="/services/search" class="hover:text-blue-600">Services</a></li>
+                <li><span class="mx-2">/</span></li>
+                <li class="text-gray-900"><?php echo e($service['title']) ?></li>
+            </ol>
+        </nav>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Main Content -->
+            <div class="lg:col-span-2 space-y-6">
+                <!-- Service Header -->
+                <div class="bg-white rounded-lg shadow-sm p-6">
+                    <div class="mb-4">
+                        <span class="inline-block px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full">
+                            <?php echo e($service['category_name']) ?>
+                        </span>
+                    </div>
+                    <h1 class="text-3xl font-bold text-gray-900 mb-4"><?php echo e($service['title']) ?></h1>
+
+                    <!-- Student Info -->
+                    <a href="/student/profile?id=<?php echo e($service['student_id']) ?>" class="flex items-center mb-6 hover:bg-gray-50 p-3 rounded-lg transition-colors -ml-3">
+                        <div class="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold text-lg">
+                            <?php echo strtoupper(substr($service['student_name'] ?? 'U', 0, 1)) ?>
+                        </div>
+                        <div class="ml-4">
+                            <p class="font-medium text-gray-900 hover:text-blue-600"><?php echo e($service['student_name'] ?? 'Unknown') ?></p>
+                            <div class="flex items-center">
+                                <span class="text-yellow-400">★</span>
+                                <span class="text-sm text-gray-600 ml-1">
+                                    <?php echo number_format($service['average_rating'] ?? 0, 1) ?>
+                                    (<?php echo e($service['total_reviews'] ?? 0) ?> reviews)
+                                </span>
+                                <span class="mx-2 text-gray-400">•</span>
+                                <span class="text-sm text-gray-600">
+                                    <?php echo e($service['total_orders'] ?? 0) ?> orders completed
+                                </span>
+                            </div>
+                        </div>
+                    </a>
+
+                    <!-- Description -->
+                    <div class="prose max-w-none">
+                        <h2 class="text-xl font-semibold text-gray-900 mb-3">About This Service</h2>
+                        <p class="text-gray-700 whitespace-pre-line"><?php echo e($service['description']) ?></p>
+                    </div>
+
+                    <!-- Sample Files Gallery -->
+                    <?php if (! empty($service['sample_files'])): ?>
+                        <div class="mt-6" x-data="{ selectedImage: null }">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-3">Sample Work</h3>
+                            <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                <?php foreach ($service['sample_files'] as $index => $file): ?>
+                                    <?php
+                                        $extension = strtolower(pathinfo($file['filename'], PATHINFO_EXTENSION));
+                                        $isImage   = in_array($extension, ['jpg', 'jpeg', 'png', 'gif', 'webp']);
+                                    ?>
+                                    <?php if ($isImage): ?>
+                                        <div class="relative group cursor-pointer" @click="selectedImage = '<?php echo e($file['path']) ?>'">
+                                            <img
+                                                src="/<?php echo e($file['path']) ?>"
+                                                alt="Sample                                                                                                                       <?php echo $index + 1 ?>"
+                                                class="w-full h-48 object-cover rounded-lg shadow-sm group-hover:shadow-md transition-shadow"
+                                            >
+                                            <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-opacity rounded-lg flex items-center justify-center">
+                                                <svg class="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"></path>
+                                                </svg>
+                                            </div>
+                                        </div>
+                                    <?php else: ?>
+                                        <a href="/<?php echo e($file['path']) ?>" download class="flex flex-col items-center justify-center h-48 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors p-4">
+                                            <svg class="w-12 h-12 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                                            </svg>
+                                            <span class="text-sm text-gray-600 text-center break-all"><?php echo e($file['original_name']) ?></span>
+                                        </a>
+                                    <?php endif; ?>
+                                <?php endforeach; ?>
+                            </div>
+
+                            <!-- Image Modal -->
+                            <div x-show="selectedImage"
+                                 x-cloak
+                                 @click="selectedImage = null"
+                                 class="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center p-4">
+                                <div class="relative max-w-4xl max-h-full">
+                                    <img :src="selectedImage" class="max-w-full max-h-screen object-contain rounded-lg">
+                                    <button @click.stop="selectedImage = null" class="absolute top-4 right-4 text-white bg-black bg-opacity-50 rounded-full p-2 hover:bg-opacity-75">
+                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+
+                    <!-- Tags -->
+                    <?php if (! empty($service['tags'])): ?>
+                        <div class="mt-6">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-3">Tags</h3>
+                            <div class="flex flex-wrap gap-2">
+                                <?php foreach ($service['tags'] as $tag): ?>
+                                    <span class="px-3 py-1 bg-gray-100 text-gray-700 text-sm rounded-full">
+                                        <?php echo e($tag) ?>
+                                    </span>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+                </div>
+
+                <!-- About the Student -->
+                <?php if (! empty($service['bio'])): ?>
+                    <div class="bg-white rounded-lg shadow-sm p-6">
+                        <h2 class="text-xl font-semibold text-gray-900 mb-4">About the Student</h2>
+                        <p class="text-gray-700 mb-4"><?php echo e($service['bio']) ?></p>
+
+                        <?php if (! empty($service['skills'])): ?>
+                            <div class="mt-4">
+                                <h3 class="text-sm font-medium text-gray-900 mb-2">Skills</h3>
+                                <div class="flex flex-wrap gap-2">
+                                    <?php foreach ($service['skills'] as $skill): ?>
+                                        <span class="px-3 py-1 bg-blue-50 text-blue-700 text-sm rounded">
+                                            <?php echo e($skill) ?>
+                                        </span>
+                                    <?php endforeach; ?>
+                                </div>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                <?php endif; ?>
+
+                <!-- Reviews -->
+                <?php if (! empty($reviews)): ?>
+                    <div class="bg-white rounded-lg shadow-sm p-6">
+                        <h2 class="text-xl font-semibold text-gray-900 mb-4">Reviews</h2>
+                        <div class="space-y-6">
+                            <?php foreach ($reviews as $review): ?>
+                                <div class="border-b border-gray-200 pb-6 last:border-0 last:pb-0">
+                                    <div class="flex items-center mb-2">
+                                        <div class="flex items-center">
+                                            <?php for ($i = 1; $i <= 5; $i++): ?>
+                                                <span class="<?php echo $i <= $review['rating'] ? 'text-yellow-400' : 'text-gray-300' ?>">★</span>
+                                            <?php endfor; ?>
+                                        </div>
+                                        <span class="ml-2 text-sm text-gray-600">
+                                            by                                                                                                                                                                                         <?php echo e($review['client_email']) ?>
+                                        </span>
+                                        <span class="mx-2 text-gray-400">•</span>
+                                        <span class="text-sm text-gray-600">
+                                            <?php echo date('M d, Y', strtotime($review['created_at'])) ?>
+                                        </span>
+                                    </div>
+                                    <?php if (! empty($review['comment'])): ?>
+                                        <p class="text-gray-700 mb-2"><?php echo e($review['comment']) ?></p>
+                                    <?php endif; ?>
+                                    <?php if (! empty($review['student_reply'])): ?>
+                                        <div class="mt-3 ml-6 p-3 bg-gray-50 rounded">
+                                            <p class="text-sm font-medium text-gray-900 mb-1">Student's Response:</p>
+                                            <p class="text-sm text-gray-700"><?php echo e($review['student_reply']) ?></p>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                <?php endif; ?>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="lg:col-span-1">
+                <div class="bg-white rounded-lg shadow-sm p-6 sticky top-8">
+                    <!-- Price -->
+                    <div class="mb-6">
+                        <p class="text-sm text-gray-600 mb-1">Starting at</p>
+                        <p class="text-3xl font-bold text-gray-900">$<?php echo number_format($service['price'], 2) ?></p>
+                    </div>
+
+                    <!-- Service Details -->
+                    <div class="space-y-4 mb-6 pb-6 border-b border-gray-200">
+                        <div class="flex items-center text-gray-700">
+                            <svg class="w-5 h-5 mr-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            <span><?php echo e($service['delivery_days']) ?> day<?php echo $service['delivery_days'] > 1 ? 's' : '' ?> delivery</span>
+                        </div>
+                        <div class="flex items-center text-gray-700">
+                            <svg class="w-5 h-5 mr-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            <span>3 revisions included</span>
+                        </div>
+                    </div>
+
+                    <!-- Order Button -->
+                    <?php if (isset($_SESSION['user_id'])): ?>
+                        <?php if ($_SESSION['user_role'] === 'client'): ?>
+                            <a href="/orders/create?service_id=<?php echo e($service['id']) ?>"
+                               class="block w-full bg-blue-600 text-white text-center px-6 py-3 rounded-lg hover:bg-blue-700 font-medium transition-colors">
+                                Order Now
+                            </a>
+                        <?php else: ?>
+                            <div class="text-center text-gray-600 text-sm">
+                                Only clients can place orders
+                            </div>
+                        <?php endif; ?>
+                    <?php else: ?>
+                        <a href="/auth/login?redirect=/services/<?php echo e($service['id']) ?>"
+                           class="block w-full bg-blue-600 text-white text-center px-6 py-3 rounded-lg hover:bg-blue-700 font-medium transition-colors">
+                            Login to Order
+                        </a>
+                        <p class="text-center text-sm text-gray-600 mt-3">
+                            Don't have an account?
+                            <a href="/auth/register" class="text-blue-600 hover:text-blue-700">Sign up</a>
+                        </p>
+                    <?php endif; ?>
+
+                    <!-- Contact Student -->
+                    <div class="mt-4">
+                        <button class="w-full border border-gray-300 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-50 font-medium transition-colors">
+                            Contact Student
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-gray-200 mt-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div class="text-center text-gray-600 text-sm">
+                <p>&copy;                                                                                                     <?php echo date('Y') ?> Student Skills Marketplace. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

@@ -1,0 +1,20 @@
+CREATE TABLE services (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    student_id INT UNSIGNED NOT NULL,
+    category_id INT UNSIGNED NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    description TEXT NOT NULL,
+    tags JSON,
+    price DECIMAL(10,2) NOT NULL,
+    delivery_days INT UNSIGNED NOT NULL,
+    sample_files JSON,
+    status ENUM('inactive', 'active', 'paused') DEFAULT 'inactive',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (category_id) REFERENCES categories(id),
+    INDEX idx_student_status (student_id, status),
+    INDEX idx_category_status (category_id, status),
+    INDEX idx_price (price),
+    FULLTEXT idx_search (title, description)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
