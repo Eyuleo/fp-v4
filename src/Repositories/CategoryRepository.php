@@ -1,0 +1,140 @@
+<?php
+
+/**
+ * Category Repository
+ *
+ * Handles database operations for categories
+ */
+class CategoryRepository
+{
+    private PDO $db;
+
+    public function __construct(PDO $db)
+    {
+        $this->db = $db;
+    }
+
+    /**
+     * Get all categories
+     */
+    public function getAll(): array
+    {
+        $sql  = "SELECT * FROM categories ORDER BY name ASC";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute();
+
+        return $stmt->fetchAll();
+    }
+
+    /**
+     * Get all categories with service count
+     */
+    public function getAllWithServiceCount(): array
+    {
+        $sql = "SELECT c.*,
+                       COUNT(s.id) as service_count
+                FROM categories c
+                LEFT JOIN services s ON c.id = s.category_id
+                GROUP BY c.id
+                ORDER BY c.name ASC";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute();
+
+        return $stmt->fetchAll();
+    }
+
+    /**
+     * Find category by ID
+     */
+    public function findById(int $id): ?array
+    {
+        $sql  = "SELECT * FROM categories WHERE id = :id";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute(['id' => $id]);
+
+        $result = $stmt->fetch();
+
+        return $result ?: null;
+    }
+
+    /**
+     * Find category by slug
+     */
+    public function findBySlug(string $slug): ?array
+    {
+        $sql  = "SELECT * FROM categories WHERE slug = :slug";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute(['slug' => $slug]);
+
+        $result = $stmt->fetch();
+
+        return $result ?: null;
+    }
+
+    /**
+     * Create a new category
+     */
+    public function create(array $data): int
+    {
+        $sql = "INSERT INTO categories (name, slug, description, created_at)
+                VALUES (:name, :slug, :description, NOW())";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([
+            'name'        => $data['name'],
+            'slug'        => $data['slug'],
+            'description' => $data['description'] ?? null,
+        ]);
+
+        return (int) $this->db->lastInsertId();
+    }
+
+    /**
+     * Delete a category
+     */
+    public function delete(int $id): bool
+    {
+        $sql  = "DELETE FROM categories WHERE id = :id";
+        $stmt = $this->db->prepare($sql);
+
+        return $stmt->execute(['id' => $id]);
+    }
+
+    /**
+     * Check if category has services
+     */
+    public function hasServices(int $id): bool
+    {
+        $sql  = "SELECT COUNT(*) as count FROM services WHERE category_id = :id";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute(['id' => $id]);
+
+        $result = $stmt->fetch();
+
+        return $result['count'] > 0;
+    }
+
+    /**
+     * Generate a unique slug from name
+     */
+    public function generateSlug(string $name): string
+    {
+        // Convert to lowercase and replace spaces with hyphens
+        $slug = strtolower(trim($name));
+        $slug = preg_replace('/[^a-z0-9-]/', '-', $slug);
+        $slug = preg_replace('/-+/', '-', $slug);
+        $slug = trim($slug, '-');
+
+        // Check if slug exists
+        $originalSlug = $slug;
+        $counter      = 1;
+
+        while ($this->findBySlug($slug)) {
+            $slug = $originalSlug . '-' . $counter;
+            $counter++;
+        }
+
+        return $slug;
+    }
+}

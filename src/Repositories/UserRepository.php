@@ -189,7 +189,7 @@ class UserRepository
     {
         $offset = ($page - 1) * $perPage;
 
-        $sql    = "SELECT * FROM users WHERE 1=1";
+        $sql    = "SELECT * FROM users WHERE role != 'admin'";
         $params = [];
 
         // Apply search filter
@@ -199,9 +199,15 @@ class UserRepository
         }
 
         // Apply role filter
-        if ($role && in_array($role, ['student', 'client', 'admin'])) {
-            $sql .= " AND role = :role";
-            $params['role'] = $role;
+        if ($role) {
+            if (in_array($role, ['student', 'client'])) {
+                $sql .= " AND role = :role";
+                $params['role'] = $role;
+            } elseif ($role === 'admin') {
+                // If someone tries to filter by admin, return no results
+                $sql .= " AND 1=0";
+            }
+            // If role is invalid, ignore it and show all non-admin users
         }
 
         // Apply status filter

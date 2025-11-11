@@ -2,6 +2,7 @@
 
 require_once __DIR__ . '/../Repositories/ServiceRepository.php';
 require_once __DIR__ . '/../Validators/ServiceValidator.php';
+require_once __DIR__ . '/FileService.php';
 
 /**
  * Service Service
@@ -12,11 +13,13 @@ class ServiceService
 {
     private ServiceRepository $repository;
     private ServiceValidator $validator;
+    private FileService $fileService;
 
     public function __construct(ServiceRepository $repository)
     {
-        $this->repository = $repository;
-        $this->validator  = new ServiceValidator();
+        $this->repository  = $repository;
+        $this->validator   = new ServiceValidator();
+        $this->fileService = new FileService();
     }
 
     /**
@@ -261,38 +264,18 @@ class ServiceService
      *
      * @param int $serviceId
      * @param array $files
-     * @return array Array of file paths
+     * @return array Array of file metadata
      */
     private function handleFileUploads(int $serviceId, array $files): array
     {
-        $uploadedFiles = [];
-        $uploadDir     = __DIR__ . '/../../storage/uploads/services/' . $serviceId;
+        // Use FileService to upload multiple files
+        $result = $this->fileService->uploadMultiple($files, 'services', $serviceId);
 
-        // Create directory if it doesn't exist
-        if (! is_dir($uploadDir)) {
-            mkdir($uploadDir, 0755, true);
+        if (! $result['success'] && ! empty($result['errors'])) {
+            throw new Exception('File upload failed: ' . implode(', ', $result['errors']));
         }
 
-        foreach ($files as $file) {
-            if ($file['error'] === UPLOAD_ERR_OK) {
-                // Generate unique filename
-                $extension   = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-                $filename    = uniqid() . '_' . time() . '.' . $extension;
-                $destination = $uploadDir . '/' . $filename;
-
-                // Move uploaded file
-                if (move_uploaded_file($file['tmp_name'], $destination)) {
-                    $uploadedFiles[] = [
-                        'filename'      => $filename,
-                        'original_name' => $file['name'],
-                        'path'          => 'storage/uploads/services/' . $serviceId . '/' . $filename,
-                        'size'          => $file['size'],
-                    ];
-                }
-            }
-        }
-
-        return $uploadedFiles;
+        return $result['files'];
     }
 
     /**
@@ -304,18 +287,12 @@ class ServiceService
      */
     private function deleteServiceFiles(int $serviceId, array $files): void
     {
-        $uploadDir = __DIR__ . '/../../storage/uploads/services/' . $serviceId;
-
         foreach ($files as $file) {
-            $filePath = __DIR__ . '/../../' . $file['path'];
-            if (file_exists($filePath)) {
-                unlink($filePath);
+            // Files are stored with path like 'services/123/filename.ext'
+            $path = $file['path'] ?? '';
+            if ($path) {
+                $this->fileService->delete($path);
             }
-        }
-
-        // Remove directory if empty
-        if (is_dir($uploadDir) && count(scandir($uploadDir)) === 2) {
-            rmdir($uploadDir);
         }
     }
 }

@@ -6,6 +6,7 @@ require_once __DIR__ . '/../Repositories/PaymentRepository.php';
 require_once __DIR__ . '/../Validators/OrderValidator.php';
 require_once __DIR__ . '/PaymentService.php';
 require_once __DIR__ . '/EmailService.php';
+require_once __DIR__ . '/FileService.php';
 
 /**
  * Order Service
@@ -19,6 +20,7 @@ class OrderService
     private OrderValidator $validator;
     private PaymentService $paymentService;
     private EmailService $emailService;
+    private FileService $fileService;
 
     public function __construct(OrderRepository $orderRepository, ServiceRepository $serviceRepository, PaymentService $paymentService = null)
     {
@@ -26,11 +28,13 @@ class OrderService
         $this->serviceRepository = $serviceRepository;
         $this->validator         = new OrderValidator();
         $this->emailService      = new EmailService();
+        $this->fileService       = new FileService();
 
         // Initialize PaymentService if not provided
         if ($paymentService === null) {
-            $paymentRepository    = new PaymentRepository($orderRepository->getDb());
-            $this->paymentService = new PaymentService($paymentRepository);
+            $db                   = $orderRepository->getDb();
+            $paymentRepository    = new PaymentRepository($db);
+            $this->paymentService = new PaymentService($paymentRepository, $db);
         } else {
             $this->paymentService = $paymentService;
         }
@@ -615,38 +619,18 @@ class OrderService
      *
      * @param int $orderId
      * @param array $files
-     * @return array Array of file paths
+     * @return array Array of file metadata
      */
     private function handleFileUploads(int $orderId, array $files): array
     {
-        $uploadedFiles = [];
-        $uploadDir     = __DIR__ . '/../../storage/uploads/orders/' . $orderId . '/requirements';
+        // Use FileService to upload multiple files to orders/{orderId}/requirements
+        $result = $this->fileService->uploadMultiple($files, 'orders/' . $orderId . '/requirements', $orderId);
 
-        // Create directory if it doesn't exist
-        if (! is_dir($uploadDir)) {
-            mkdir($uploadDir, 0755, true);
+        if (! $result['success'] && ! empty($result['errors'])) {
+            throw new Exception('File upload failed: ' . implode(', ', $result['errors']));
         }
 
-        foreach ($files as $file) {
-            if ($file['error'] === UPLOAD_ERR_OK) {
-                // Generate unique filename
-                $extension   = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-                $filename    = uniqid() . '_' . time() . '.' . $extension;
-                $destination = $uploadDir . '/' . $filename;
-
-                // Move uploaded file
-                if (move_uploaded_file($file['tmp_name'], $destination)) {
-                    $uploadedFiles[] = [
-                        'filename'      => $filename,
-                        'original_name' => $file['name'],
-                        'path'          => 'storage/uploads/orders/' . $orderId . '/requirements/' . $filename,
-                        'size'          => $file['size'],
-                    ];
-                }
-            }
-        }
-
-        return $uploadedFiles;
+        return $result['files'];
     }
 
     /**
@@ -654,37 +638,17 @@ class OrderService
      *
      * @param int $orderId
      * @param array $files
-     * @return array Array of file paths
+     * @return array Array of file metadata
      */
     private function handleDeliveryFileUploads(int $orderId, array $files): array
     {
-        $uploadedFiles = [];
-        $uploadDir     = __DIR__ . '/../../storage/uploads/orders/' . $orderId . '/delivery';
+        // Use FileService to upload multiple files to orders/{orderId}/delivery
+        $result = $this->fileService->uploadMultiple($files, 'orders/' . $orderId . '/delivery', $orderId);
 
-        // Create directory if it doesn't exist
-        if (! is_dir($uploadDir)) {
-            mkdir($uploadDir, 0755, true);
+        if (! $result['success'] && ! empty($result['errors'])) {
+            throw new Exception('File upload failed: ' . implode(', ', $result['errors']));
         }
 
-        foreach ($files as $file) {
-            if ($file['error'] === UPLOAD_ERR_OK) {
-                // Generate unique filename
-                $extension   = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-                $filename    = uniqid() . '_' . time() . '.' . $extension;
-                $destination = $uploadDir . '/' . $filename;
-
-                // Move uploaded file
-                if (move_uploaded_file($file['tmp_name'], $destination)) {
-                    $uploadedFiles[] = [
-                        'filename'      => $filename,
-                        'original_name' => $file['name'],
-                        'path'          => 'storage/uploads/orders/' . $orderId . '/delivery/' . $filename,
-                        'size'          => $file['size'],
-                    ];
-                }
-            }
-        }
-
-        return $uploadedFiles;
+        return $result['files'];
     }
 }

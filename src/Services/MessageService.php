@@ -3,6 +3,7 @@
 require_once __DIR__ . '/../Repositories/MessageRepository.php';
 require_once __DIR__ . '/../Repositories/OrderRepository.php';
 require_once __DIR__ . '/EmailService.php';
+require_once __DIR__ . '/FileService.php';
 
 /**
  * Message Service
@@ -14,6 +15,7 @@ class MessageService
     private MessageRepository $messageRepository;
     private OrderRepository $orderRepository;
     private EmailService $emailService;
+    private FileService $fileService;
 
     // Patterns that suggest off-platform communication
     private array $suspiciousPatterns = [
@@ -38,6 +40,7 @@ class MessageService
         $this->messageRepository = $messageRepository;
         $this->orderRepository   = $orderRepository;
         $this->emailService      = new EmailService();
+        $this->fileService       = new FileService();
     }
 
     /**
@@ -203,59 +206,9 @@ class MessageService
      */
     private function handleFileUploads(int $orderId, array $files): array
     {
-        $uploadedFiles = [];
-        $uploadDir     = __DIR__ . '/../../storage/uploads/messages/' . $orderId;
+        // Use FileService to upload multiple files
+        $result = $this->fileService->uploadMultiple($files, 'messages', $orderId);
 
-        // Create directory if it doesn't exist
-        if (! is_dir($uploadDir)) {
-            mkdir($uploadDir, 0755, true);
-        }
-
-        // Allowed file extensions
-        $allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'pdf', 'doc', 'docx', 'txt', 'zip'];
-        $maxFileSize       = 10 * 1024 * 1024; // 10MB per file
-
-        foreach ($files as $file) {
-            if ($file['error'] === UPLOAD_ERR_OK) {
-                // Validate file size
-                if ($file['size'] > $maxFileSize) {
-                    return [
-                        'success' => false,
-                        'files'   => [],
-                        'errors'  => ['file_size' => 'File size must not exceed 10MB per file'],
-                    ];
-                }
-
-                // Validate file extension
-                $extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-                if (! in_array($extension, $allowedExtensions)) {
-                    return [
-                        'success' => false,
-                        'files'   => [],
-                        'errors'  => ['file_type' => 'File type not allowed. Allowed types: ' . implode(', ', $allowedExtensions)],
-                    ];
-                }
-
-                // Generate unique filename
-                $filename    = uniqid() . '_' . time() . '.' . $extension;
-                $destination = $uploadDir . '/' . $filename;
-
-                // Move uploaded file
-                if (move_uploaded_file($file['tmp_name'], $destination)) {
-                    $uploadedFiles[] = [
-                        'filename'      => $filename,
-                        'original_name' => $file['name'],
-                        'path'          => 'storage/uploads/messages/' . $orderId . '/' . $filename,
-                        'size'          => $file['size'],
-                    ];
-                }
-            }
-        }
-
-        return [
-            'success' => true,
-            'files'   => $uploadedFiles,
-            'errors'  => [],
-        ];
+        return $result;
     }
 }

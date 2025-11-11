@@ -41,9 +41,8 @@
                         class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                         <option value="">All Roles</option>
-                        <option value="student"                                                                                               <?php echo($_GET['role'] ?? '') === 'student' ? 'selected' : '' ?>>Student</option>
-                        <option value="client"                                                                                             <?php echo($_GET['role'] ?? '') === 'client' ? 'selected' : '' ?>>Client</option>
-                        <option value="admin"                                                                                           <?php echo($_GET['role'] ?? '') === 'admin' ? 'selected' : '' ?>>Admin</option>
+                        <option value="student"                                                <?php echo($_GET['role'] ?? '') === 'student' ? 'selected' : '' ?>>Student</option>
+                        <option value="client"                                               <?php echo($_GET['role'] ?? '') === 'client' ? 'selected' : '' ?>>Client</option>
                     </select>
                 </div>
 
@@ -56,9 +55,9 @@
                         class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                         <option value="">All Statuses</option>
-                        <option value="unverified"                                                                                                     <?php echo($_GET['status'] ?? '') === 'unverified' ? 'selected' : '' ?>>Unverified</option>
-                        <option value="active"                                                                                             <?php echo($_GET['status'] ?? '') === 'active' ? 'selected' : '' ?>>Active</option>
-                        <option value="suspended"                                                                                                   <?php echo($_GET['status'] ?? '') === 'suspended' ? 'selected' : '' ?>>Suspended</option>
+                        <option value="unverified"                                                                                                                                                       <?php echo($_GET['status'] ?? '') === 'unverified' ? 'selected' : '' ?>>Unverified</option>
+                        <option value="active"                                                                                                                                           <?php echo($_GET['status'] ?? '') === 'active' ? 'selected' : '' ?>>Active</option>
+                        <option value="suspended"                                                                                                                                                    <?php echo($_GET['status'] ?? '') === 'suspended' ? 'selected' : '' ?>>Suspended</option>
                     </select>
                 </div>
 
@@ -85,7 +84,7 @@
     <!-- Results Summary -->
     <div class="mb-4">
         <p class="text-sm text-gray-600">
-            Showing                                       <?php echo count($users) ?> of<?php echo $totalCount ?> users
+            Showing                                                          <?php echo count($users) ?> of<?php echo $totalCount ?> users
         </p>
     </div>
 

@@ -700,9 +700,9 @@ This plan breaks down the Student Skills Marketplace implementation into discret
   - Test audit log records admin actions
   - _Requirements: 16.1-16.5_
 
-- [-] 15. Admin service moderation
+- [x] 15. Admin service moderation
 
-- [ ] 15.1 Create service moderation interface
+- [x] 15.1 Create service moderation interface
 
   - Add `services` method to AdminController
   - Display all services with status, student, creation date
@@ -711,7 +711,7 @@ This plan breaks down the Student Skills Marketplace implementation into discret
   - Create `views/admin/services/index.php` with service table
   - _Requirements: 17.1_
 
-- [ ] 15.2 Implement service deactivation and deletion
+- [x] 15.2 Implement service deactivation and deletion
 
   - Add `deactivateService` and `deleteService` methods to AdminController
   - Update service status to 'inactive' for deactivation
@@ -720,7 +720,7 @@ This plan breaks down the Student Skills Marketplace implementation into discret
   - Insert audit_log entry
   - _Requirements: 17.2-17.3, 17.5_
 
-- [ ] 15.3 Create service detail view for admin
+- [x] 15.3 Create service detail view for admin
 
   - Add `showService` method to AdminController
   - Display complete service details and associated orders
@@ -735,8 +735,9 @@ This plan breaks down the Student Skills Marketplace implementation into discret
   - Test notification sent to student
   - _Requirements: 17.1-17.5_
 
-- [ ] 16. Admin dispute resolution
-- [ ] 16.1 Implement dispute creation by users
+- [x] 16. Admin dispute resolution
+
+- [x] 16.1 Implement dispute creation by users
 
   - Create `src/Controllers/DisputeController.php` with create and store methods
   - Write `src/Services/DisputeService.php`
@@ -747,7 +748,7 @@ This plan breaks down the Student Skills Marketplace implementation into discret
   - Create `views/disputes/create.php` form
   - _Requirements: 18.1_
 
-- [ ] 16.2 Create dispute management interface for admin
+- [x] 16.2 Create dispute management interface for admin
 
   - Add `disputes` method to AdminController
   - Display all disputes with order details, status, opened date
@@ -755,7 +756,7 @@ This plan breaks down the Student Skills Marketplace implementation into discret
   - Create `views/admin/disputes/index.php` with dispute table
   - _Requirements: 18.1_
 
-- [ ] 16.3 Create dispute detail view with resolution actions
+- [x] 16.3 Create dispute detail view with resolution actions
 
   - Add `showDispute` method to AdminController
   - Display order details, messages, delivery files, both party statements
@@ -763,7 +764,7 @@ This plan breaks down the Student Skills Marketplace implementation into discret
   - Create `views/admin/disputes/show.php`
   - _Requirements: 18.1_
 
-- [ ] 16.4 Implement dispute resolution actions
+- [x] 16.4 Implement dispute resolution actions
 
   - Add `resolve` method to AdminController
   - For "release to student": call OrderService.completeOrder
@@ -782,8 +783,9 @@ This plan breaks down the Student Skills Marketplace implementation into discret
   - Test partial refund splits payment correctly
   - _Requirements: 18.1-18.5_
 
-- [ ] 17. Admin platform settings
-- [ ] 17.1 Create platform settings interface
+- [x] 17. Admin platform settings
+
+- [x] 17.1 Create platform settings interface
 
   - Add `settings` method to AdminController
   - Display current settings: commission_rate, max_revisions
@@ -791,7 +793,7 @@ This plan breaks down the Student Skills Marketplace implementation into discret
   - Create `views/admin/settings.php`
   - _Requirements: 19.1-19.2_
 
-- [ ] 17.2 Implement settings update
+- [x] 17.2 Implement settings update
 
   - Add `updateSettings` method to AdminController
   - Validate commission_rate (0-100) and max_revisions (> 0)
@@ -799,7 +801,7 @@ This plan breaks down the Student Skills Marketplace implementation into discret
   - Insert audit_log entry with old and new values
   - _Requirements: 19.1-19.2, 19.5_
 
-- [ ] 17.3 Implement category management
+- [x] 17.3 Implement category management
 
   - Add `categories` method to AdminController
   - Display all categories with service count
@@ -815,8 +817,9 @@ This plan breaks down the Student Skills Marketplace implementation into discret
   - Test category deletion prevention with existing services
   - _Requirements: 19.1-19.5_
 
-- [ ] 18. File storage and access control
-- [ ] 18.1 Implement file upload handler with validation
+- [x] 18. File storage and access control
+
+- [x] 18.1 Implement file upload handler with validation
 
   - Create `src/Services/FileService.php` with upload method
   - Validate file extension against allowlist (jpg, jpeg, png, gif, pdf, doc, docx, zip)
@@ -828,7 +831,7 @@ This plan breaks down the Student Skills Marketplace implementation into discret
   - Return file metadata (path, original_name, size, mime_type)
   - _Requirements: 24.1-24.5_
 
-- [ ] 18.2 Implement signed URL generation for downloads
+- [x] 18.2 Implement signed URL generation for downloads
 
   - Add `generateSignedUrl` method to FileService
   - Create HMAC signature with file_id, expires timestamp, and secret key
@@ -836,7 +839,7 @@ This plan breaks down the Student Skills Marketplace implementation into discret
   - Set expiration to 5 minutes from generation
   - _Requirements: 25.2_
 
-- [ ] 18.3 Implement file download controller with authorization
+- [x] 18.3 Implement file download controller with authorization
 
   - Create `src/Controllers/FileController.php` with download method
   - Verify signature and expiration
@@ -847,7 +850,7 @@ This plan breaks down the Student Skills Marketplace implementation into discret
   - Return 403 for unauthorized or invalid signature
   - _Requirements: 25.1-25.5_
 
-- [ ] 18.4 Update all file upload forms to use FileService
+- [x] 18.4 Update all file upload forms to use FileService
 
   - Update profile portfolio upload to use FileService
   - Update service sample upload to use FileService

@@ -114,6 +114,29 @@ $router->post('/admin/users/{id}/reactivate', 'AdminController@reactivateUser', 
     new CsrfMiddleware(),
 ]);
 
+// Admin service moderation
+$router->get('/admin/services', 'AdminController@services', [
+    new AuthMiddleware(),
+    new RoleMiddleware('admin'),
+]);
+
+$router->get('/admin/services/{id}', 'AdminController@showService', [
+    new AuthMiddleware(),
+    new RoleMiddleware('admin'),
+]);
+
+$router->post('/admin/services/{id}/deactivate', 'AdminController@deactivateService', [
+    new AuthMiddleware(),
+    new RoleMiddleware('admin'),
+    new CsrfMiddleware(),
+]);
+
+$router->post('/admin/services/{id}/delete', 'AdminController@deleteService', [
+    new AuthMiddleware(),
+    new RoleMiddleware('admin'),
+    new CsrfMiddleware(),
+]);
+
 // Example POST route with CSRF protection
 $router->post('/test/submit', function () {
     echo json_encode([
@@ -310,6 +333,7 @@ $router->get('/services/{id}', 'DiscoveryController@show');
 
 // File serving routes
 $router->get('/storage/file', 'FileController@serve');
+$router->get('/files/download', 'FileController@download'); // Secure download with signed URLs
 
 // Webhook routes (no authentication - verified by signature)
 $router->post('/webhooks/stripe', 'WebhookController@stripe');
@@ -378,5 +402,67 @@ $router->post('/settings/account/update', 'SettingsController@updateAccount', [
 
 $router->post('/settings/password/update', 'SettingsController@updatePassword', [
     new AuthMiddleware(),
+    new CsrfMiddleware(),
+]);
+
+// Dispute routes
+
+// Create dispute form (client or student)
+$router->get('/disputes/create', 'DisputeController@create', [
+    new AuthMiddleware(),
+    new RoleMiddleware(['client', 'student']),
+]);
+
+// Store new dispute (client or student)
+$router->post('/disputes/store', 'DisputeController@store', [
+    new AuthMiddleware(),
+    new RoleMiddleware(['client', 'student']),
+    new CsrfMiddleware(),
+]);
+
+// Admin dispute management
+$router->get('/admin/disputes', 'AdminController@disputes', [
+    new AuthMiddleware(),
+    new RoleMiddleware('admin'),
+]);
+
+$router->get('/admin/disputes/{id}', 'AdminController@showDispute', [
+    new AuthMiddleware(),
+    new RoleMiddleware('admin'),
+]);
+
+$router->post('/admin/disputes/{id}/resolve', 'AdminController@resolveDispute', [
+    new AuthMiddleware(),
+    new RoleMiddleware('admin'),
+    new CsrfMiddleware(),
+]);
+
+// Admin platform settings
+$router->get('/admin/settings', 'AdminController@settings', [
+    new AuthMiddleware(),
+    new RoleMiddleware('admin'),
+]);
+
+$router->post('/admin/settings/update', 'AdminController@updateSettings', [
+    new AuthMiddleware(),
+    new RoleMiddleware('admin'),
+    new CsrfMiddleware(),
+]);
+
+// Admin category management
+$router->get('/admin/categories', 'AdminController@categories', [
+    new AuthMiddleware(),
+    new RoleMiddleware('admin'),
+]);
+
+$router->post('/admin/categories/create', 'AdminController@createCategory', [
+    new AuthMiddleware(),
+    new RoleMiddleware('admin'),
+    new CsrfMiddleware(),
+]);
+
+$router->post('/admin/categories/{id}/delete', 'AdminController@deleteCategory', [
+    new AuthMiddleware(),
+    new RoleMiddleware('admin'),
     new CsrfMiddleware(),
 ]);

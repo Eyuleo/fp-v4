@@ -1,5 +1,7 @@
 <?php
 
+require_once __DIR__ . '/FileService.php';
+
 /**
  * Profile Service
  *
@@ -8,11 +10,13 @@
 class ProfileService
 {
     private StudentProfileRepository $profileRepository;
+    private FileService $fileService;
     private string $uploadPath;
 
     public function __construct(StudentProfileRepository $profileRepository)
     {
         $this->profileRepository = $profileRepository;
+        $this->fileService       = new FileService();
         $this->uploadPath        = __DIR__ . '/../../storage/uploads/profiles';
     }
 
@@ -96,89 +100,21 @@ class ProfileService
      */
     private function handleProfilePictureUpload(int $userId, array $file, ?string $oldPicture): ?string
     {
-        if ($file['error'] !== UPLOAD_ERR_OK) {
-            return null;
-        }
-
-        $tmpName = $file['tmp_name'];
-        $name    = $file['name'];
-        $size    = $file['size'];
-
-        // Validate file
-        $validation = $this->validateProfilePicture($name, $size, $tmpName);
-
-        if ($validation !== true) {
-            throw new Exception($validation);
-        }
-
-        // Create user directory if it doesn't exist
-        $userDir = $this->uploadPath . '/' . $userId;
-
-        if (! is_dir($userDir)) {
-            mkdir($userDir, 0755, true);
-        }
-
         // Delete old profile picture if exists
-        if ($oldPicture && file_exists($userDir . '/' . $oldPicture)) {
-            unlink($userDir . '/' . $oldPicture);
+        if ($oldPicture) {
+            $oldPath = 'profiles/' . $userId . '/' . $oldPicture;
+            $this->fileService->delete($oldPath);
         }
 
-        // Generate unique filename
-        $extension = strtolower(pathinfo($name, PATHINFO_EXTENSION));
-        $filename  = 'profile_' . bin2hex(random_bytes(8)) . '.' . $extension;
-        $filepath  = $userDir . '/' . $filename;
+        // Upload new profile picture using FileService
+        $result = $this->fileService->upload($file, 'profiles', $userId);
 
-        // Move uploaded file
-        if (move_uploaded_file($tmpName, $filepath)) {
-            return $filename;
+        if (! $result['success']) {
+            throw new Exception($result['error']);
         }
 
-        return null;
-    }
-
-    /**
-     * Validate profile picture
-     */
-    private function validateProfilePicture(string $filename, int $size, string $tmpPath): string | bool
-    {
-                                    // Check file size (5MB limit for profile pictures)
-        $maxSize = 5 * 1024 * 1024; // 5MB in bytes
-
-        if ($size > $maxSize) {
-            return 'Profile picture size exceeds 5MB limit';
-        }
-
-        // Check file extension (only images)
-        $allowedExtensions = ['jpg', 'jpeg', 'png', 'gif'];
-        $extension         = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
-
-        if (! in_array($extension, $allowedExtensions)) {
-            return 'Profile picture must be an image (JPG, PNG, or GIF)';
-        }
-
-        // Validate MIME type
-        $finfo    = finfo_open(FILEINFO_MIME_TYPE);
-        $mimeType = finfo_file($finfo, $tmpPath);
-        finfo_close($finfo);
-
-        $allowedMimeTypes = [
-            'image/jpeg',
-            'image/png',
-            'image/gif',
-        ];
-
-        if (! in_array($mimeType, $allowedMimeTypes)) {
-            return 'Invalid image file';
-        }
-
-        // Verify it's a valid image
-        $imageInfo = @getimagesize($tmpPath);
-
-        if ($imageInfo === false) {
-            return 'Invalid image file';
-        }
-
-        return true;
+        // Return just the filename (not the full path)
+        return $result['file']['filename'];
     }
 
     /**
@@ -186,104 +122,14 @@ class ProfileService
      */
     private function handlePortfolioUploads(int $userId, array $files): array
     {
-        $uploadedFiles = [];
+        // Use FileService to upload multiple files
+        $result = $this->fileService->uploadMultiple($files, 'profiles', $userId);
 
-        // Create user directory if it doesn't exist
-        $userDir = $this->uploadPath . '/' . $userId;
-
-        if (! is_dir($userDir)) {
-            mkdir($userDir, 0755, true);
+        if (! $result['success'] && ! empty($result['errors'])) {
+            throw new Exception('File upload failed: ' . implode(', ', $result['errors']));
         }
 
-        // Process each file
-        $fileCount = count($files['name']);
-
-        for ($i = 0; $i < $fileCount; $i++) {
-            if ($files['error'][$i] !== UPLOAD_ERR_OK) {
-                continue;
-            }
-
-            $tmpName  = $files['tmp_name'][$i];
-            $name     = $files['name'][$i];
-            $size     = $files['size'][$i];
-            $mimeType = $files['type'][$i];
-
-            // Validate file
-            $validation = $this->validatePortfolioFile($name, $size, $tmpName);
-
-            if ($validation !== true) {
-                throw new Exception($validation);
-            }
-
-            // Generate unique filename
-            $extension = strtolower(pathinfo($name, PATHINFO_EXTENSION));
-            $filename  = bin2hex(random_bytes(16)) . '.' . $extension;
-            $filepath  = $userDir . '/' . $filename;
-
-            // Move uploaded file
-            if (move_uploaded_file($tmpName, $filepath)) {
-                $uploadedFiles[] = [
-                    'filename'      => $filename,
-                    'original_name' => $name,
-                    'size'          => $size,
-                    'mime_type'     => $mimeType,
-                    'uploaded_at'   => date('Y-m-d H:i:s'),
-                ];
-            }
-        }
-
-        return $uploadedFiles;
-    }
-
-    /**
-     * Validate portfolio file
-     */
-    private function validatePortfolioFile(string $filename, int $size, string $tmpPath): string | bool
-    {
-                                     // Check file size (10MB limit)
-        $maxSize = 10 * 1024 * 1024; // 10MB in bytes
-
-        if ($size > $maxSize) {
-            return 'File size exceeds 10MB limit';
-        }
-
-        // Check file extension
-        $allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'pdf', 'doc', 'docx', 'zip'];
-        $extension         = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
-
-        if (! in_array($extension, $allowedExtensions)) {
-            return 'File type not allowed. Allowed types: ' . implode(', ', $allowedExtensions);
-        }
-
-        // Validate MIME type
-        $finfo    = finfo_open(FILEINFO_MIME_TYPE);
-        $mimeType = finfo_file($finfo, $tmpPath);
-        finfo_close($finfo);
-
-        $allowedMimeTypes = [
-            'image/jpeg',
-            'image/png',
-            'image/gif',
-            'application/pdf',
-            'application/msword',
-            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-            'application/zip',
-        ];
-
-        if (! in_array($mimeType, $allowedMimeTypes)) {
-            return 'Invalid file type';
-        }
-
-        // For images, verify they are valid
-        if (in_array($extension, ['jpg', 'jpeg', 'png', 'gif'])) {
-            $imageInfo = @getimagesize($tmpPath);
-
-            if ($imageInfo === false) {
-                return 'Invalid image file';
-            }
-        }
-
-        return true;
+        return $result['files'];
     }
 
     /**
