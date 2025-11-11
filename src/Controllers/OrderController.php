@@ -245,6 +245,19 @@ class OrderController
             }
         }
 
+        // Get review if order is completed
+        $review = null;
+        if ($order['status'] === 'completed') {
+            require_once __DIR__ . '/../Services/ReviewService.php';
+            require_once __DIR__ . '/../Repositories/ReviewRepository.php';
+
+            $reviewRepository = new ReviewRepository($this->db);
+            $orderRepository  = new OrderRepository($this->db);
+            $reviewService    = new ReviewService($reviewRepository, $orderRepository);
+
+            $review = $reviewService->getReviewByOrderId($id);
+        }
+
         // Render order details
         include __DIR__ . '/../../views/orders/show.php';
     }

@@ -128,6 +128,59 @@
             </div>
         <?php endif; ?>
 
+        <!-- Review (if completed and reviewed) -->
+        <?php if ($order['status'] === 'completed' && ! empty($review)): ?>
+            <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                <h2 class="text-xl font-bold text-gray-900 mb-4">Review</h2>
+
+                <div class="flex items-start space-x-4">
+                    <div class="flex-shrink-0">
+                        <div class="flex items-center">
+                            <?php for ($i = 1; $i <= 5; $i++): ?>
+                                <svg class="w-5 h-5<?php echo $i <= $review['rating'] ? 'text-yellow-400' : 'text-gray-300' ?>" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                                </svg>
+                            <?php endfor; ?>
+                            <span class="ml-2 text-sm font-medium text-gray-700"><?php echo e($review['rating']) ?>/5</span>
+                        </div>
+                    </div>
+
+                    <div class="flex-1">
+                        <div class="flex items-center justify-between mb-2">
+                            <p class="text-sm font-medium text-gray-900"><?php echo e($review['client_name']) ?></p>
+                            <p class="text-sm text-gray-500"><?php echo date('M d, Y', strtotime($review['created_at'])) ?></p>
+                        </div>
+
+                        <?php if ($review['comment']): ?>
+                            <p class="text-gray-700 mb-3"><?php echo e($review['comment']) ?></p>
+                        <?php endif; ?>
+
+                        <?php if ($review['student_reply']): ?>
+                            <div class="mt-4 pl-4 border-l-2 border-gray-200">
+                                <p class="text-sm font-medium text-gray-900 mb-1">Student Reply:</p>
+                                <p class="text-gray-700"><?php echo e($review['student_reply']) ?></p>
+                                <p class="text-xs text-gray-500 mt-1"><?php echo date('M d, Y', strtotime($review['student_replied_at'])) ?></p>
+                            </div>
+                        <?php elseif ($order['student_id'] === Auth::user()['id']): ?>
+                            <button onclick="showReplyForm()" class="mt-3 text-sm text-blue-600 hover:text-blue-700">
+                                Reply to review
+                            </button>
+                        <?php endif; ?>
+
+                        <?php
+                            $canEditUntil = strtotime($review['can_edit_until']);
+                            $now          = time();
+                        ?>
+                        <?php if ($order['client_id'] === Auth::user()['id'] && $now <= $canEditUntil): ?>
+                            <a href="/reviews/<?php echo e($review['id']) ?>/edit" class="mt-3 inline-block text-sm text-blue-600 hover:text-blue-700">
+                                Edit review (<?php echo ceil(($canEditUntil - $now) / 3600) ?> hours left)
+                            </a>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+        <?php endif; ?>
+
         <!-- Action Buttons -->
         <div class="bg-white rounded-lg shadow-md p-6">
             <div class="flex items-center justify-between">
@@ -172,6 +225,12 @@
                                 Request Revision (<?php echo e($order['max_revisions'] - $order['revision_count']) ?> left)
                             </button>
                         <?php endif; ?>
+                    <?php endif; ?>
+
+                    <?php if ($order['status'] === 'completed' && $order['client_id'] === Auth::user()['id'] && empty($review)): ?>
+                        <a href="/reviews/create?order_id=<?php echo e($order['id']) ?>" class="inline-block bg-yellow-600 text-white px-6 py-2 rounded-md hover:bg-yellow-700">
+                            Leave Review
+                        </a>
                     <?php endif; ?>
 
                     <?php if ($order['status'] === 'pending'): ?>
@@ -292,7 +351,7 @@
                         placeholder="Please be specific about what changes you need..."
                     ></textarea>
                     <p class="text-sm text-gray-500 mt-1">
-                        You have                                                                                                                                                                                                                                                                 <?php echo e($order['max_revisions'] - $order['revision_count']) ?> revision(s) remaining.
+                        You have                                                                                                                                                                                                                                                                                                                                                                                                 <?php echo e($order['max_revisions'] - $order['revision_count']) ?> revision(s) remaining.
                     </p>
                 </div>
 
@@ -307,6 +366,41 @@
             </form>
         </div>
     </div>
+
+    <!-- Reply to Review Modal -->
+    <?php if (! empty($review) && empty($review['student_reply']) && $order['student_id'] === Auth::user()['id']): ?>
+    <div id="replyModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+        <div class="bg-white rounded-lg max-w-2xl w-full mx-4 p-6">
+            <h3 class="text-xl font-bold text-gray-900 mb-4">Reply to Review</h3>
+            <form action="/reviews/<?php echo e($review['id']) ?>/reply" method="POST">
+                <input type="hidden" name="csrf_token" value="<?php echo e($_SESSION['csrf_token']) ?>">
+
+                <div class="mb-4">
+                    <label for="student_reply" class="block text-sm font-medium text-gray-700 mb-2">
+                        Your Reply <span class="text-red-500">*</span>
+                    </label>
+                    <textarea
+                        id="student_reply"
+                        name="student_reply"
+                        rows="4"
+                        required
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Thank the client or respond to their feedback..."
+                    ></textarea>
+                </div>
+
+                <div class="flex items-center justify-end space-x-3">
+                    <button type="button" onclick="hideReplyForm()" class="px-4 py-2 text-gray-700 hover:text-gray-900">
+                        Cancel
+                    </button>
+                    <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700">
+                        Submit Reply
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <?php endif; ?>
 
     <script>
         function showCancelModal() {
@@ -333,6 +427,14 @@
             document.getElementById('revisionModal').classList.add('hidden');
         }
 
+        function showReplyForm() {
+            document.getElementById('replyModal').classList.remove('hidden');
+        }
+
+        function hideReplyForm() {
+            document.getElementById('replyModal').classList.add('hidden');
+        }
+
         // Close modals when clicking outside
         document.getElementById('cancelModal').addEventListener('click', function(e) {
             if (e.target === this) hideCancelModal();
@@ -345,6 +447,12 @@
         document.getElementById('revisionModal').addEventListener('click', function(e) {
             if (e.target === this) hideRevisionForm();
         });
+
+        <?php if (! empty($review) && empty($review['student_reply']) && $order['student_id'] === Auth::user()['id']): ?>
+        document.getElementById('replyModal').addEventListener('click', function(e) {
+            if (e.target === this) hideReplyForm();
+        });
+        <?php endif; ?>
     </script>
 
 <?php
