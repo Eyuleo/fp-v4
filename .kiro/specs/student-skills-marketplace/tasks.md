@@ -424,8 +424,9 @@ This plan breaks down the Student Skills Marketplace implementation into discret
   - Test state transition guards prevent invalid transitions
   - _Requirements: 7.1-7.6_
 
-- [ ] 10. Payment processing and escrow
-- [ ] 10.1 Implement payment release to student (Balance System)
+- [x] 10. Payment processing and escrow
+
+- [x] 10.1 Implement payment release to student (Balance System)
 
   - Add `releasePayment` method to PaymentService
   - Get payment record and verify status is 'succeeded'
@@ -437,7 +438,7 @@ This plan breaks down the Student Skills Marketplace implementation into discret
   - _Requirements: 9.2_
   - _Note: Funds added to student balance; actual Stripe transfer happens on withdrawal_
 
-- [ ] 10.2 Implement payment refund to client
+- [x] 10.2 Implement payment refund to client
 
   - Add `refundPayment` method to PaymentService
   - Get payment record and stripe_payment_intent_id
@@ -448,14 +449,14 @@ This plan breaks down the Student Skills Marketplace implementation into discret
   - Handle Stripe API errors with retry logic
   - _Requirements: 8.1-8.5, 9.5_
 
-- [ ] 10.3 Implement idempotency for payment operations
+- [x] 10.3 Implement idempotency for payment operations
 
   - Use order_id + operation type as idempotency key
   - Check if operation already completed before calling Stripe
   - Store idempotency keys in payment metadata
   - _Requirements: 9.5, 10.2_
 
-- [ ] 10.4 Create payment history view for admin
+- [x] 10.4 Create payment history view for admin
 
   - Add `payments` method to AdminController
   - Display all payments with order details, amounts, status, Stripe IDs
@@ -471,8 +472,9 @@ This plan breaks down the Student Skills Marketplace implementation into discret
   - Test idempotency prevents duplicate operations
   - _Requirements: 9.1-9.5_
 
-- [ ] 11. Messaging system
-- [ ] 11.1 Implement message sending with attachments
+- [x] 11. Messaging system
+
+- [x] 11.1 Implement message sending with attachments
 
   - Create `src/Controllers/MessageController.php` with send method
   - Write `src/Services/MessageService.php` with sendMessage method
@@ -484,7 +486,7 @@ This plan breaks down the Student Skills Marketplace implementation into discret
   - Send notification to recipient
   - _Requirements: 11.1-11.3_
 
-- [ ] 11.2 Create message thread view
+- [x] 11.2 Create message thread view
 
   - Add `thread` method to MessageController
   - Get all messages for order ordered by created_at
@@ -494,7 +496,7 @@ This plan breaks down the Student Skills Marketplace implementation into discret
   - Add message form at bottom with file upload
   - _Requirements: 11.1-11.5_
 
-- [ ] 11.3 Implement unread message counter
+- [x] 11.3 Implement unread message counter
 
   - Add `getUnreadCount` method to MessageService
   - Count messages where user is recipient and not marked as read
@@ -502,7 +504,7 @@ This plan breaks down the Student Skills Marketplace implementation into discret
   - Update counter via AJAX after marking messages as read
   - _Requirements: 11.4_
 
-- [ ] 11.4 Implement message polling for real-time updates
+- [x] 11.4 Implement message polling for real-time updates
 
   - Add `poll` method to MessageController returning JSON
   - Accept `after` parameter with last message ID
@@ -519,8 +521,9 @@ This plan breaks down the Student Skills Marketplace implementation into discret
   - Test marking messages as read
   - _Requirements: 11.1-11.5_
 
-- [ ] 12. Review and rating system
-- [ ] 12.1 Implement review submission by client
+- [-] 12. Review and rating system
+
+- [x] 12.1 Implement review submission by client
 
   - Create `src/Controllers/ReviewController.php` with create and store methods
   - Write `src/Services/ReviewService.php` with createReview method
@@ -535,7 +538,7 @@ This plan breaks down the Student Skills Marketplace implementation into discret
   - Create `views/reviews/create.php` form with star rating and comment
   - _Requirements: 12.1-12.5_
 
-- [ ] 12.2 Implement review editing within 24-hour window
+- [x] 12.2 Implement review editing within 24-hour window
 
   - Add `edit` and `update` methods to ReviewController
   - Check can_edit_until > current time
@@ -543,7 +546,7 @@ This plan breaks down the Student Skills Marketplace implementation into discret
   - Recalculate student average_rating
   - _Requirements: 12.3_
 
-- [ ] 12.3 Implement student reply to reviews
+- [x] 12.3 Implement student reply to reviews
 
   - Add `reply` method to ReviewController
   - Check user is the student being reviewed
@@ -551,7 +554,7 @@ This plan breaks down the Student Skills Marketplace implementation into discret
   - Send notification to client
   - _Requirements: 13.1-13.5_
 
-- [ ] 12.4 Display reviews on student profile
+- [x] 12.4 Display reviews on student profile
 
   - Update student profile view to show recent reviews
   - Display rating stars, comment, client name, date
@@ -560,7 +563,7 @@ This plan breaks down the Student Skills Marketplace implementation into discret
   - Implement pagination for reviews
   - _Requirements: 12.5, 13.4_
 
-- [ ] 12.5 Calculate and update student average rating
+- [x] 12.5 Calculate and update student average rating
 
   - Add `calculateAverageRating` method to ReviewService
   - Query all reviews for student and calculate AVG(rating)

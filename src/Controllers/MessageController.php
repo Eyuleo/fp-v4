@@ -1,69 +1,221 @@
 <?php
 
+require_once __DIR__ . '/../Services/MessageService.php';
+require_once __DIR__ . '/../Repositories/MessageRepository.php';
+require_once __DIR__ . '/../Repositories/OrderRepository.php';
 require_once __DIR__ . '/../Auth.php';
+require_once __DIR__ . '/../Helpers.php';
+require_once __DIR__ . '/../../config/database.php';
 
 /**
  * Message Controller
  *
- * Handles message-related HTTP requests with authorization
- *
- * This is a stub implementation showing how to integrate policy checks
+ * Handles message-related HTTP requests
  */
 class MessageController
 {
+    private MessageService $messageService;
+    private OrderRepository $orderRepository;
+    private PDO $db;
+
+    public function __construct()
+    {
+        $this->db = getDatabaseConnection();
+
+        $messageRepository     = new MessageRepository($this->db);
+        $this->orderRepository = new OrderRepository($this->db);
+        $this->messageService  = new MessageService($messageRepository, $this->orderRepository);
+    }
+
+    /**
+     * Send a message
+     *
+     * POST /messages/send
+     */
+    public function send(): void
+    {
+        // Check authentication
+        if (! Auth::check()) {
+            http_response_code(401);
+            echo json_encode(['success' => false, 'error' => 'Unauthorized']);
+            exit;
+        }
+
+        $user = Auth::user();
+
+        // Validate CSRF token
+        if (! isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'error' => 'Invalid request']);
+            exit;
+        }
+
+        // Get form data
+        $orderId = (int) ($_POST['order_id'] ?? 0);
+        $content = $_POST['content'] ?? '';
+
+        // Handle file uploads
+        $files = [];
+        if (isset($_FILES['attachments']) && is_array($_FILES['attachments']['name'])) {
+            // Restructure $_FILES array for multiple files
+            $fileCount = count($_FILES['attachments']['name']);
+            for ($i = 0; $i < $fileCount; $i++) {
+                if ($_FILES['attachments']['error'][$i] === UPLOAD_ERR_OK) {
+                    $files[] = [
+                        'name'     => $_FILES['attachments']['name'][$i],
+                        'type'     => $_FILES['attachments']['type'][$i],
+                        'tmp_name' => $_FILES['attachments']['tmp_name'][$i],
+                        'error'    => $_FILES['attachments']['error'][$i],
+                        'size'     => $_FILES['attachments']['size'][$i],
+                    ];
+                }
+            }
+        }
+
+        // Send message
+        $result = $this->messageService->sendMessage($user['id'], $orderId, $content, $files);
+
+        if (! $result['success']) {
+            $_SESSION['error'] = implode(', ', array_values($result['errors']));
+            header('Location: /messages/thread/' . $orderId);
+            exit;
+        }
+
+        $_SESSION['success'] = 'Message sent successfully';
+        header('Location: /messages/thread/' . $orderId);
+        exit;
+    }
+
     /**
      * View message thread for an order
+     *
+     * GET /messages/thread/{orderId}
      */
     public function thread(int $orderId): void
     {
-        $order = $this->getOrderById($orderId);
+        // Check authentication
+        if (! Auth::check()) {
+            $_SESSION['error'] = 'Please login to view messages';
+            header('Location: /login');
+            exit;
+        }
+
+        $user = Auth::user();
+
+        // Get order
+        $order = $this->orderRepository->findById($orderId);
 
         if (! $order) {
             http_response_code(404);
-            echo "Order not found";
-            return;
+            include __DIR__ . '/../../views/errors/404.php';
+            exit;
         }
 
-        // Check if user can view messages in this order
-        Auth::authorizeOrFail('message', 'view', $order);
+        // Check authorization (client or student can view)
+        if ($order['client_id'] !== $user['id'] &&
+            $order['student_id'] !== $user['id'] &&
+            $user['role'] !== 'admin') {
+            http_response_code(403);
+            include __DIR__ . '/../../views/errors/403.php';
+            exit;
+        }
 
-        // Get messages for this order
-        // ... fetch from database ...
+        // Get all messages for the order
+        $messages = $this->messageService->getOrderMessages($orderId);
 
-        // Show the message thread
-        view('messages/thread', ['order' => $order]);
+        // Mark messages as read for current user
+        $this->messageService->markMessagesAsRead($orderId, $user['id'], $user['role']);
+
+        // Render message thread view
+        include __DIR__ . '/../../views/messages/thread.php';
     }
 
     /**
-     * Send a message in an order thread
+     * Poll for new messages (AJAX endpoint)
+     *
+     * GET /messages/poll?order_id={id}&after={messageId}
      */
-    public function send(int $orderId): void
+    public function poll(): void
     {
-        $order = $this->getOrderById($orderId);
+        // Check authentication
+        if (! Auth::check()) {
+            http_response_code(401);
+            echo json_encode(['success' => false, 'error' => 'Unauthorized']);
+            exit;
+        }
+
+        $user = Auth::user();
+
+        // Get parameters
+        $orderId = (int) ($_GET['order_id'] ?? 0);
+        $afterId = (int) ($_GET['after'] ?? 0);
+
+        if (! $orderId) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'error' => 'Order ID required']);
+            exit;
+        }
+
+        // Get order to verify authorization
+        $order = $this->orderRepository->findById($orderId);
 
         if (! $order) {
             http_response_code(404);
-            echo "Order not found";
-            return;
+            echo json_encode(['success' => false, 'error' => 'Order not found']);
+            exit;
         }
 
-        // Check if user can send messages in this order
-        Auth::authorizeOrFail('message', 'send', $order);
+        // Check authorization
+        if ($order['client_id'] !== $user['id'] &&
+            $order['student_id'] !== $user['id'] &&
+            $user['role'] !== 'admin') {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'error' => 'Unauthorized']);
+            exit;
+        }
 
-        // Process the message
-        // ... business logic here ...
+        // Get new messages
+        $newMessages = $this->messageService->getNewMessages($orderId, $afterId);
 
-        flash('success', 'Message sent successfully');
-        redirect('/messages/thread/' . $orderId);
+        // Mark new messages as read
+        if (! empty($newMessages)) {
+            $this->messageService->markMessagesAsRead($orderId, $user['id'], $user['role']);
+        }
+
+        // Return JSON response
+        header('Content-Type: application/json');
+        echo json_encode([
+            'success'  => true,
+            'messages' => $newMessages,
+        ]);
+        exit;
     }
 
     /**
-     * Stub method to get order by ID
-     * In real implementation, this would use OrderRepository
+     * Get unread message count (AJAX endpoint)
+     *
+     * GET /messages/unread-count
      */
-    private function getOrderById(int $orderId): ?array
+    public function unreadCount(): void
     {
-        // This is a stub - in real implementation, fetch from database
-        return null;
+        // Check authentication
+        if (! Auth::check()) {
+            http_response_code(401);
+            echo json_encode(['success' => false, 'error' => 'Unauthorized']);
+            exit;
+        }
+
+        $user = Auth::user();
+
+        // Get unread count
+        $count = $this->messageService->getUnreadCount($user['id'], $user['role']);
+
+        // Return JSON response
+        header('Content-Type: application/json');
+        echo json_encode([
+            'success' => true,
+            'count'   => $count,
+        ]);
+        exit;
     }
 }

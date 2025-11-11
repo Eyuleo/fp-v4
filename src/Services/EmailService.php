@@ -168,6 +168,89 @@ class EmailService
     }
 
     /**
+     * Send message received notification
+     *
+     * @param array $order Order data
+     * @param array $recipient Recipient data
+     * @param string $messagePreview Preview of the message content
+     * @return bool
+     */
+    public function sendMessageReceivedNotification(array $order, array $recipient, string $messagePreview): bool
+    {
+        $subject = 'New Message - Order #' . $order['id'];
+
+        // Truncate message preview to 100 characters
+        $preview = strlen($messagePreview) > 100 ? substr($messagePreview, 0, 100) . '...' : $messagePreview;
+
+        $message = "Hello {$recipient['name']},\n\n";
+        $message .= "You have received a new message for order #{$order['id']}.\n\n";
+        $message .= "Message Preview:\n";
+        $message .= "{$preview}\n\n";
+        $message .= "View Full Message: " . getenv('APP_URL') . "/messages/thread/{$order['id']}\n\n";
+        $message .= "Best regards,\n";
+        $message .= "Student Skills Marketplace Team";
+
+        return $this->send($recipient['email'], $subject, $message);
+    }
+
+    /**
+     * Send review submitted notification to student
+     *
+     * @param array $order Order data
+     * @param array $student Student data with rating and comment
+     * @return bool
+     */
+    public function sendReviewSubmittedNotification(array $order, array $student): bool
+    {
+        $subject = 'New Review Received - Order #' . $order['id'];
+
+        $stars = str_repeat('★', $student['rating']) . str_repeat('☆', 5 - $student['rating']);
+
+        $message = "Hello {$student['name']},\n\n";
+        $message .= "You have received a new review!\n\n";
+        $message .= "Order Details:\n";
+        $message .= "- Order ID: #{$order['id']}\n";
+        $message .= "- Service: {$order['service_title']}\n";
+        $message .= "- Rating: {$stars} ({$student['rating']}/5)\n\n";
+
+        if (! empty($student['comment'])) {
+            $message .= "Review Comment:\n";
+            $message .= "{$student['comment']}\n\n";
+        }
+
+        $message .= "You can reply to this review from your profile page.\n\n";
+        $message .= "View Your Profile: " . getenv('APP_URL') . "/student/profile\n\n";
+        $message .= "Best regards,\n";
+        $message .= "Student Skills Marketplace Team";
+
+        return $this->send($student['email'], $subject, $message);
+    }
+
+    /**
+     * Send review reply notification to client
+     *
+     * @param array $review Review data
+     * @param array $client Client data with reply
+     * @return bool
+     */
+    public function sendReviewReplyNotification(array $review, array $client): bool
+    {
+        $subject = 'Student Replied to Your Review';
+
+        $message = "Hello {$client['name']},\n\n";
+        $message .= "The student has replied to your review.\n\n";
+        $message .= "Service: {$review['service_title']}\n";
+        $message .= "Student: {$review['student_name']}\n\n";
+        $message .= "Reply:\n";
+        $message .= "{$client['reply']}\n\n";
+        $message .= "View Student Profile: " . getenv('APP_URL') . "/student/profile/{$review['student_id']}\n\n";
+        $message .= "Best regards,\n";
+        $message .= "Student Skills Marketplace Team";
+
+        return $this->send($client['email'], $subject, $message);
+    }
+
+    /**
      * Send email using PHP mail function
      *
      * @param string $to Recipient email

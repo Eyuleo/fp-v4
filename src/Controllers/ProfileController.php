@@ -148,12 +148,29 @@ class ProfileController
                 return;
             }
 
-            // Get recent reviews (to be implemented later)
-            $reviews = [];
+            // Get recent reviews
+            require_once __DIR__ . '/../Services/ReviewService.php';
+            require_once __DIR__ . '/../Repositories/ReviewRepository.php';
+            require_once __DIR__ . '/../Repositories/OrderRepository.php';
+
+            $reviewRepository = new ReviewRepository($this->db);
+            $orderRepository  = new OrderRepository($this->db);
+            $reviewService    = new ReviewService($reviewRepository, $orderRepository);
+
+            // Get page number for pagination
+            $page = isset($_GET['page']) && is_numeric($_GET['page']) ? (int) $_GET['page'] : 1;
+
+            // Get reviews for this student
+            $reviews      = $reviewService->getReviewsForStudent((int) $studentId, $page);
+            $totalReviews = $reviewService->getReviewCount((int) $studentId);
+            $totalPages   = ceil($totalReviews / 10);
 
             view('student/show', [
-                'profile' => $profile,
-                'reviews' => $reviews,
+                'profile'      => $profile,
+                'reviews'      => $reviews,
+                'currentPage'  => $page,
+                'totalPages'   => $totalPages,
+                'totalReviews' => $totalReviews,
             ], 'base');
         } catch (Exception $e) {
             flash('error', 'Error loading profile: ' . $e->getMessage());

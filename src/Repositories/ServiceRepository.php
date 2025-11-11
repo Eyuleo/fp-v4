@@ -67,9 +67,9 @@ class ServiceRepository
             return null;
         }
 
-        // Decode JSON fields
-        $service['tags']         = json_decode($service['tags'], true) ?? [];
-        $service['sample_files'] = json_decode($service['sample_files'], true) ?? [];
+        // Decode JSON fields (handle NULL values)
+        $service['tags']         = $service['tags'] ? json_decode($service['tags'], true) : [];
+        $service['sample_files'] = $service['sample_files'] ? json_decode($service['sample_files'], true) : [];
 
         return $service;
     }
@@ -171,10 +171,10 @@ class ServiceRepository
 
         $services = $stmt->fetchAll();
 
-        // Decode JSON fields for each service
+        // Decode JSON fields for each service (handle NULL values)
         foreach ($services as &$service) {
-            $service['tags']         = json_decode($service['tags'], true) ?? [];
-            $service['sample_files'] = json_decode($service['sample_files'], true) ?? [];
+            $service['tags']         = $service['tags'] ? json_decode($service['tags'], true) : [];
+            $service['sample_files'] = $service['sample_files'] ? json_decode($service['sample_files'], true) : [];
         }
 
         return $services;
@@ -292,10 +292,10 @@ class ServiceRepository
         $stmt->execute();
         $services = $stmt->fetchAll();
 
-        // Decode JSON fields for each service
+        // Decode JSON fields for each service (handle NULL values)
         foreach ($services as &$service) {
-            $service['tags']         = json_decode($service['tags'], true) ?? [];
-            $service['sample_files'] = json_decode($service['sample_files'], true) ?? [];
+            $service['tags']         = $service['tags'] ? json_decode($service['tags'], true) : [];
+            $service['sample_files'] = $service['sample_files'] ? json_decode($service['sample_files'], true) : [];
         }
 
         return $services;
@@ -423,10 +423,10 @@ class ServiceRepository
             return null;
         }
 
-        // Decode JSON fields
-        $service['tags']         = json_decode($service['tags'], true) ?? [];
-        $service['sample_files'] = json_decode($service['sample_files'], true) ?? [];
-        $service['skills']       = json_decode($service['skills'], true) ?? [];
+        // Decode JSON fields (handle NULL values)
+        $service['tags']         = $service['tags'] ? json_decode($service['tags'], true) : [];
+        $service['sample_files'] = $service['sample_files'] ? json_decode($service['sample_files'], true) : [];
+        $service['skills']       = $service['skills'] ? json_decode($service['skills'], true) : [];
 
         return $service;
     }

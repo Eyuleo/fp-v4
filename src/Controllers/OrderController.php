@@ -28,7 +28,7 @@ class OrderController
         $serviceRepository = new ServiceRepository($this->db);
         $paymentRepository = new PaymentRepository($this->db);
 
-        $this->paymentService = new PaymentService($paymentRepository);
+        $this->paymentService = new PaymentService($paymentRepository, $this->db);
         $this->orderService   = new OrderService($orderRepository, $serviceRepository, $this->paymentService);
     }
 

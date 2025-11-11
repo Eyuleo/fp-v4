@@ -5,6 +5,7 @@ require_once __DIR__ . '/../Repositories/ServiceRepository.php';
 require_once __DIR__ . '/../Repositories/PaymentRepository.php';
 require_once __DIR__ . '/../Validators/OrderValidator.php';
 require_once __DIR__ . '/PaymentService.php';
+require_once __DIR__ . '/EmailService.php';
 
 /**
  * Order Service
@@ -17,12 +18,14 @@ class OrderService
     private ServiceRepository $serviceRepository;
     private OrderValidator $validator;
     private PaymentService $paymentService;
+    private EmailService $emailService;
 
     public function __construct(OrderRepository $orderRepository, ServiceRepository $serviceRepository, PaymentService $paymentService = null)
     {
         $this->orderRepository   = $orderRepository;
         $this->serviceRepository = $serviceRepository;
         $this->validator         = new OrderValidator();
+        $this->emailService      = new EmailService();
 
         // Initialize PaymentService if not provided
         if ($paymentService === null) {
@@ -215,6 +218,10 @@ class OrderService
 
             // TODO: Send notification to client (will be implemented in task 13)
             // For now, we'll just log it
+            $this->emailService->sendOrderAcceptedNotification($order, [
+                'email' => $order['client_email'],
+                'name'  => $order['client_name'],
+            ]);
             error_log("Order #{$orderId} accepted by student #{$studentId}");
 
             // Commit transaction
@@ -317,6 +324,10 @@ class OrderService
 
             // TODO: Send notification to client (will be implemented in task 13)
             // For now, we'll just log it
+            $this->emailService->sendOrderDeliveredNotification($order, [
+                'email' => $order['client_email'],
+                'name'  => $order['client_name'],
+            ]);
             error_log("Order #{$orderId} delivered by student #{$studentId}");
 
             // Commit transaction
@@ -397,6 +408,7 @@ class OrderService
 
             // TODO: Send notifications to both parties (will be implemented in task 13)
             // For now, we'll just log it
+
             error_log("Order #{$orderId} completed by client #{$clientId}. Student #{$order['student_id']} credited $" . number_format($studentEarnings, 2));
 
             // Commit transaction

@@ -84,6 +84,12 @@ $router->get('/admin/dashboard', function () {
     require __DIR__ . '/../views/admin/dashboard.php';
 }, [new AuthMiddleware(), new RoleMiddleware('admin')]);
 
+// Admin payment history
+$router->get('/admin/payments', 'AdminController@payments', [
+    new AuthMiddleware(),
+    new RoleMiddleware('admin'),
+]);
+
 // Example POST route with CSRF protection
 $router->post('/test/submit', function () {
     echo json_encode([
@@ -207,7 +213,7 @@ $router->post('/student/services/{id}/delete', 'ServiceController@delete', [
     new CsrfMiddleware(),
 ]);
 
-// Example Message routes with authorization
+// Message routes
 
 // View message thread (client or student, ownership checked in controller)
 $router->get('/messages/thread/{orderId}', 'MessageController@thread', [
@@ -216,10 +222,21 @@ $router->get('/messages/thread/{orderId}', 'MessageController@thread', [
 ]);
 
 // Send message (client or student, ownership checked in controller)
-$router->post('/messages/thread/{orderId}/send', 'MessageController@send', [
+$router->post('/messages/send', 'MessageController@send', [
     new AuthMiddleware(),
     new RoleMiddleware(['client', 'student']),
     new CsrfMiddleware(),
+]);
+
+// Poll for new messages (AJAX endpoint)
+$router->get('/messages/poll', 'MessageController@poll', [
+    new AuthMiddleware(),
+    new RoleMiddleware(['client', 'student']),
+]);
+
+// Get unread message count (AJAX endpoint)
+$router->get('/messages/unread-count', 'MessageController@unreadCount', [
+    new AuthMiddleware(),
 ]);
 
 // Student Profile routes
@@ -288,6 +305,41 @@ $router->post('/student/withdrawals/request', 'WithdrawalController@request', [
 $router->get('/student/withdrawals/stripe-dashboard', 'WithdrawalController@stripeDashboard', [
     new AuthMiddleware(),
     new RoleMiddleware('student'),
+]);
+
+// Review routes
+
+// Create review form (client only)
+$router->get('/reviews/create', 'ReviewController@create', [
+    new AuthMiddleware(),
+    new RoleMiddleware('client'),
+]);
+
+// Store new review (client only)
+$router->post('/reviews/store', 'ReviewController@store', [
+    new AuthMiddleware(),
+    new RoleMiddleware('client'),
+    new CsrfMiddleware(),
+]);
+
+// Edit review form (client only)
+$router->get('/reviews/{id}/edit', 'ReviewController@edit', [
+    new AuthMiddleware(),
+    new RoleMiddleware('client'),
+]);
+
+// Update review (client only)
+$router->post('/reviews/{id}/update', 'ReviewController@update', [
+    new AuthMiddleware(),
+    new RoleMiddleware('client'),
+    new CsrfMiddleware(),
+]);
+
+// Add student reply to review (student only)
+$router->post('/reviews/{id}/reply', 'ReviewController@reply', [
+    new AuthMiddleware(),
+    new RoleMiddleware('student'),
+    new CsrfMiddleware(),
 ]);
 
 // Settings routes (authenticated users)

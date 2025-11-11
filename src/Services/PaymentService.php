@@ -2,6 +2,7 @@
 
 require_once __DIR__ . '/../../vendor/autoload.php';
 require_once __DIR__ . '/../Repositories/PaymentRepository.php';
+require_once __DIR__ . '/WithdrawalService.php';
 
 /**
  * Payment Service
@@ -11,12 +12,16 @@ require_once __DIR__ . '/../Repositories/PaymentRepository.php';
 class PaymentService
 {
     private PaymentRepository $repository;
+    private WithdrawalService $withdrawalService;
+    private PDO $db;
     private string $stripeSecretKey;
     private string $stripeWebhookSecret;
 
-    public function __construct(PaymentRepository $repository)
+    public function __construct(PaymentRepository $repository, PDO $db)
     {
         $this->repository          = $repository;
+        $this->db                  = $db;
+        $this->withdrawalService   = new WithdrawalService($db);
         $this->stripeSecretKey     = getenv('STRIPE_SECRET_KEY') ?: '';
         $this->stripeWebhookSecret = getenv('STRIPE_WEBHOOK_SECRET') ?: '';
 
@@ -266,7 +271,10 @@ class PaymentService
     }
 
     /**
-     * Release payment to student (called after order completion)
+     * Release payment to student (Balance System)
+     *
+     * Adds funds to student's available balance instead of direct Stripe transfer.
+     * Actual Stripe transfer happens when student requests withdrawal.
      *
      * @param array $order Order data
      * @return array ['success' => bool, 'errors' => array]
@@ -277,50 +285,78 @@ class PaymentService
             // Get payment record
             $payment = $this->repository->findByOrderId($order['id']);
 
-            if (! $payment || $payment['status'] !== 'succeeded') {
+            if (! $payment) {
                 return [
                     'success' => false,
-                    'errors'  => ['payment' => 'Payment not found or not in succeeded status'],
+                    'errors'  => ['payment' => 'Payment not found'],
                 ];
             }
 
-            // Get student's Stripe Connect account ID
-            $studentConnectAccountId = $this->repository->getStudentStripeAccount($order['student_id']);
-
-            if (! $studentConnectAccountId) {
+            if ($payment['status'] !== 'succeeded') {
                 return [
                     'success' => false,
-                    'errors'  => ['payment' => 'Student Stripe account not found'],
+                    'errors'  => ['payment' => 'Payment not in succeeded status'],
                 ];
             }
 
-            // Create transfer to student
-            $transfer = \Stripe\Transfer::create([
-                'amount'      => (int) ($payment['student_amount'] * 100), // Convert to cents
-                'currency'    => 'usd',
-                'destination' => $studentConnectAccountId,
-                'metadata'    => [
-                    'order_id'   => $order['id'],
-                    'student_id' => $order['student_id'],
-                ],
-            ]);
+            // Check idempotency - if already released, return success
+            $metadata = json_decode($payment['metadata'], true) ?? [];
+            if (isset($metadata['released_at'])) {
+                return [
+                    'success' => true,
+                    'errors'  => [],
+                ];
+            }
 
-            // Update payment record
-            $this->repository->update($payment['id'], [
-                'stripe_transfer_id' => $transfer->id,
-            ]);
+            // Calculate commission and student amount
+            $orderAmount      = $payment['amount'];
+            $commissionRate   = $order['commission_rate'];
+            $commissionAmount = $orderAmount * ($commissionRate / 100);
+            $studentAmount    = $orderAmount - $commissionAmount;
 
-            return [
-                'success' => true,
-                'errors'  => [],
-            ];
-        } catch (\Stripe\Exception\ApiErrorException $e) {
-            error_log('Stripe transfer error: ' . $e->getMessage());
+            // Begin transaction
+            $this->db->beginTransaction();
 
-            return [
-                'success' => false,
-                'errors'  => ['payment' => 'Transfer failed. Please contact support.'],
-            ];
+            try {
+                // Add to student's available balance
+                $this->withdrawalService->addToBalance($order['student_id'], $studentAmount, 'available');
+
+                // Update payment record with release timestamp
+                $metadata['released_at']       = date('Y-m-d H:i:s');
+                $metadata['commission_amount'] = $commissionAmount;
+                $metadata['student_amount']    = $studentAmount;
+
+                $this->repository->update($payment['id'], [
+                    'metadata' => json_encode($metadata),
+                ]);
+
+                // Insert audit log entry
+                $this->insertAuditLog([
+                    'user_id'       => $order['student_id'],
+                    'action'        => 'payment.released',
+                    'resource_type' => 'payment',
+                    'resource_id'   => $payment['id'],
+                    'old_values'    => json_encode(['status' => 'succeeded']),
+                    'new_values'    => json_encode([
+                        'status'            => 'succeeded',
+                        'released_at'       => $metadata['released_at'],
+                        'student_amount'    => $studentAmount,
+                        'commission_amount' => $commissionAmount,
+                    ]),
+                    'ip_address'    => $_SERVER['REMOTE_ADDR'] ?? null,
+                    'user_agent'    => $_SERVER['HTTP_USER_AGENT'] ?? null,
+                ]);
+
+                $this->db->commit();
+
+                return [
+                    'success' => true,
+                    'errors'  => [],
+                ];
+            } catch (Exception $e) {
+                $this->db->rollBack();
+                throw $e;
+            }
         } catch (Exception $e) {
             error_log('Payment release error: ' . $e->getMessage());
 
@@ -344,28 +380,101 @@ class PaymentService
             // Get payment record
             $payment = $this->repository->findByOrderId($order['id']);
 
-            if (! $payment || $payment['status'] !== 'succeeded') {
+            if (! $payment) {
                 return [
                     'success' => false,
-                    'errors'  => ['payment' => 'Payment not found or not in succeeded status'],
+                    'errors'  => ['payment' => 'Payment not found'],
+                ];
+            }
+
+            if ($payment['status'] !== 'succeeded' && $payment['status'] !== 'partially_refunded') {
+                return [
+                    'success' => false,
+                    'errors'  => ['payment' => 'Payment cannot be refunded in current status'],
                 ];
             }
 
             // Determine refund amount
             $refundAmount = $amount ?? $payment['amount'];
 
-            // Create refund
-            $refund = \Stripe\Refund::create([
-                'payment_intent' => $payment['stripe_payment_intent_id'],
-                'amount'         => (int) ($refundAmount * 100), // Convert to cents
-            ]);
+            // Check idempotency - use order_id + operation type as key
+            $metadata       = json_decode($payment['metadata'], true) ?? [];
+            $idempotencyKey = 'refund_' . $order['id'] . '_' . number_format($refundAmount, 2);
+
+            if (isset($metadata['refund_operations'][$idempotencyKey])) {
+                // Already processed this refund
+                return [
+                    'success' => true,
+                    'errors'  => [],
+                ];
+            }
+
+            // Retry logic for Stripe API calls
+            $maxRetries = 2;
+            $retryDelay = 5; // seconds
+            $lastError  = null;
+
+            for ($attempt = 0; $attempt <= $maxRetries; $attempt++) {
+                try {
+                    // Create refund with idempotency key
+                    $refund = \Stripe\Refund::create([
+                        'payment_intent' => $payment['stripe_payment_intent_id'],
+                        'amount'         => (int) ($refundAmount * 100), // Convert to cents
+                    ], [
+                        'idempotency_key' => $idempotencyKey,
+                    ]);
+
+                    // Success - break retry loop
+                    break;
+                } catch (\Stripe\Exception\ApiErrorException $e) {
+                    $lastError = $e;
+
+                    if ($attempt < $maxRetries) {
+                        error_log("Stripe refund attempt " . ($attempt + 1) . " failed: " . $e->getMessage() . ". Retrying in {$retryDelay}s...");
+                        sleep($retryDelay);
+                    } else {
+                        throw $e;
+                    }
+                }
+            }
 
             // Update payment record
-            $newStatus = ($refundAmount >= $payment['amount']) ? 'refunded' : 'partially_refunded';
+            $newStatus         = ($refundAmount >= $payment['amount']) ? 'refunded' : 'partially_refunded';
+            $totalRefundAmount = $payment['refund_amount'] + $refundAmount;
+
+            // Store idempotency key in metadata
+            if (! isset($metadata['refund_operations'])) {
+                $metadata['refund_operations'] = [];
+            }
+            $metadata['refund_operations'][$idempotencyKey] = [
+                'amount'      => $refundAmount,
+                'refund_id'   => $refund->id,
+                'refunded_at' => date('Y-m-d H:i:s'),
+            ];
 
             $this->repository->update($payment['id'], [
                 'status'        => $newStatus,
-                'refund_amount' => $refundAmount,
+                'refund_amount' => $totalRefundAmount,
+                'metadata'      => json_encode($metadata),
+            ]);
+
+            // Insert audit log entry
+            $this->insertAuditLog([
+                'user_id'       => $order['client_id'],
+                'action'        => 'payment.refunded',
+                'resource_type' => 'payment',
+                'resource_id'   => $payment['id'],
+                'old_values'    => json_encode([
+                    'status'        => $payment['status'],
+                    'refund_amount' => $payment['refund_amount'],
+                ]),
+                'new_values'    => json_encode([
+                    'status'        => $newStatus,
+                    'refund_amount' => $totalRefundAmount,
+                    'refund_id'     => $refund->id,
+                ]),
+                'ip_address'    => $_SERVER['REMOTE_ADDR'] ?? null,
+                'user_agent'    => $_SERVER['HTTP_USER_AGENT'] ?? null,
             ]);
 
             return [
@@ -387,5 +496,34 @@ class PaymentService
                 'errors'  => ['payment' => 'An error occurred. Please contact support.'],
             ];
         }
+    }
+
+    /**
+     * Insert audit log entry
+     *
+     * @param array $data Audit log data
+     * @return void
+     */
+    private function insertAuditLog(array $data): void
+    {
+        $sql = "INSERT INTO audit_logs (
+            user_id, action, resource_type, resource_id,
+            old_values, new_values, ip_address, user_agent, created_at
+        ) VALUES (
+            :user_id, :action, :resource_type, :resource_id,
+            :old_values, :new_values, :ip_address, :user_agent, NOW()
+        )";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([
+            'user_id'       => $data['user_id'] ?? null,
+            'action'        => $data['action'],
+            'resource_type' => $data['resource_type'],
+            'resource_id'   => $data['resource_id'] ?? null,
+            'old_values'    => $data['old_values'] ?? null,
+            'new_values'    => $data['new_values'] ?? null,
+            'ip_address'    => $data['ip_address'] ?? null,
+            'user_agent'    => $data['user_agent'] ?? null,
+        ]);
     }
 }

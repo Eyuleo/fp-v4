@@ -18,7 +18,7 @@ class WebhookController
     {
         $this->db             = getDatabaseConnection();
         $paymentRepository    = new PaymentRepository($this->db);
-        $this->paymentService = new PaymentService($paymentRepository);
+        $this->paymentService = new PaymentService($paymentRepository, $this->db);
     }
 
     /**

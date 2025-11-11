@@ -87,13 +87,13 @@
                     <h3 class="text-sm font-medium text-gray-700 mb-2">Attached Files:</h3>
                     <div class="space-y-2">
                         <?php foreach ($order['requirement_files'] as $file): ?>
-                            <div class="flex items-center space-x-2 text-sm text-gray-600">
+                            <a href="/<?php echo e($file['path']) ?>" download class="flex items-center space-x-2 text-sm text-blue-600 hover:text-blue-800 hover:bg-blue-50 p-2 rounded transition-colors">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                                 </svg>
-                                <span><?php echo e($file['original_name']) ?></span>
+                                <span class="font-medium"><?php echo e($file['original_name']) ?></span>
                                 <span class="text-gray-400">(<?php echo number_format($file['size'] / 1024, 2) ?> KB)</span>
-                            </div>
+                            </a>
                         <?php endforeach; ?>
                     </div>
                 </div>
@@ -114,13 +114,13 @@
                         <h3 class="text-sm font-medium text-gray-700 mb-2">Delivered Files:</h3>
                         <div class="space-y-2">
                             <?php foreach ($order['delivery_files'] as $file): ?>
-                                <div class="flex items-center space-x-2 text-sm text-gray-600">
+                                <a href="/<?php echo e($file['path']) ?>" download class="flex items-center space-x-2 text-sm text-blue-600 hover:text-blue-800 hover:bg-blue-50 p-2 rounded transition-colors">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                                     </svg>
-                                    <span><?php echo e($file['original_name']) ?></span>
+                                    <span class="font-medium"><?php echo e($file['original_name']) ?></span>
                                     <span class="text-gray-400">(<?php echo number_format($file['size'] / 1024, 2) ?> KB)</span>
-                                </div>
+                                </a>
                             <?php endforeach; ?>
                         </div>
                     </div>
@@ -131,9 +131,17 @@
         <!-- Action Buttons -->
         <div class="bg-white rounded-lg shadow-md p-6">
             <div class="flex items-center justify-between">
-                <a href="/orders" class="text-gray-600 hover:text-gray-900">
-                    ← Back to Orders
-                </a>
+                <div class="flex items-center space-x-4">
+                    <a href="/orders" class="text-gray-600 hover:text-gray-900">
+                        ← Back to Orders
+                    </a>
+                    <a href="/messages/thread/<?php echo e($order['id']) ?>" class="flex items-center space-x-2 text-blue-600 hover:text-blue-700">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
+                        </svg>
+                        <span>Messages</span>
+                    </a>
+                </div>
 
                 <div class="space-x-3">
                     <?php if ($order['status'] === 'pending' && $order['student_id'] === Auth::user()['id']): ?>
@@ -284,7 +292,7 @@
                         placeholder="Please be specific about what changes you need..."
                     ></textarea>
                     <p class="text-sm text-gray-500 mt-1">
-                        You have                                                                                                                                                                 <?php echo e($order['max_revisions'] - $order['revision_count']) ?> revision(s) remaining.
+                        You have                                                                                                                                                                                                                                                                 <?php echo e($order['max_revisions'] - $order['revision_count']) ?> revision(s) remaining.
                     </p>
                 </div>
 
