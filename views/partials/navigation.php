@@ -9,8 +9,10 @@
             <div class="flex items-center">
                 <!-- Mobile menu button -->
                 <button
+                    data-hamburger
                     @click="sidebarOpen = !sidebarOpen"
                     class="lg:hidden mr-4 text-gray-600 hover:text-gray-900 focus:outline-none"
+                    type="button"
                 >
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>

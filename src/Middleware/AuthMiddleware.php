@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/MiddlewareInterface.php';
+require_once __DIR__ . '/../../config/database.php';
 
 /**
  * Authentication Middleware
@@ -18,7 +19,46 @@ class AuthMiddleware implements MiddlewareInterface
             $this->redirectToLogin();
         }
 
+        // Check if user is suspended
+        if ($this->isSuspended()) {
+            $this->handleSuspendedUser();
+        }
+
         return $next();
+    }
+
+    /**
+     * Check if user is suspended
+     */
+    private function isSuspended(): bool
+    {
+        if (! isset($_SESSION['user_id'])) {
+            return false;
+        }
+
+        // Get user status from database
+        $db   = getDatabaseConnection();
+        $stmt = $db->prepare('SELECT status FROM users WHERE id = ?');
+        $stmt->execute([$_SESSION['user_id']]);
+        $user = $stmt->fetch();
+
+        return $user && $user['status'] === 'suspended';
+    }
+
+    /**
+     * Handle suspended user
+     */
+    private function handleSuspendedUser(): void
+    {
+        // Log out the user
+        self::logout();
+
+        // Set error message
+        $_SESSION['error'] = 'Your account has been suspended. Please contact support for more information.';
+
+        // Redirect to login
+        header('Location: /login');
+        exit;
     }
 
     /**

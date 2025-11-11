@@ -80,14 +80,38 @@ $router->get('/client/dashboard', function () {
     ], 'dashboard');
 }, [new AuthMiddleware(), new RoleMiddleware('client')]);
 
-$router->get('/admin/dashboard', function () {
-    require __DIR__ . '/../views/admin/dashboard.php';
-}, [new AuthMiddleware(), new RoleMiddleware('admin')]);
+$router->get('/admin/dashboard', 'AdminController@dashboard', [
+    new AuthMiddleware(),
+    new RoleMiddleware('admin'),
+]);
 
 // Admin payment history
 $router->get('/admin/payments', 'AdminController@payments', [
     new AuthMiddleware(),
     new RoleMiddleware('admin'),
+]);
+
+// Admin user management
+$router->get('/admin/users', 'AdminController@users', [
+    new AuthMiddleware(),
+    new RoleMiddleware('admin'),
+]);
+
+$router->get('/admin/users/{id}', 'AdminController@showUser', [
+    new AuthMiddleware(),
+    new RoleMiddleware('admin'),
+]);
+
+$router->post('/admin/users/{id}/suspend', 'AdminController@suspendUser', [
+    new AuthMiddleware(),
+    new RoleMiddleware('admin'),
+    new CsrfMiddleware(),
+]);
+
+$router->post('/admin/users/{id}/reactivate', 'AdminController@reactivateUser', [
+    new AuthMiddleware(),
+    new RoleMiddleware('admin'),
+    new CsrfMiddleware(),
 ]);
 
 // Example POST route with CSRF protection

@@ -181,4 +181,85 @@ class UserRepository
             'id'    => $userId,
         ]);
     }
+
+    /**
+     * Get paginated users with filters
+     */
+    public function getPaginated(int $page, int $perPage, ?string $search, ?string $role, ?string $status): array
+    {
+        $offset = ($page - 1) * $perPage;
+
+        $sql    = "SELECT * FROM users WHERE 1=1";
+        $params = [];
+
+        // Apply search filter
+        if ($search) {
+            $sql .= " AND email LIKE :search";
+            $params['search'] = '%' . $search . '%';
+        }
+
+        // Apply role filter
+        if ($role && in_array($role, ['student', 'client', 'admin'])) {
+            $sql .= " AND role = :role";
+            $params['role'] = $role;
+        }
+
+        // Apply status filter
+        if ($status && in_array($status, ['unverified', 'active', 'suspended'])) {
+            $sql .= " AND status = :status";
+            $params['status'] = $status;
+        }
+
+        // Get total count
+        $countSql  = "SELECT COUNT(*) as total FROM (" . $sql . ") as subquery";
+        $countStmt = $this->db->prepare($countSql);
+        $countStmt->execute($params);
+        $totalCount = $countStmt->fetch()['total'];
+
+        // Add ordering and pagination
+        $sql .= " ORDER BY created_at DESC LIMIT :limit OFFSET :offset";
+        $params['limit']  = $perPage;
+        $params['offset'] = $offset;
+
+        // Execute query
+        $stmt = $this->db->prepare($sql);
+
+        // Bind parameters with correct types
+        foreach ($params as $key => $value) {
+            if ($key === 'limit' || $key === 'offset') {
+                $stmt->bindValue(':' . $key, $value, PDO::PARAM_INT);
+            } else {
+                $stmt->bindValue(':' . $key, $value);
+            }
+        }
+
+        $stmt->execute();
+        $users = $stmt->fetchAll();
+
+        return [
+            'users'       => $users,
+            'total'       => $totalCount,
+            'page'        => $page,
+            'per_page'    => $perPage,
+            'total_pages' => ceil($totalCount / $perPage),
+        ];
+    }
+
+    /**
+     * Update user status
+     */
+    public function updateStatus(int $userId, string $status): bool
+    {
+        $stmt = $this->db->prepare('
+            UPDATE users
+            SET status = :status,
+                updated_at = NOW()
+            WHERE id = :id
+        ');
+
+        return $stmt->execute([
+            'status' => $status,
+            'id'     => $userId,
+        ]);
+    }
 }

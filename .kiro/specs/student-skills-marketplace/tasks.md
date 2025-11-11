@@ -579,8 +579,9 @@ This plan breaks down the Student Skills Marketplace implementation into discret
   - Test student reply functionality
   - _Requirements: 12.1-12.5, 13.1-13.5_
 
-- [ ] 13. Notification system
-- [ ] 13.1 Set up PHPMailer with Gmail SMTP
+- [x] 13. Notification system
+
+- [x] 13.1 Set up PHPMailer with Gmail SMTP
 
   - Install PHPMailer via Composer
   - Create `src/Services/MailService.php` with send method
@@ -589,7 +590,7 @@ This plan breaks down the Student Skills Marketplace implementation into discret
   - Implement error handling and logging for failed sends
   - _Requirements: 14.7_
 
-- [ ] 13.2 Create email templates for notifications
+- [x] 13.2 Create email templates for notifications
 
   - Create `views/emails/order-placed.php` template
   - Create `views/emails/order-delivered.php` template
@@ -602,7 +603,7 @@ This plan breaks down the Student Skills Marketplace implementation into discret
   - Use simple HTML with inline styles for email client compatibility
   - _Requirements: 14.1-14.6_
 
-- [ ] 13.3 Implement email notification sending
+- [x] 13.3 Implement email notification sending
 
   - Add `sendEmail` method to NotificationService
   - Accept recipient, subject, template name, and data array
@@ -612,14 +613,14 @@ This plan breaks down the Student Skills Marketplace implementation into discret
   - Implement retry logic (2 attempts with 5s delay)
   - _Requirements: 14.1-14.7_
 
-- [ ] 13.4 Implement in-app notification creation
+- [x] 13.4 Implement in-app notification creation
 
   - Add `createInAppNotification` method to NotificationService
   - Insert notification record with user_id, type, title, message, link
   - Set is_read to false
   - _Requirements: 15.1_
 
-- [ ] 13.5 Create notification center view
+- [x] 13.5 Create notification center view
 
   - Add `index` method to NotificationController
   - Get all notifications for user ordered by created_at desc
@@ -628,7 +629,7 @@ This plan breaks down the Student Skills Marketplace implementation into discret
   - Create `views/notifications/index.php` with notification list
   - _Requirements: 15.2_
 
-- [ ] 13.6 Implement mark as read functionality
+- [x] 13.6 Implement mark as read functionality
 
   - Add `markAsRead` method to NotificationController
   - Update notification is_read to true
@@ -636,7 +637,7 @@ This plan breaks down the Student Skills Marketplace implementation into discret
   - Update unread counter in navigation
   - _Requirements: 15.3-15.4_
 
-- [ ] 13.7 Integrate notifications into order lifecycle events
+- [x] 13.7 Integrate notifications into order lifecycle events
 
   - Call NotificationService after order placement (email + in-app to student)
   - Call NotificationService after order delivery (email + in-app to client)
@@ -654,8 +655,9 @@ This plan breaks down the Student Skills Marketplace implementation into discret
   - Test unread counter accuracy
   - _Requirements: 14.1-14.6, 15.1-15.5_
 
-- [ ] 14. Admin user management
-- [ ] 14.1 Create admin dashboard with analytics
+- [x] 14. Admin user management
+
+- [x] 14.1 Create admin dashboard with analytics
 
   - Create `src/Controllers/AdminController.php` with dashboard method
   - Calculate GMV (sum of completed order prices)
@@ -663,10 +665,10 @@ This plan breaks down the Student Skills Marketplace implementation into discret
   - Calculate on-time delivery rate (completed before deadline)
   - Calculate dispute rate
   - Support date range filtering (last 7, 30, 90 days, or custom)
-  - Create `views/admin/dashboard.php` with metric cards and charts
+  - Create `views/admin/dashboard.php`(use the admin layout ) with metric cards and charts
   - _Requirements: 20.1-20.5_
 
-- [ ] 14.2 Implement user management interface
+- [x] 14.2 Implement user management interface
 
   - Add `users` method to AdminController
   - Display paginated list of all users with role, status, registration date
@@ -675,7 +677,7 @@ This plan breaks down the Student Skills Marketplace implementation into discret
   - Create `views/admin/users/index.php` with user table
   - _Requirements: 16.1_
 
-- [ ] 14.3 Implement user suspension and reactivation
+- [x] 14.3 Implement user suspension and reactivation
 
   - Add `suspend` and `reactivate` methods to AdminController
   - Update user status to 'suspended' or 'active'
@@ -683,7 +685,7 @@ This plan breaks down the Student Skills Marketplace implementation into discret
   - Suspended users cannot login (check in authentication)
   - _Requirements: 16.2-16.3, 16.5_
 
-- [ ] 14.4 Create user detail view for admin
+- [x] 14.4 Create user detail view for admin
 
   - Add `showUser` method to AdminController
   - Display complete user details, order history, review history
@@ -698,7 +700,8 @@ This plan breaks down the Student Skills Marketplace implementation into discret
   - Test audit log records admin actions
   - _Requirements: 16.1-16.5_
 
-- [ ] 15. Admin service moderation
+- [-] 15. Admin service moderation
+
 - [ ] 15.1 Create service moderation interface
 
   - Add `services` method to AdminController
