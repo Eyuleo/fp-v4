@@ -123,10 +123,7 @@ class AuthController
             clear_old_input();
         }
 
-        // Check if this is a Stripe return
-        $stripeReturn = isset($_GET['stripe_return']) && $_GET['stripe_return'] == '1';
-
-        view('auth/login', ['stripe_return' => $stripeReturn], 'auth');
+        view('auth/login', [], 'auth');
     }
 
     /**
@@ -138,6 +135,7 @@ class AuthController
             // Validate input
             $email    = trim($_POST['email'] ?? '');
             $password = $_POST['password'] ?? '';
+            $remember = isset($_POST['remember']) && $_POST['remember'] === '1';
 
             $errors = [];
 
@@ -159,14 +157,8 @@ class AuthController
             // Authenticate user
             $user = $this->authService->login($email, $password);
 
-            // Create session
-            $this->authService->createSession($user);
-
-            // Check if this is a Stripe return redirect
-            if (isset($_GET['stripe_return']) && $_GET['stripe_return'] == '1' && $user['role'] === 'student') {
-                redirect('/student/profile/edit');
-                return;
-            }
+            // Create session with remember me option
+            $this->authService->createSession($user, $remember);
 
             // Redirect based on role
             if ($user['role'] === 'admin') {

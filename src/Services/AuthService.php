@@ -9,11 +9,20 @@ class AuthService
 {
     private UserRepository $userRepository;
     private MailService $mailService;
+    private RememberTokenRepository $rememberTokenRepository;
 
-    public function __construct(UserRepository $userRepository, MailService $mailService)
+    public function __construct(UserRepository $userRepository, MailService $mailService, RememberTokenRepository $rememberTokenRepository = null)
     {
         $this->userRepository = $userRepository;
         $this->mailService    = $mailService;
+
+        // Allow optional injection for backward compatibility
+        if ($rememberTokenRepository === null) {
+            $db                            = require __DIR__ . '/../../config/database.php';
+            $this->rememberTokenRepository = new RememberTokenRepository($db);
+        } else {
+            $this->rememberTokenRepository = $rememberTokenRepository;
+        }
     }
 
     /**
@@ -187,8 +196,11 @@ class AuthService
 
     /**
      * Create authenticated session
+     *
+     * @param array $user User data
+     * @param bool $remember Whether to create a remember token
      */
-    public function createSession(array $user): void
+    public function createSession(array $user, bool $remember = false): void
     {
         // Regenerate session ID for security
         session_regenerate_id(true);
@@ -200,13 +212,89 @@ class AuthService
 
         // Regenerate CSRF token
         $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+
+        // Create remember token if requested
+        if ($remember) {
+            $this->createRememberToken($user['id']);
+        }
     }
 
     /**
-     * Destroy authenticated session
+     * Create a remember token for the user
+     *
+     * @param int $userId
+     * @return void
+     */
+    private function createRememberToken(int $userId): void
+    {
+        // Generate a cryptographically secure random token (64 bytes = 128 hex chars)
+        $token = bin2hex(random_bytes(64));
+
+        // Hash the token for storage
+        $tokenHash = hash('sha256', $token);
+
+        // Set expiration to 30 days from now
+        $expiresAt = (new DateTime())->add(new DateInterval('P30D'))->format('Y-m-d H:i:s');
+
+        // Store the hashed token in database
+        $this->rememberTokenRepository->create($userId, $tokenHash, $expiresAt);
+
+        // Set the cookie with the plain token (httponly, secure if HTTPS)
+        $isSecure = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on';
+        setcookie(
+            'remember_token',
+            $token,
+            time() + (30 * 24 * 60 * 60), // 30 days
+            '/',
+            '',
+            $isSecure,
+            true// httponly
+        );
+    }
+
+    /**
+     * Authenticate user from remember token
+     *
+     * @param string $token Plain token from cookie
+     * @return array|null User data if valid, null otherwise
+     */
+    public function authenticateFromRememberToken(string $token): ?array
+    {
+        // Hash the token to match database
+        $tokenHash = hash('sha256', $token);
+
+        // Find valid token with user data
+        $tokenData = $this->rememberTokenRepository->findValidToken($tokenHash);
+
+        if (! $tokenData) {
+            return null;
+        }
+
+        // Return user data
+        return [
+            'id'     => $tokenData['user_id'],
+            'email'  => $tokenData['email'],
+            'role'   => $tokenData['role'],
+            'status' => $tokenData['status'],
+        ];
+    }
+
+    /**
+     * Destroy authenticated session and remember token
      */
     public function destroySession(): void
     {
+        // Delete remember token from database if exists
+        if (isset($_COOKIE['remember_token'])) {
+            $token     = $_COOKIE['remember_token'];
+            $tokenHash = hash('sha256', $token);
+            $this->rememberTokenRepository->deleteByTokenHash($tokenHash);
+
+            // Delete the cookie
+            setcookie('remember_token', '', time() - 3600, '/', '', false, true);
+        }
+
+        // Clear session data
         $_SESSION = [];
 
         if (ini_get('session.use_cookies')) {

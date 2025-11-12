@@ -82,6 +82,9 @@ class OrderController
 
         // Render order creation form
         include __DIR__ . '/../../views/client/orders/create.php';
+
+        // Clear old input after rendering
+        clear_old_input();
     }
 
     /**
@@ -131,6 +134,7 @@ class OrderController
         // Validate requirements
         if (strlen(trim($requirements)) < 10) {
             $_SESSION['error'] = 'Requirements must be at least 10 characters';
+            flash_input(['requirements' => $requirements, 'service_id' => $serviceId]);
             header('Location: /orders/create?service_id=' . $serviceId);
             exit;
         }

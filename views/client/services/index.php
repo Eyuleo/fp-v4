@@ -1,34 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Browse Services - Student Skills Marketplace</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-</head>
-<body class="bg-gray-50">
-    <!-- Navigation -->
-    <!-- <nav class="bg-white shadow-sm">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-16">
-                <div class="flex items-center">
-                    <a href="/" class="text-xl font-bold text-blue-600">Student Skills Marketplace</a>
-                </div>
-                <div class="flex items-center space-x-4">
-                    <?php if (isset($_SESSION['user_id'])): ?>
-                        <a href="/<?php echo e($_SESSION['user_role']) ?>/dashboard" class="text-gray-700 hover:text-gray-900">Dashboard</a>
-                        <a href="/auth/logout" class="text-gray-700 hover:text-gray-900">Logout</a>
-                    <?php else: ?>
-                        <a href="/auth/login" class="text-gray-700 hover:text-gray-900">Login</a>
-                        <a href="/auth/register" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Sign Up</a>
-                    <?php endif; ?>
-                </div>
-            </div>
-        </div>
-    </nav> -->
-
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div class="flex flex-col lg:flex-row gap-8">
             <!-- Filter Sidebar -->
             <aside class="w-full lg:w-64 flex-shrink-0" x-data="{ mobileOpen: false }">
@@ -90,10 +60,10 @@
                             <label for="min_rating" class="block text-sm font-medium text-gray-700 mb-2">Minimum Rating</label>
                             <select id="min_rating" name="min_rating" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                                 <option value="">Any Rating</option>
-                                <option value="4"                                                                                                   <?php echo($minRating ?? 0) == 4 ? 'selected' : '' ?>>4+ Stars</option>
-                                <option value="3"                                                                                                   <?php echo($minRating ?? 0) == 3 ? 'selected' : '' ?>>3+ Stars</option>
-                                <option value="2"                                                                                                   <?php echo($minRating ?? 0) == 2 ? 'selected' : '' ?>>2+ Stars</option>
-                                <option value="1"                                                                                                   <?php echo($minRating ?? 0) == 1 ? 'selected' : '' ?>>1+ Stars</option>
+                                <option value="4"                                                                                                                                                                                                                                                      <?php echo($minRating ?? 0) == 4 ? 'selected' : '' ?>>4+ Stars</option>
+                                <option value="3"                                                                                                                                                                                                                                                      <?php echo($minRating ?? 0) == 3 ? 'selected' : '' ?>>3+ Stars</option>
+                                <option value="2"                                                                                                                                                                                                                                                      <?php echo($minRating ?? 0) == 2 ? 'selected' : '' ?>>2+ Stars</option>
+                                <option value="1"                                                                                                                                                                                                                                                      <?php echo($minRating ?? 0) == 1 ? 'selected' : '' ?>>1+ Stars</option>
                             </select>
                         </div>
 
@@ -131,11 +101,11 @@
                             <label for="sort" class="text-sm text-gray-700">Sort by:</label>
                             <select id="sort" name="sort" onchange="updateSort(this.value)"
                                     class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                <option value="relevance"                                                                                                                   <?php echo $sortBy === 'relevance' ? 'selected' : '' ?>>Relevance</option>
-                                <option value="price_asc"                                                                                                                   <?php echo $sortBy === 'price_asc' ? 'selected' : '' ?>>Price: Low to High</option>
-                                <option value="price_desc"                                                                                                                     <?php echo $sortBy === 'price_desc' ? 'selected' : '' ?>>Price: High to Low</option>
-                                <option value="rating"                                                                                                             <?php echo $sortBy === 'rating' ? 'selected' : '' ?>>Highest Rated</option>
-                                <option value="delivery"                                                                                                                 <?php echo $sortBy === 'delivery' ? 'selected' : '' ?>>Fastest Delivery</option>
+                                <option value="relevance"                                                                                                                                                                                                                                                                                              <?php echo $sortBy === 'relevance' ? 'selected' : '' ?>>Relevance</option>
+                                <option value="price_asc"                                                                                                                                                                                                                                                                                              <?php echo $sortBy === 'price_asc' ? 'selected' : '' ?>>Price: Low to High</option>
+                                <option value="price_desc"                                                                                                                                                                                                                                                                                                   <?php echo $sortBy === 'price_desc' ? 'selected' : '' ?>>Price: High to Low</option>
+                                <option value="rating"                                                                                                                                                                                                                                                                               <?php echo $sortBy === 'rating' ? 'selected' : '' ?>>Highest Rated</option>
+                                <option value="delivery"                                                                                                                                                                                                                                                                                         <?php echo $sortBy === 'delivery' ? 'selected' : '' ?>>Fastest Delivery</option>
                             </select>
                         </div>
                     </div>
@@ -191,13 +161,13 @@
                                                 if (is_array($tags)):
                                                     foreach (array_slice($tags, 0, 3) as $tag):
                                                 ?>
-		                                                <span class="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded">
-		                                                    <?php echo e($tag) ?>
-		                                                </span>
-		                                            <?php
-                                                        endforeach;
-                                                        endif;
-                                                    ?>
+					                                                <span class="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded">
+					                                                    <?php echo e($tag) ?>
+					                                                </span>
+					                                            <?php
+                                                                    endforeach;
+                                                                    endif;
+                                                                ?>
                                         </div>
                                     <?php endif; ?>
 
@@ -239,7 +209,7 @@
                                     for ($i = $startPage; $i <= $endPage; $i++):
                                 ?>
                                     <a href="?<?php echo http_build_query(array_merge($_GET, ['page' => $i])) ?>"
-                                       class="px-4 py-2 border rounded-md                                                                                                                                                   <?php echo $i === $page ? 'bg-blue-600 text-white border-blue-600' : 'border-gray-300 text-gray-700 hover:bg-gray-50' ?>">
+                                       class="px-4 py-2 border rounded-md                                                                                                                                                                                                                                                                                                                                                                              <?php echo $i === $page ? 'bg-blue-600 text-white border-blue-600' : 'border-gray-300 text-gray-700 hover:bg-gray-50' ?>">
                                         <?php echo $i ?>
                                     </a>
                                 <?php endfor; ?>
@@ -259,14 +229,15 @@
         </div>
     </div>
 
-    <!-- JavaScript for Sort Functionality -->
-    <script>
-        function updateSort(sortValue) {
-            const url = new URL(window.location.href);
-            url.searchParams.set('sort', sortValue);
-            url.searchParams.set('page', '1'); // Reset to first page when sorting
-            window.location.href = url.toString();
-        }
-    </script>
-</body>
-</html>
+    </div>
+</div>
+
+<!-- JavaScript for Sort Functionality -->
+<script>
+    function updateSort(sortValue) {
+        const url = new URL(window.location.href);
+        url.searchParams.set('sort', sortValue);
+        url.searchParams.set('page', '1'); // Reset to first page when sorting
+        window.location.href = url.toString();
+    }
+</script>

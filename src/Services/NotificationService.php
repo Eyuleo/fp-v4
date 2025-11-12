@@ -345,6 +345,176 @@ class NotificationService
     }
 
     /**
+     * Send order accepted notification to client
+     */
+    public function notifyOrderAccepted(array $order, array $client, array $student, array $service): void
+    {
+        $appUrl      = getenv('APP_URL') ?: 'http://localhost:8000';
+        $studentName = $student['name'] ?? $student['email'];
+
+        $this->notify(
+            $client['id'],
+            $client['email'],
+            'order_accepted',
+            'Order Accepted',
+            "{$studentName} has accepted your order",
+            'emails/order-accepted',
+            [
+                'client_name'   => $client['name'] ?? $client['email'],
+                'student_name'  => $student['name'] ?? $student['email'],
+                'service_title' => $service['title'],
+                'order_id'      => $order['id'],
+                'deadline'      => date('M j, Y g:i A', strtotime($order['deadline'])),
+                'order_url'     => $appUrl . '/orders/' . $order['id'],
+            ],
+            $appUrl . '/orders/' . $order['id']
+        );
+    }
+
+    /**
+     * Send order cancelled notification to both parties
+     */
+    public function notifyOrderCancelled(array $order, array $client, array $student, array $service): void
+    {
+        $appUrl = getenv('APP_URL') ?: 'http://localhost:8000';
+
+        // Notify client
+        $this->notify(
+            $client['id'],
+            $client['email'],
+            'order_cancelled',
+            'Order Cancelled',
+            "Order #{$order['id']} has been cancelled",
+            'emails/order-cancelled',
+            [
+                'recipient_name'      => $client['name'] ?? $client['email'],
+                'service_title'       => $service['title'],
+                'order_id'            => $order['id'],
+                'cancelled_at'        => date('M j, Y g:i A'),
+                'cancellation_reason' => $order['cancellation_reason'] ?? '',
+                'is_client'           => true,
+                'order_url'           => $appUrl . '/orders/' . $order['id'],
+            ],
+            $appUrl . '/orders/' . $order['id']
+        );
+
+        // Notify student
+        $this->notify(
+            $student['id'],
+            $student['email'],
+            'order_cancelled',
+            'Order Cancelled',
+            "Order #{$order['id']} has been cancelled",
+            'emails/order-cancelled',
+            [
+                'recipient_name'      => $student['name'] ?? $student['email'],
+                'service_title'       => $service['title'],
+                'order_id'            => $order['id'],
+                'cancelled_at'        => date('M j, Y g:i A'),
+                'cancellation_reason' => $order['cancellation_reason'] ?? '',
+                'is_client'           => false,
+                'order_url'           => $appUrl . '/orders/' . $order['id'],
+            ],
+            $appUrl . '/orders/' . $order['id']
+        );
+    }
+
+    /**
+     * Send dispute opened notification to admin and parties
+     */
+    public function notifyDisputeOpened(array $dispute, array $order, array $client, array $student, array $service, array $admin): void
+    {
+        $appUrl   = getenv('APP_URL') ?: 'http://localhost:8000';
+        $openedBy = $dispute['opened_by_id'] == $client['id'] ? $client['name'] ?? $client['email'] : $student['name'] ?? $student['email'];
+
+        // Notify admin
+        $this->notify(
+            $admin['id'],
+            $admin['email'],
+            'dispute_opened',
+            'New Dispute Opened',
+            "A dispute has been opened for order #{$order['id']}",
+            'emails/dispute-opened',
+            [
+                'admin_name'    => $admin['name'] ?? $admin['email'],
+                'order_id'      => $order['id'],
+                'service_title' => $service['title'],
+                'opened_by'     => $openedBy,
+                'reason'        => $dispute['reason'],
+                'dispute_url'   => $appUrl . '/admin/disputes/' . $dispute['id'],
+            ],
+            $appUrl . '/admin/disputes/' . $dispute['id']
+        );
+
+        // Notify the other party (not the one who opened it)
+        $otherParty = $dispute['opened_by_id'] == $client['id'] ? $student : $client;
+
+        $this->notify(
+            $otherParty['id'],
+            $otherParty['email'],
+            'dispute_opened',
+            'Dispute Opened',
+            "A dispute has been opened for order #{$order['id']}",
+            'emails/dispute-opened',
+            [
+                'admin_name'    => $otherParty['name'] ?? $otherParty['email'],
+                'order_id'      => $order['id'],
+                'service_title' => $service['title'],
+                'opened_by'     => $openedBy,
+                'reason'        => $dispute['reason'],
+                'dispute_url'   => $appUrl . '/orders/' . $order['id'],
+            ],
+            $appUrl . '/orders/' . $order['id']
+        );
+    }
+
+    /**
+     * Send dispute updated notification to all parties
+     */
+    public function notifyDisputeUpdated(array $dispute, array $order, array $client, array $student, array $service, string $updateMessage): void
+    {
+        $appUrl = getenv('APP_URL') ?: 'http://localhost:8000';
+
+        // Notify client
+        $this->notify(
+            $client['id'],
+            $client['email'],
+            'dispute_updated',
+            'Dispute Updated',
+            "The dispute for order #{$order['id']} has been updated",
+            'emails/dispute-updated',
+            [
+                'user_name'      => $client['name'] ?? $client['email'],
+                'order_id'       => $order['id'],
+                'service_title'  => $service['title'],
+                'dispute_status' => ucfirst($dispute['status']),
+                'update_message' => $updateMessage,
+                'dispute_url'    => $appUrl . '/orders/' . $order['id'],
+            ],
+            $appUrl . '/orders/' . $order['id']
+        );
+
+        // Notify student
+        $this->notify(
+            $student['id'],
+            $student['email'],
+            'dispute_updated',
+            'Dispute Updated',
+            "The dispute for order #{$order['id']} has been updated",
+            'emails/dispute-updated',
+            [
+                'user_name'      => $student['name'] ?? $student['email'],
+                'order_id'       => $order['id'],
+                'service_title'  => $service['title'],
+                'dispute_status' => ucfirst($dispute['status']),
+                'update_message' => $updateMessage,
+                'dispute_url'    => $appUrl . '/orders/' . $order['id'],
+            ],
+            $appUrl . '/orders/' . $order['id']
+        );
+    }
+
+    /**
      * Log notification events
      */
     private function log(string $level, string $message, array $context = []): void

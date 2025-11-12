@@ -100,33 +100,33 @@ class DisputeService
                 'status'    => 'open',
             ]);
 
+            // Get admin users, client, student, and service for notifications
+            require_once __DIR__ . '/../Repositories/UserRepository.php';
+            require_once __DIR__ . '/../Repositories/ServiceRepository.php';
+
+            $userRepository    = new UserRepository($this->db);
+            $serviceRepository = new ServiceRepository($this->db);
+
+            $client  = $userRepository->findById($order['client_id']);
+            $student = $userRepository->findById($order['student_id']);
+            $service = $serviceRepository->findById($order['service_id']);
+
+            // Get the created dispute
+            $dispute = $this->disputeRepository->findById($disputeId);
+
             // Get admin users
-            $adminSql  = "SELECT id, email, name FROM users WHERE role = 'admin' AND status = 'active'";
+            $adminSql  = "SELECT id, email, name FROM users WHERE role = 'admin' AND status = 'active' LIMIT 1";
             $adminStmt = $this->db->prepare($adminSql);
             $adminStmt->execute();
-            $admins = $adminStmt->fetchAll();
+            $admin = $adminStmt->fetch();
 
-            // Send notification to all admins
-            $appUrl = getenv('APP_URL') ?: 'http://localhost:8000';
-
-            foreach ($admins as $admin) {
-                $this->notificationService->notify(
-                    $admin['id'],
-                    $admin['email'],
-                    'dispute_opened',
-                    'New Dispute Opened',
-                    "A dispute has been opened for order #{$orderId}",
-                    'emails/dispute-opened',
-                    [
-                        'admin_name'    => $admin['name'] ?? $admin['email'],
-                        'order_id'      => $orderId,
-                        'service_title' => $order['service_title'],
-                        'opened_by'     => $userId == $order['client_id'] ? 'Client' : 'Student',
-                        'reason'        => $reason,
-                        'dispute_url'   => $appUrl . '/admin/disputes/' . $disputeId,
-                    ],
-                    $appUrl . '/admin/disputes/' . $disputeId
-                );
+            // Send notification to admin and parties
+            if ($admin && $client && $student && $service && $dispute) {
+                try {
+                    $this->notificationService->notifyDisputeOpened($dispute, $order, $client, $student, $service, $admin);
+                } catch (Exception $e) {
+                    error_log('Failed to send dispute opened notification: ' . $e->getMessage());
+                }
             }
 
             // Commit transaction
@@ -471,6 +471,82 @@ class DisputeService
             'success' => true,
             'errors'  => [],
         ];
+    }
+
+    /**
+     * Update dispute and send notifications
+     *
+     * @param int $disputeId Dispute ID
+     * @param int $adminId Admin user ID
+     * @param string $updateMessage Update message
+     * @return array ['success' => bool, 'errors' => array]
+     */
+    public function updateDispute(int $disputeId, int $adminId, string $updateMessage): array
+    {
+        // Get dispute
+        $dispute = $this->disputeRepository->findById($disputeId);
+
+        if (! $dispute) {
+            return [
+                'success' => false,
+                'errors'  => ['dispute' => 'Dispute not found'],
+            ];
+        }
+
+        // Validate update message
+        $updateMessage = trim($updateMessage);
+        if (empty($updateMessage)) {
+            return [
+                'success' => false,
+                'errors'  => ['update_message' => 'Update message is required'],
+            ];
+        }
+
+        // Get order
+        $order = $this->orderRepository->findById($dispute['order_id']);
+
+        if (! $order) {
+            return [
+                'success' => false,
+                'errors'  => ['order' => 'Order not found'],
+            ];
+        }
+
+        try {
+            // Get client, student, and service for notifications
+            require_once __DIR__ . '/../Repositories/UserRepository.php';
+            require_once __DIR__ . '/../Repositories/ServiceRepository.php';
+
+            $userRepository    = new UserRepository($this->db);
+            $serviceRepository = new ServiceRepository($this->db);
+
+            $client  = $userRepository->findById($order['client_id']);
+            $student = $userRepository->findById($order['student_id']);
+            $service = $serviceRepository->findById($order['service_id']);
+
+            // Send notifications to both parties
+            if ($client && $student && $service) {
+                $this->notificationService->notifyDisputeUpdated($dispute, $order, $client, $student, $service, $updateMessage);
+            }
+
+            // Insert audit log
+            $this->insertAuditLog($adminId, 'dispute_updated', 'dispute', $disputeId, [
+                'order_id'       => $order['id'],
+                'update_message' => $updateMessage,
+            ]);
+
+            return [
+                'success' => true,
+                'errors'  => [],
+            ];
+        } catch (Exception $e) {
+            error_log('Dispute update error: ' . $e->getMessage());
+
+            return [
+                'success' => false,
+                'errors'  => ['database' => 'Failed to update dispute. Please try again.'],
+            ];
+        }
     }
 
     /**

@@ -92,6 +92,9 @@ class ReviewController
 
         // Render review creation form
         include __DIR__ . '/../../views/reviews/create.php';
+
+        // Clear old input after rendering
+        clear_old_input();
     }
 
     /**
@@ -134,6 +137,7 @@ class ReviewController
 
         if (! $result['success']) {
             $_SESSION['error'] = implode(', ', array_values($result['errors']));
+            flash_input(['rating' => $rating, 'comment' => $comment, 'order_id' => $orderId]);
             header('Location: /reviews/create?order_id=' . $orderId);
             exit;
         }

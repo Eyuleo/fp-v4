@@ -61,6 +61,9 @@ class ServiceController
         view('student.services.create', [
             'categories' => $categories,
         ], 'dashboard');
+
+        // Clear old input after rendering
+        clear_old_input();
     }
 
     /**
@@ -160,6 +163,9 @@ class ServiceController
             'service'    => $service,
             'categories' => $categories,
         ], 'dashboard');
+
+        // Clear old input after rendering
+        clear_old_input();
     }
 
     /**

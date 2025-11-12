@@ -15,8 +15,12 @@ class AuthMiddleware implements MiddlewareInterface
      */
     public function handle(callable $next, array $params = [])
     {
+        // Check if user is authenticated via session
         if (! $this->isAuthenticated()) {
-            $this->redirectToLogin();
+            // Try to authenticate from remember token
+            if (! $this->authenticateFromRememberToken()) {
+                $this->redirectToLogin();
+            }
         }
 
         // Check if user is suspended
@@ -67,6 +71,48 @@ class AuthMiddleware implements MiddlewareInterface
     private function isAuthenticated(): bool
     {
         return isset($_SESSION['user_id']) && isset($_SESSION['user_role']);
+    }
+
+    /**
+     * Try to authenticate user from remember token cookie
+     *
+     * @return bool True if authentication successful, false otherwise
+     */
+    private function authenticateFromRememberToken(): bool
+    {
+        // Check if remember token cookie exists
+        if (! isset($_COOKIE['remember_token'])) {
+            return false;
+        }
+
+        $token = $_COOKIE['remember_token'];
+
+        try {
+            // Get database connection and create repositories
+            $db                      = getDatabaseConnection();
+            $userRepository          = new UserRepository($db);
+            $mailService             = new MailService();
+            $rememberTokenRepository = new RememberTokenRepository($db);
+            $authService             = new AuthService($userRepository, $mailService, $rememberTokenRepository);
+
+            // Try to authenticate from token
+            $user = $authService->authenticateFromRememberToken($token);
+
+            if ($user) {
+                                                           // Create session for the user
+                $authService->createSession($user, false); // Don't create new remember token
+                return true;
+            }
+
+            // Invalid token, delete the cookie
+            setcookie('remember_token', '', time() - 3600, '/', '', false, true);
+            return false;
+        } catch (Exception $e) {
+            // Log error and delete invalid cookie
+            error_log('Remember token authentication failed: ' . $e->getMessage());
+            setcookie('remember_token', '', time() - 3600, '/', '', false, true);
+            return false;
+        }
     }
 
     /**

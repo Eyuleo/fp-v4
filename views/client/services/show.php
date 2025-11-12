@@ -1,38 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo e($service['title']) ?> - Student Skills Marketplace</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <style>
-        [x-cloak] { display: none !important; }
-    </style>
-</head>
-<body class="bg-gray-50">
-    <!-- Navigation -->
-    <!-- <nav class="bg-white shadow-sm">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-16">
-                <div class="flex items-center">
-                    <a href="/" class="text-xl font-bold text-blue-600">Student Skills Marketplace</a>
-                </div>
-                <div class="flex items-center space-x-4">
-                    <a href="/services/search" class="text-gray-700 hover:text-gray-900">Browse Services</a>
-                    <?php if (isset($_SESSION['user_id'])): ?>
-                        <a href="/<?php echo e($_SESSION['user_role']) ?>/dashboard" class="text-gray-700 hover:text-gray-900">Dashboard</a>
-                        <a href="/auth/logout" class="text-gray-700 hover:text-gray-900">Logout</a>
-                    <?php else: ?>
-                        <a href="/auth/login" class="text-gray-700 hover:text-gray-900">Login</a>
-                        <a href="/auth/register" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Sign Up</a>
-                    <?php endif; ?>
-                </div>
-            </div>
-        </div>
-    </nav> -->
-
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <!-- Breadcrumb -->
         <nav class="mb-6 text-sm">
             <ol class="flex items-center space-x-2 text-gray-600">
@@ -98,7 +64,7 @@
                                         <div class="relative group cursor-pointer" @click="selectedImage = '<?php echo e($filePath) ?>'">
                                             <img
                                                 src="<?php echo e($filePath) ?>"
-                                                alt="Sample                                                                                                                                                                                  <?php echo $index + 1 ?>"
+                                                alt="Sample                                                                                                                                                                                                                                                                                                        <?php echo $index + 1 ?>"
                                                 class="w-full h-48 object-cover rounded-lg shadow-sm group-hover:shadow-md transition-shadow"
                                             >
                                             <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-opacity rounded-lg flex items-center justify-center">
@@ -185,7 +151,7 @@
                                             <?php endfor; ?>
                                         </div>
                                         <span class="ml-2 text-sm text-gray-600">
-                                            by                                                                                                                                                                                                                                                                                                                                   <?php echo e($review['client_email']) ?>
+                                            by                                                                                                                                                                                                                                                                                                                                                                                                                               <?php echo e($review['client_email']) ?>
                                         </span>
                                         <span class="mx-2 text-gray-400">•</span>
                                         <span class="text-sm text-gray-600">
@@ -265,15 +231,5 @@
                 </div>
             </div>
         </div>
-    </div>
+</div>
 
-    <!-- Footer -->
-    <footer class="bg-white border-t border-gray-200 mt-16">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <div class="text-center text-gray-600 text-sm">
-                <p>&copy;                                                                                                                                                                                <?php echo date('Y') ?> Student Skills Marketplace. All rights reserved.</p>
-            </div>
-        </div>
-    </footer>
-</body>
-</html>

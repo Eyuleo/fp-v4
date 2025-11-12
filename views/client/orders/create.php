@@ -73,7 +73,7 @@
                         required
                         class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                         placeholder="Please provide detailed requirements for your order (minimum 10 characters)..."
-                    ><?php echo e($_POST['requirements'] ?? '') ?></textarea>
+                    ><?php echo e(old('requirements')) ?></textarea>
                     <p class="mt-1 text-sm text-gray-500">Minimum 10 characters</p>
                 </div>
 

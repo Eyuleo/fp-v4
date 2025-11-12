@@ -145,6 +145,18 @@ class OrderService
         // Get the created order
         $order = $this->orderRepository->findById($orderId);
 
+        // Send notification to student about new order
+        try {
+            $client  = $this->userRepository->findById($clientId);
+            $student = $this->userRepository->findById($service['student_id']);
+
+            if ($client && $student && $order) {
+                $this->notificationService->notifyOrderPlaced($order, $student, $client, $service);
+            }
+        } catch (Exception $e) {
+            error_log('Failed to send order placed notification: ' . $e->getMessage());
+        }
+
         return [
             'success'  => true,
             'order_id' => $orderId,
@@ -232,13 +244,19 @@ class OrderService
                 'status' => 'in_progress',
             ]);
 
-            // TODO: Send notification to client (will be implemented in task 13)
-            // For now, we'll just log it
-            $this->emailService->sendOrderAcceptedNotification($order, [
-                'email' => $order['client_email'],
-                'name'  => $order['client_name'],
-            ]);
-            error_log("Order #{$orderId} accepted by student #{$studentId}");
+            // Send notification to client about order acceptance
+            try {
+                $client  = $this->userRepository->findById($order['client_id']);
+                $student = $this->userRepository->findById($order['student_id']);
+                $service = $this->serviceRepository->findById($order['service_id']);
+
+                if ($client && $student && $service) {
+                    $updatedOrder = $this->orderRepository->findById($orderId);
+                    $this->notificationService->notifyOrderAccepted($updatedOrder, $client, $student, $service);
+                }
+            } catch (Exception $e) {
+                error_log('Failed to send order accepted notification: ' . $e->getMessage());
+            }
 
             // Commit transaction
             $this->orderRepository->commit();
@@ -630,8 +648,19 @@ class OrderService
                 ];
             }
 
-            // TODO: Send notifications to both parties (will be implemented in task 13)
-            error_log("Order #{$orderId} cancelled by user #{$userId}. Reason: {$reason}");
+            // Send notifications to both parties about order cancellation
+            try {
+                $client  = $this->userRepository->findById($order['client_id']);
+                $student = $this->userRepository->findById($order['student_id']);
+                $service = $this->serviceRepository->findById($order['service_id']);
+
+                if ($client && $student && $service) {
+                    $updatedOrder = $this->orderRepository->findById($orderId);
+                    $this->notificationService->notifyOrderCancelled($updatedOrder, $client, $student, $service);
+                }
+            } catch (Exception $e) {
+                error_log('Failed to send order cancelled notification: ' . $e->getMessage());
+            }
 
             // Commit transaction
             $this->orderRepository->commit();

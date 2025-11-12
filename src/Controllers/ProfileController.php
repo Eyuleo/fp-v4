@@ -302,12 +302,22 @@ class ProfileController
 
         $userId = user_id();
 
+        error_log("Stripe Connect: Starting connection for user ID: $userId");
+
         try {
+            // Validate Stripe configuration
+            $stripeSecretKey = config('stripe.secret_key');
+            if (empty($stripeSecretKey)) {
+                error_log('Stripe Connect Error: STRIPE_SECRET_KEY not configured');
+                throw new Exception('Stripe is not properly configured. Please contact support.');
+            }
+
             // Get or create profile
             $profile = $this->profileService->getOrCreateProfile($userId);
 
             // Check if already connected
             if (! empty($profile['stripe_onboarding_complete'])) {
+                error_log("Stripe Connect: User ID $userId already connected");
                 flash('info', 'Your Stripe account is already connected');
                 redirect('/student/profile/edit');
                 return;
@@ -316,11 +326,18 @@ class ProfileController
             // Get user information
             $user = $this->userRepository->findById($userId);
 
+            if (! $user) {
+                error_log("Stripe Connect Error: User not found for ID: $userId");
+                throw new Exception('User account not found.');
+            }
+
             // Initialize Stripe
-            \Stripe\Stripe::setApiKey(config('stripe.secret_key'));
+            \Stripe\Stripe::setApiKey($stripeSecretKey);
 
             // Create or retrieve Connect account
             if (empty($profile['stripe_connect_account_id'])) {
+                error_log("Stripe Connect: Creating new account for user ID: $userId");
+
                 // Create new Connect account
                 $account = \Stripe\Account::create([
                     'type'    => 'express',
@@ -328,20 +345,29 @@ class ProfileController
                     'country' => 'US', // Default to US, can be made configurable
                 ]);
 
+                error_log("Stripe Connect: Created account ID: {$account->id}");
+
                 // Save account ID
                 $profileRepository = new StudentProfileRepository($this->db);
-                $profileRepository->updateStripeConnect($userId, $account->id, false);
+                $updated           = $profileRepository->updateStripeConnect($userId, $account->id, false);
+
+                if (! $updated) {
+                    error_log("Stripe Connect Error: Failed to save account ID for user ID: $userId");
+                    throw new Exception('Failed to save Stripe account information. Please try again.');
+                }
 
                 $accountId = $account->id;
             } else {
                 $accountId = $profile['stripe_connect_account_id'];
+                error_log("Stripe Connect: Using existing account ID: $accountId");
             }
 
             // Generate a state token for security
             $stateToken = bin2hex(random_bytes(32));
 
-            // Store token in database (expires in 1 hour)
-            $expiresAt = date('Y-m-d H:i:s', time() + 3600);
+            // Store token in database (expires in 2 hours to account for Stripe onboarding time)
+            // Use UTC timezone to match database
+            $expiresAt = gmdate('Y-m-d H:i:s', time() + 7200);
             $stmt      = $this->db->prepare('
                 INSERT INTO stripe_connect_tokens (token, user_id, stripe_account_id, expires_at)
                 VALUES (:token, :user_id, :account_id, :expires_at)
@@ -352,6 +378,8 @@ class ProfileController
                 'account_id' => $accountId,
                 'expires_at' => $expiresAt,
             ]);
+
+            error_log("Stripe Connect: Stored state token for user ID: $userId, expires at: $expiresAt UTC");
 
             // Get base URL
             $baseUrl = $this->getBaseUrl();
@@ -364,9 +392,16 @@ class ProfileController
                 'type'        => 'account_onboarding',
             ]);
 
+            error_log("Stripe Connect: Redirecting to Stripe onboarding URL");
+
             // Redirect to Stripe onboarding
             redirect($accountLink->url);
+        } catch (\Stripe\Exception\ApiErrorException $e) {
+            error_log('Stripe API Error: ' . $e->getMessage());
+            flash('error', 'Stripe API error: ' . $e->getMessage());
+            redirect('/student/profile/edit');
         } catch (Exception $e) {
+            error_log('Stripe Connect Error: ' . $e->getMessage());
             flash('error', 'Error connecting Stripe account: ' . $e->getMessage());
             redirect('/student/profile/edit');
         }
@@ -377,17 +412,51 @@ class ProfileController
      */
     public function connectStripeReturn(): void
     {
+        // Log the return for debugging
+        $stateToken = $_GET['state'] ?? 'none';
+        error_log('Stripe Connect Return - State: ' . substr($stateToken, 0, 10) . '..., Current UTC: ' . gmdate('Y-m-d H:i:s'));
+
         try {
             // Get state token from URL
-            $stateToken = $_GET['state'] ?? '';
-
-            if (empty($stateToken)) {
+            if (empty($stateToken) || $stateToken === 'none') {
+                error_log('Stripe Connect Error: Missing state token');
                 flash('error', 'Invalid request. Please try connecting Stripe again.');
-                redirect('/auth/login');
+
+                // If user is already logged in, redirect to profile
+                if (auth() && user_role() === 'student') {
+                    redirect('/student/profile/edit');
+                } else {
+                    redirect('/auth/login');
+                }
                 return;
             }
 
-            // Look up token in database
+            // First, check if token exists at all (for debugging)
+            $debugStmt = $this->db->prepare('
+                SELECT user_id, stripe_account_id, expires_at,
+                       TIMESTAMPDIFF(MINUTE, NOW(), expires_at) as minutes_until_expiry
+                FROM stripe_connect_tokens
+                WHERE token = :token
+            ');
+            $debugStmt->execute(['token' => $stateToken]);
+            $debugData = $debugStmt->fetch();
+
+            if (! $debugData) {
+                error_log('Stripe Connect Error: Token not found in database');
+                flash('error', 'Invalid token. Please try connecting Stripe again.');
+
+                // If user is already logged in, redirect to profile
+                if (auth() && user_role() === 'student') {
+                    redirect('/student/profile/edit');
+                } else {
+                    redirect('/auth/login');
+                }
+                return;
+            }
+
+            error_log("Stripe Connect Debug: Token found for user {$debugData['user_id']}, expires in {$debugData['minutes_until_expiry']} minutes");
+
+            // Look up token in database (with valid expiry)
             $stmt = $this->db->prepare('
                 SELECT user_id, stripe_account_id, expires_at
                 FROM stripe_connect_tokens
@@ -398,43 +467,125 @@ class ProfileController
             $tokenData = $stmt->fetch();
 
             if (! $tokenData) {
-                flash('error', 'Invalid or expired token. Please try connecting Stripe again.');
-                redirect('/auth/login');
+                error_log('Stripe Connect Error: Token expired. Expires at: ' . $debugData['expires_at'] . ', Current: ' . gmdate('Y-m-d H:i:s'));
+                flash('error', 'Your session expired. Please try connecting Stripe again.');
+
+                // If user is already logged in, redirect to profile
+                if (auth() && user_role() === 'student') {
+                    redirect('/student/profile/edit');
+                } else {
+                    redirect('/auth/login');
+                }
                 return;
             }
 
             $userId          = $tokenData['user_id'];
             $stripeAccountId = $tokenData['stripe_account_id'];
 
+            error_log("Stripe Connect: Processing for user ID: $userId, Account ID: $stripeAccountId");
+
             // Delete the used token
             $stmt = $this->db->prepare('DELETE FROM stripe_connect_tokens WHERE token = :token');
             $stmt->execute(['token' => $stateToken]);
 
+            // Validate Stripe configuration
+            $stripeSecretKey = config('stripe.secret_key');
+            if (empty($stripeSecretKey)) {
+                error_log('Stripe Connect Error: STRIPE_SECRET_KEY not configured');
+                throw new Exception('Stripe is not properly configured. Please contact support.');
+            }
+
             // Initialize Stripe
-            \Stripe\Stripe::setApiKey(config('stripe.secret_key'));
+            \Stripe\Stripe::setApiKey($stripeSecretKey);
 
             // Retrieve account to check onboarding status
             $account = \Stripe\Account::retrieve($stripeAccountId);
 
+            error_log('Stripe Account Status - Charges: ' . ($account->charges_enabled ? 'enabled' : 'disabled') .
+                ', Payouts: ' . ($account->payouts_enabled ? 'enabled' : 'disabled'));
+
             // Check if onboarding is complete
             if ($account->charges_enabled && $account->payouts_enabled) {
-                // Update profile
+                // Update profile with Stripe account ID
                 $profileRepository = new StudentProfileRepository($this->db);
-                $profileRepository->updateStripeConnect($userId, $account->id, true);
+                $updated           = $profileRepository->updateStripeConnect($userId, $account->id, true);
 
-                // Create a temporary session for the redirect
-                $_SESSION['stripe_success_user_id'] = $userId;
+                if (! $updated) {
+                    error_log("Stripe Connect Error: Failed to update profile for user ID: $userId");
+                    throw new Exception('Failed to save Stripe account information. Please try again.');
+                }
+
+                error_log("Stripe Connect Success: Profile updated for user ID: $userId");
+
+                // Ensure user session exists (recreate if needed)
+                if (! auth() || user_id() != $userId) {
+                    error_log("Stripe Connect: Session missing or mismatched, recreating for user ID: $userId");
+
+                    // Get user information to recreate session
+                    $userRepository = new UserRepository($this->db);
+                    $user           = $userRepository->findById($userId);
+
+                    if (! $user) {
+                        error_log("Stripe Connect Error: User not found for ID: $userId");
+                        throw new Exception('User account not found. Please contact support.');
+                    }
+
+                    // Recreate the session for the user
+                    $_SESSION['user_id']    = $user['id'];
+                    $_SESSION['user_role']  = $user['role'];
+                    $_SESSION['user_email'] = $user['email'];
+
+                    error_log("Stripe Connect: Session recreated for user ID: $userId");
+                } else {
+                    error_log("Stripe Connect: Session already exists for user ID: $userId");
+                }
 
                 flash('success', 'Stripe account connected successfully! You can now receive payments.');
-            } else {
-                flash('warning', 'Stripe onboarding is not complete. Please complete all required steps.');
-            }
 
-            // Redirect to login with a special flag to redirect to profile
-            redirect('/auth/login?stripe_return=1');
+                // Redirect directly to profile edit page
+                redirect('/student/profile/edit');
+            } else {
+                error_log('Stripe Connect Warning: Onboarding not complete');
+
+                // Ensure user session exists (recreate if needed)
+                if (! auth() || user_id() != $userId) {
+                    error_log("Stripe Connect: Session missing, recreating for user ID: $userId");
+
+                    // Get user information to recreate session
+                    $userRepository = new UserRepository($this->db);
+                    $user           = $userRepository->findById($userId);
+
+                    if ($user) {
+                        // Recreate the session even if onboarding is incomplete
+                        $_SESSION['user_id']    = $user['id'];
+                        $_SESSION['user_role']  = $user['role'];
+                        $_SESSION['user_email'] = $user['email'];
+                    }
+                }
+
+                flash('warning', 'Stripe onboarding is not complete. Please complete all required steps.');
+                redirect('/student/profile/edit');
+            }
+        } catch (\Stripe\Exception\ApiErrorException $e) {
+            error_log('Stripe API Error: ' . $e->getMessage());
+            flash('error', 'Stripe API error: ' . $e->getMessage());
+
+            // Redirect to profile if user is logged in, otherwise to login
+            if (auth() && user_role() === 'student') {
+                redirect('/student/profile/edit');
+            } else {
+                redirect('/auth/login');
+            }
         } catch (Exception $e) {
+            error_log('Stripe Connect Error: ' . $e->getMessage());
             flash('error', 'Error verifying Stripe account: ' . $e->getMessage());
-            redirect('/auth/login');
+
+            // Redirect to profile if user is logged in, otherwise to login
+            if (auth() && user_role() === 'student') {
+                redirect('/student/profile/edit');
+            } else {
+                redirect('/auth/login');
+            }
         }
     }
 }
