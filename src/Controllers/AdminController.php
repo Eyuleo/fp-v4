@@ -988,9 +988,9 @@ class AdminController
         $services = $stmt->fetchAll();
 
         // Decode JSON fields for each service
-        foreach ($services as &$service) {
-            $service['tags']         = $service['tags'] ? json_decode($service['tags'], true) : [];
-            $service['sample_files'] = $service['sample_files'] ? json_decode($service['sample_files'], true) : [];
+        foreach ($services as $i => $svc) {
+            $services[$i]['tags']         = $svc['tags'] ? json_decode($svc['tags'], true) : [];
+            $services[$i]['sample_files'] = $svc['sample_files'] ? json_decode($svc['sample_files'], true) : [];
         }
 
         // Get all categories for filter dropdown
