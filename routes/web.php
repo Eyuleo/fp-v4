@@ -14,29 +14,7 @@ require_once __DIR__ . '/../src/Middleware/RateLimitMiddleware.php';
 require_once __DIR__ . '/../src/Middleware/RoleMiddleware.php';
 
 // Home page
-$router->get('/', function () {
-    echo '<!DOCTYPE html>';
-    echo '<html lang="en">';
-    echo '<head>';
-    echo '<meta charset="UTF-8">';
-    echo '<meta name="viewport" content="width=device-width, initial-scale=1.0">';
-    echo '<title>Student Skills Marketplace</title>';
-    echo '<script src="https://cdn.tailwindcss.com"></script>';
-    echo '</head>';
-    echo '<body class="bg-gray-50">';
-    echo '<div class="min-h-screen flex items-center justify-center">';
-    echo '<div class="max-w-md w-full bg-white rounded-lg shadow-lg p-8">';
-    echo '<h1 class="text-3xl font-bold text-gray-900 mb-4">Welcome to Student Skills Marketplace</h1>';
-    echo '<p class="text-gray-600 mb-6">A platform connecting Ethiopian university students with clients seeking their skills.</p>';
-    echo '<div class="space-y-3">';
-    echo '<a href="/login" class="block w-full bg-blue-600 text-white text-center py-2 px-4 rounded hover:bg-blue-700">Login</a>';
-    echo '<a href="/register" class="block w-full bg-gray-200 text-gray-800 text-center py-2 px-4 rounded hover:bg-gray-300">Register</a>';
-    echo '</div>';
-    echo '</div>';
-    echo '</div>';
-    echo '</body>';
-    echo '</html>';
-});
+$router->get('/', 'HomeController@home');
 
 // Test route with parameters
 $router->get('/test/{id}', function ($id) {

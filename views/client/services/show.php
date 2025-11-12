@@ -12,7 +12,7 @@
 </head>
 <body class="bg-gray-50">
     <!-- Navigation -->
-    <nav class="bg-white shadow-sm">
+    <!-- <nav class="bg-white shadow-sm">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16">
                 <div class="flex items-center">
@@ -30,7 +30,7 @@
                 </div>
             </div>
         </div>
-    </nav>
+    </nav> -->
 
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <!-- Breadcrumb -->
@@ -90,14 +90,15 @@
                             <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
                                 <?php foreach ($service['sample_files'] as $index => $file): ?>
                                     <?php
-                                        $extension = strtolower(pathinfo($file['filename'], PATHINFO_EXTENSION));
+                                        $extension = strtolower(pathinfo($file['original_name'] ?? $file['filename'], PATHINFO_EXTENSION));
                                         $isImage   = in_array($extension, ['jpg', 'jpeg', 'png', 'gif', 'webp']);
+                                        $filePath  = '/storage/file?path=' . urlencode($file['path']);
                                     ?>
                                     <?php if ($isImage): ?>
-                                        <div class="relative group cursor-pointer" @click="selectedImage = '<?php echo e($file['path']) ?>'">
+                                        <div class="relative group cursor-pointer" @click="selectedImage = '<?php echo e($filePath) ?>'">
                                             <img
-                                                src="/<?php echo e($file['path']) ?>"
-                                                alt="Sample                                                                                                                       <?php echo $index + 1 ?>"
+                                                src="<?php echo e($filePath) ?>"
+                                                alt="Sample                                                                                                                                                                                  <?php echo $index + 1 ?>"
                                                 class="w-full h-48 object-cover rounded-lg shadow-sm group-hover:shadow-md transition-shadow"
                                             >
                                             <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-opacity rounded-lg flex items-center justify-center">
@@ -107,11 +108,11 @@
                                             </div>
                                         </div>
                                     <?php else: ?>
-                                        <a href="/<?php echo e($file['path']) ?>" download class="flex flex-col items-center justify-center h-48 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors p-4">
+                                        <a href="<?php echo e($filePath) ?>" download class="flex flex-col items-center justify-center h-48 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors p-4">
                                             <svg class="w-12 h-12 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
                                             </svg>
-                                            <span class="text-sm text-gray-600 text-center break-all"><?php echo e($file['original_name']) ?></span>
+                                            <span class="text-sm text-gray-600 text-center break-all"><?php echo e($file['original_name'] ?? basename($file['path'])) ?></span>
                                         </a>
                                     <?php endif; ?>
                                 <?php endforeach; ?>
@@ -184,7 +185,7 @@
                                             <?php endfor; ?>
                                         </div>
                                         <span class="ml-2 text-sm text-gray-600">
-                                            by                                                                                                                                                                                         <?php echo e($review['client_email']) ?>
+                                            by                                                                                                                                                                                                                                                                                                                                   <?php echo e($review['client_email']) ?>
                                         </span>
                                         <span class="mx-2 text-gray-400">•</span>
                                         <span class="text-sm text-gray-600">
@@ -270,7 +271,7 @@
     <footer class="bg-white border-t border-gray-200 mt-16">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <div class="text-center text-gray-600 text-sm">
-                <p>&copy;                                                                                                     <?php echo date('Y') ?> Student Skills Marketplace. All rights reserved.</p>
+                <p>&copy;                                                                                                                                                                                <?php echo date('Y') ?> Student Skills Marketplace. All rights reserved.</p>
             </div>
         </div>
     </footer>

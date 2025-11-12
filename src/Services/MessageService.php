@@ -235,6 +235,15 @@ class MessageService
      */
     private function handleFileUploads(int $orderId, array $files): array
     {
+        // Return success with empty files if no files provided
+        if (empty($files)) {
+            return [
+                'success' => true,
+                'files'   => [],
+                'errors'  => [],
+            ];
+        }
+
         // Use FileService to upload multiple files
         $result = $this->fileService->uploadMultiple($files, 'messages', $orderId);
 

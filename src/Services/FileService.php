@@ -166,6 +166,15 @@ class FileService
         $uploadedFiles = [];
         $errors        = [];
 
+        // If empty array, return success with no files
+        if (empty($files)) {
+            return [
+                'success' => true,
+                'files'   => [],
+                'errors'  => [],
+            ];
+        }
+
         // Handle both single and multiple file uploads
         if (isset($files['name']) && is_array($files['name'])) {
             // Multiple files
@@ -188,8 +197,8 @@ class FileService
                     $errors[] = $result['error'];
                 }
             }
-        } else {
-            // Single file
+        } elseif (isset($files['name']) && ! empty($files['name'])) {
+            // Single file (only process if name is not empty)
             $result = $this->upload($files, $context, $contextId);
 
             if ($result['success']) {
@@ -200,7 +209,7 @@ class FileService
         }
 
         return [
-            'success' => count($uploadedFiles) > 0,
+            'success' => count($uploadedFiles) > 0 || empty($errors),
             'files'   => $uploadedFiles,
             'errors'  => $errors,
         ];

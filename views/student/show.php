@@ -26,7 +26,7 @@
                             <h1 class="text-3xl font-bold text-gray-900">
                                 <?php echo e(explode('@', $profile['email'] ?? 'Student')[0]) ?>
                             </h1>
-                            <p class="text-gray-600">Student • Member since                                                                                                                                                                                                                                                                                                                     <?php echo e(date('M Y', strtotime($profile['user_created_at'] ?? 'now'))) ?></p>
+                            <p class="text-gray-600">Student • Member since                                                                                                                                                                                                                                                                                                                                                                                                  <?php echo e(date('M Y', strtotime($profile['user_created_at'] ?? 'now'))) ?></p>
                         </div>
                     </div>
 
@@ -106,6 +106,50 @@
                     </div>
                 <?php endif; ?>
 
+                <!-- Active Services Section -->
+                <?php if (! empty($activeServices)): ?>
+                    <div class="bg-white rounded-lg shadow-md p-6">
+                        <h2 class="text-xl font-bold text-gray-900 mb-4">Active Services</h2>
+                        <div class="space-y-4">
+                            <?php foreach ($activeServices as $service): ?>
+                                <a href="/services/<?php echo e($service['id']) ?>"
+                                   class="block border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                                    <div class="flex items-start justify-between mb-2">
+                                        <h3 class="font-semibold text-gray-900 flex-1">
+                                            <?php echo e($service['title']) ?>
+                                        </h3>
+                                        <span class="text-lg font-bold text-gray-900 ml-4">
+                                            ETB                                                <?php echo number_format($service['price'], 2) ?>
+                                        </span>
+                                    </div>
+                                    <p class="text-sm text-gray-600 mb-3 line-clamp-2">
+                                        <?php echo e(substr($service['description'], 0, 120)) ?><?php echo strlen($service['description']) > 120 ? '...' : '' ?>
+                                    </p>
+                                    <div class="flex items-center justify-between text-sm">
+                                        <span class="text-gray-500">
+                                            <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                            </svg>
+                                            <?php echo e($service['delivery_days']) ?> day<?php echo $service['delivery_days'] != 1 ? 's' : '' ?>
+                                        </span>
+                                        <?php if (! empty($service['category_name'])): ?>
+                                            <span class="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                                                <?php echo e($service['category_name']) ?>
+                                            </span>
+                                        <?php endif; ?>
+                                    </div>
+                                </a>
+                            <?php endforeach; ?>
+                        </div>
+                        <div class="mt-4 text-center">
+                            <a href="/services/search?student_id=<?php echo e($profile['user_id']) ?>"
+                               class="text-blue-600 hover:text-blue-700 text-sm font-medium">
+                                View all services →
+                            </a>
+                        </div>
+                    </div>
+                <?php endif; ?>
+
                 <!-- Reviews Section -->
                 <div class="bg-white rounded-lg shadow-md p-6">
                     <div class="flex items-center justify-between mb-4">
@@ -130,7 +174,7 @@
                                                 <?php endfor; ?>
                                             </div>
                                             <p class="text-sm text-gray-600">
-                                                by                                                   <?php echo e($review['client_name'] ?? 'Anonymous') ?>
+                                                by                                                                                                     <?php echo e($review['client_name'] ?? 'Anonymous') ?>
                                             </p>
                                         </div>
                                         <span class="text-sm text-gray-500">

@@ -122,6 +122,11 @@ class ProfileService
      */
     private function handlePortfolioUploads(int $userId, array $files): array
     {
+        // Return empty array if no files provided
+        if (empty($files)) {
+            return [];
+        }
+
         // Use FileService to upload multiple files
         $result = $this->fileService->uploadMultiple($files, 'profiles', $userId);
 

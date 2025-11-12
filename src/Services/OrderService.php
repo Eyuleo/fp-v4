@@ -661,6 +661,11 @@ class OrderService
      */
     private function handleFileUploads(int $orderId, array $files): array
     {
+        // Return empty array if no files provided
+        if (empty($files)) {
+            return [];
+        }
+
         // Use FileService to upload multiple files to orders/{orderId}/requirements
         $result = $this->fileService->uploadMultiple($files, 'orders/' . $orderId . '/requirements', $orderId);
 
@@ -680,6 +685,11 @@ class OrderService
      */
     private function handleDeliveryFileUploads(int $orderId, array $files): array
     {
+        // Return empty array if no files provided
+        if (empty($files)) {
+            return [];
+        }
+
         // Use FileService to upload multiple files to orders/{orderId}/delivery
         $result = $this->fileService->uploadMultiple($files, 'orders/' . $orderId . '/delivery', $orderId);
 

@@ -71,26 +71,44 @@ class ServiceService
             'status'        => 'inactive', // Always create as inactive
         ];
 
-        // Create service first to get ID
-        $serviceId = $this->repository->create($serviceData);
+        // Begin transaction
+        $this->repository->beginTransaction();
 
-        // Handle file uploads if provided
-        if (! empty($files) && $serviceId) {
-            $uploadedFiles = $this->handleFileUploads($serviceId, $files);
+        try {
+            // Create service first to get ID
+            $serviceId = $this->repository->create($serviceData);
 
-            if (! empty($uploadedFiles)) {
-                // Update service with file paths
-                $this->repository->update($serviceId, [
-                    'sample_files' => $uploadedFiles,
-                ]);
+            // Handle file uploads if provided
+            if (! empty($files) && $serviceId) {
+                $uploadedFiles = $this->handleFileUploads($serviceId, $files);
+
+                if (! empty($uploadedFiles)) {
+                    // Update service with file paths
+                    $this->repository->update($serviceId, [
+                        'sample_files' => $uploadedFiles,
+                    ]);
+                }
             }
-        }
 
-        return [
-            'success'    => true,
-            'service_id' => $serviceId,
-            'errors'     => [],
-        ];
+            // Commit transaction
+            $this->repository->commit();
+
+            return [
+                'success'    => true,
+                'service_id' => $serviceId,
+                'errors'     => [],
+            ];
+        } catch (Exception $e) {
+            // Rollback on error
+            $this->repository->rollback();
+            error_log('Service creation error: ' . $e->getMessage());
+
+            return [
+                'success'    => false,
+                'service_id' => null,
+                'errors'     => ['database' => 'Failed to create service. Please try again.'],
+            ];
+        }
     }
 
     /**
@@ -149,27 +167,44 @@ class ServiceService
             $updateData['delivery_days'] = (int) $data['delivery_days'];
         }
 
-        // Handle file uploads if provided
-        if (! empty($files)) {
-            $uploadedFiles = $this->handleFileUploads($serviceId, $files);
+        // Begin transaction
+        $this->repository->beginTransaction();
 
-            if (! empty($uploadedFiles)) {
-                // Get existing files
-                $service       = $this->repository->findById($serviceId);
-                $existingFiles = $service['sample_files'] ?? [];
+        try {
+            // Handle file uploads if provided
+            if (! empty($files)) {
+                $uploadedFiles = $this->handleFileUploads($serviceId, $files);
 
-                // Merge with new files
-                $updateData['sample_files'] = array_merge($existingFiles, $uploadedFiles);
+                if (! empty($uploadedFiles)) {
+                    // Get existing files
+                    $service       = $this->repository->findById($serviceId);
+                    $existingFiles = $service['sample_files'] ?? [];
+
+                    // Merge with new files
+                    $updateData['sample_files'] = array_merge($existingFiles, $uploadedFiles);
+                }
             }
+
+            // Update service
+            $success = $this->repository->update($serviceId, $updateData);
+
+            // Commit transaction
+            $this->repository->commit();
+
+            return [
+                'success' => $success,
+                'errors'  => [],
+            ];
+        } catch (Exception $e) {
+            // Rollback on error
+            $this->repository->rollback();
+            error_log('Service update error: ' . $e->getMessage());
+
+            return [
+                'success' => false,
+                'errors'  => ['database' => 'Failed to update service. Please try again.'],
+            ];
         }
-
-        // Update service
-        $success = $this->repository->update($serviceId, $updateData);
-
-        return [
-            'success' => $success,
-            'errors'  => [],
-        ];
     }
 
     /**
@@ -268,9 +303,15 @@ class ServiceService
      */
     private function handleFileUploads(int $serviceId, array $files): array
     {
+        // Return empty array if no files provided
+        if (empty($files)) {
+            return [];
+        }
+
         // Use FileService to upload multiple files
         $result = $this->fileService->uploadMultiple($files, 'services', $serviceId);
 
+        // Only throw exception if there were actual errors (not just no files)
         if (! $result['success'] && ! empty($result['errors'])) {
             throw new Exception('File upload failed: ' . implode(', ', $result['errors']));
         }

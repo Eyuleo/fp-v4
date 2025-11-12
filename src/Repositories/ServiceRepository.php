@@ -459,4 +459,36 @@ class ServiceRepository
 
         return $stmt->fetchAll();
     }
+
+    /**
+     * Begin database transaction
+     */
+    public function beginTransaction(): void
+    {
+        $this->db->beginTransaction();
+    }
+
+    /**
+     * Commit database transaction
+     */
+    public function commit(): void
+    {
+        $this->db->commit();
+    }
+
+    /**
+     * Rollback database transaction
+     */
+    public function rollback(): void
+    {
+        $this->db->rollBack();
+    }
+
+    /**
+     * Get database connection
+     */
+    public function getDb(): PDO
+    {
+        return $this->db;
+    }
 }

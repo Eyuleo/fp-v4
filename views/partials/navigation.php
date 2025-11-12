@@ -30,9 +30,9 @@
             <div class="hidden md:flex items-center space-x-4">
                 <?php if (! isset($_SESSION['user_id'])): ?>
                     <!-- Guest Navigation -->
-                    <a href="/services" class="text-gray-700 hover:text-blue-600 px-3 py-2">Browse Services</a>
-                    <a href="/login" class="text-gray-700 hover:text-blue-600 px-3 py-2">Login</a>
-                    <a href="/register" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">Sign Up</a>
+                    <a href="/services/search" class="text-gray-700 hover:text-blue-600 px-3 py-2">Browse Services</a>
+                    <a href="/auth/login" class="text-gray-700 hover:text-blue-600 px-3 py-2">Login</a>
+                    <a href="/auth/register" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">Sign Up</a>
                 <?php else: ?>
                     <!-- Authenticated Navigation -->
 

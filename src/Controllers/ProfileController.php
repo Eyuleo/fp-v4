@@ -165,12 +165,22 @@ class ProfileController
             $totalReviews = $reviewService->getReviewCount((int) $studentId);
             $totalPages   = ceil($totalReviews / 10);
 
+            // Get active services for this student
+            require_once __DIR__ . '/../Repositories/ServiceRepository.php';
+            $serviceRepository = new ServiceRepository($this->db);
+            $allServices       = $serviceRepository->findByStudentId((int) $studentId);
+            // Filter only active services
+            $activeServices = array_filter($allServices, function ($service) {
+                return $service['status'] === 'active';
+            });
+
             view('student/show', [
-                'profile'      => $profile,
-                'reviews'      => $reviews,
-                'currentPage'  => $page,
-                'totalPages'   => $totalPages,
-                'totalReviews' => $totalReviews,
+                'profile'        => $profile,
+                'reviews'        => $reviews,
+                'currentPage'    => $page,
+                'totalPages'     => $totalPages,
+                'totalReviews'   => $totalReviews,
+                'activeServices' => $activeServices,
             ], 'base');
         } catch (Exception $e) {
             flash('error', 'Error loading profile: ' . $e->getMessage());

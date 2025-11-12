@@ -969,8 +969,9 @@ This plan breaks down the Student Skills Marketplace implementation into discret
   - Test late flag appears for overdue orders
   - _Requirements: 7.1-7.6_
 
-- [ ] 21. Landing page and public views
-- [ ] 21.1 Create landing page
+- [-] 21. Landing page and public views
+
+- [x] 21.1 Create landing page
 
   - Add `home` method to HomeController
   - Display hero section with value proposition
@@ -979,21 +980,21 @@ This plan breaks down the Student Skills Marketplace implementation into discret
   - Create `views/home.php` with Tailwind styling
   - _Requirements: 5.1-5.6_
 
-- [ ] 21.2 Create public service browsing
+- [x] 21.2 Create public service browsing
 
   - Allow unauthenticated users to view service listings
   - Allow unauthenticated users to view service details
   - Require authentication for "Order Now" action
   - _Requirements: 5.1-5.6_
 
-- [ ] 21.3 Create public student profiles
+- [x] 21.3 Create public student profiles
 
   - Allow unauthenticated users to view student profiles
   - Display bio, skills, portfolio, ratings, reviews
   - Show list of active services
   - _Requirements: 3.3_
 
-- [ ] 21.4 Add navigation and footer
+- [x] 21.4 Add navigation and footer
 
   - Update navigation partial with logo, search, auth links
   - Create footer partial with links (About, Terms, Privacy, Contact)
