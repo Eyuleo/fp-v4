@@ -34,7 +34,7 @@ class MessageRepository
             'sender_id'   => $data['sender_id'],
             'content'     => $data['content'],
             'attachments' => json_encode($data['attachments'] ?? []),
-            'is_flagged'  => $data['is_flagged'] ?? false,
+            'is_flagged'  => $data['is_flagged'] ?? 0,
         ]);
 
         return (int) $this->db->lastInsertId();

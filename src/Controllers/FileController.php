@@ -160,12 +160,18 @@ class FileController
         // Parse path to determine context
         $parts = explode('/', $path);
 
-        if (count($parts) < 2) {
+        if (count($parts) < 3) {
             return false;
         }
 
-        $context   = $parts[0]; // e.g., 'profiles', 'services', 'orders', 'messages'
-        $contextId = (int) $parts[1];
+        $context    = $parts[0];       // e.g., 'profiles', 'services', 'orders', 'messages'
+        $subContext = $parts[1];       // e.g., 'requirements', 'delivery', or contextId for legacy paths
+        $contextId  = (int) $parts[2]; // The actual ID
+
+        // Handle legacy path format (context/id/filename)
+        if (is_numeric($subContext)) {
+            $contextId = (int) $subContext;
+        }
 
         // Get current user
         $user = Auth::user();

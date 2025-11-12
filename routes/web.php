@@ -240,6 +240,11 @@ $router->post('/student/services/{id}/delete', 'ServiceController@delete', [
 
 // Message routes
 
+// List all message conversations
+$router->get('/messages', 'MessageController@index', [
+    new AuthMiddleware(),
+]);
+
 // View message thread (client or student, ownership checked in controller)
 $router->get('/messages/thread/{orderId}', 'MessageController@thread', [
     new AuthMiddleware(),

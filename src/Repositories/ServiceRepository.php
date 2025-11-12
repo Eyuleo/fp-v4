@@ -441,7 +441,7 @@ class ServiceRepository
      */
     public function getStudentReviews(int $studentId, int $limit, int $offset): array
     {
-        $sql = "SELECT r.*, u.email as client_email, o.id as order_id, s.title as service_title
+        $sql = "SELECT r.*, u.name as client_name, u.email as client_email, o.id as order_id, s.title as service_title
                 FROM reviews r
                 LEFT JOIN users u ON r.client_id = u.id
                 LEFT JOIN orders o ON r.order_id = o.id

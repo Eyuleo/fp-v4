@@ -28,6 +28,29 @@ class MessageController
     }
 
     /**
+     * Display all message conversations
+     *
+     * GET /messages
+     */
+    public function index(): void
+    {
+        // Check authentication
+        if (! Auth::check()) {
+            $_SESSION['error'] = 'Please login to view messages';
+            header('Location: /login');
+            exit;
+        }
+
+        $user = Auth::user();
+
+        // Get all conversations for the user
+        $conversations = $this->messageService->getUserConversations($user['id'], $user['role']);
+
+        // Render messages index view
+        include __DIR__ . '/../../views/messages/index.php';
+    }
+
+    /**
      * Send a message
      *
      * POST /messages/send

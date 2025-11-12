@@ -126,56 +126,59 @@
     - Send emails on dispute creation and updates
     - _Requirements: 6.5_
 
-- [-] 7. Fix Order Detail File Access
+- [x] 7. Fix Order Detail File Access
 
-  - [ ] 7.1 Fix requirement files display
+  - [x] 7.1 Fix requirement files display
 
     - Update OrderRepository to fetch requirement files
     - Display requirement files on order detail page
     - Ensure files are accessible to both client and student
     - _Requirements: 7.1, 7.5_
 
-  - [ ] 7.2 Fix delivered files access
+  - [x] 7.2 Fix delivered files access
+
     - Update FileService to correctly resolve delivered file paths
     - Fix file download endpoint to prevent 404 errors
     - Add proper authentication and permission checks
     - _Requirements: 7.2, 7.3, 7.4, 7.5_
 
-- [ ] 8. Fix Message System Issues
+- [x] 8. Fix Message System Issues
 
-  - [ ] 8.1 Fix is_flagged SQL error
+  - [x] 8.1 Fix is_flagged SQL error
 
     - Set default value of 0 for is_flagged in MessageRepository
     - Update message creation logic
     - _Requirements: 8.2_
 
-  - [ ] 8.2 Add /messages route and fix navbar link
+  - [x] 8.2 Add /messages route and fix navbar link
 
     - Add /messages route to Router
     - Create messages index view
     - Fix navbar message icon to link to /messages
     - _Requirements: 8.3, 8.4_
 
-  - [ ] 8.3 Implement /messages/unread-count endpoint
+  - [x] 8.3 Implement /messages/unread-count endpoint
+
     - Create unread count method in MessageController
     - Add route for /messages/unread-count
     - Return JSON response with count
     - _Requirements: 8.5_
 
-- [ ] 9. Improve Review Display
+- [x] 9. Improve Review Display
 
-  - [ ] 9.1 Update review star styling
+  - [x] 9.1 Update review star styling
 
     - Add CSS to make star ratings yellow
     - _Requirements: 9.1_
 
-  - [ ] 9.2 Display reviewer information
+  - [x] 9.2 Display reviewer information
+
     - Update ReviewRepository to fetch reviewer name
     - Display reviewer name instead of "anonymous"
     - Generate and display reviewer initials as profile picture
     - _Requirements: 9.2, 9.3, 9.4_
 
-- [ ] 10. Fix Notification Polling
+- [-] 10. Fix Notification Polling
 
   - [ ] 10.1 Implement NotificationController unread count endpoint
 

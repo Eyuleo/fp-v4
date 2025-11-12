@@ -695,8 +695,8 @@ class OrderService
             return [];
         }
 
-        // Use FileService to upload multiple files to orders/{orderId}/requirements
-        $result = $this->fileService->uploadMultiple($files, 'orders/' . $orderId . '/requirements', $orderId);
+        // Use FileService to upload multiple files to orders/{orderId}
+        $result = $this->fileService->uploadMultiple($files, 'orders/requirements', $orderId);
 
         if (! $result['success'] && ! empty($result['errors'])) {
             throw new Exception('File upload failed: ' . implode(', ', $result['errors']));
@@ -719,8 +719,8 @@ class OrderService
             return [];
         }
 
-        // Use FileService to upload multiple files to orders/{orderId}/delivery
-        $result = $this->fileService->uploadMultiple($files, 'orders/' . $orderId . '/delivery', $orderId);
+        // Use FileService to upload multiple files to orders/{orderId}
+        $result = $this->fileService->uploadMultiple($files, 'orders/delivery', $orderId);
 
         if (! $result['success'] && ! empty($result['errors'])) {
             throw new Exception('File upload failed: ' . implode(', ', $result['errors']));

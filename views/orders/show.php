@@ -5,6 +5,10 @@
     // Set page title
     $title = 'Order #' . e($order['id']) . ' - Student Skills Marketplace';
 
+    // Initialize FileService for signed URLs
+    require_once __DIR__ . '/../../src/Services/FileService.php';
+    $fileService = new FileService();
+
     // Start output buffering for content
     ob_start();
 ?>
@@ -87,7 +91,10 @@
                     <h3 class="text-sm font-medium text-gray-700 mb-2">Attached Files:</h3>
                     <div class="space-y-2">
                         <?php foreach ($order['requirement_files'] as $file): ?>
-                            <a href="/<?php echo e($file['path']) ?>" download class="flex items-center space-x-2 text-sm text-blue-600 hover:text-blue-800 hover:bg-blue-50 p-2 rounded transition-colors">
+                            <?php
+                                $signedUrl = $fileService->generateSignedUrl($file['path'], 3600); // 1 hour expiry
+                            ?>
+                            <a href="<?php echo e($signedUrl) ?>" target="_blank" class="flex items-center space-x-2 text-sm text-blue-600 hover:text-blue-800 hover:bg-blue-50 p-2 rounded transition-colors">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                                 </svg>
@@ -114,7 +121,10 @@
                         <h3 class="text-sm font-medium text-gray-700 mb-2">Delivered Files:</h3>
                         <div class="space-y-2">
                             <?php foreach ($order['delivery_files'] as $file): ?>
-                                <a href="/<?php echo e($file['path']) ?>" download class="flex items-center space-x-2 text-sm text-blue-600 hover:text-blue-800 hover:bg-blue-50 p-2 rounded transition-colors">
+                                <?php
+                                    $signedUrl = $fileService->generateSignedUrl($file['path'], 3600); // 1 hour expiry
+                                ?>
+                                <a href="<?php echo e($signedUrl) ?>" target="_blank" class="flex items-center space-x-2 text-sm text-blue-600 hover:text-blue-800 hover:bg-blue-50 p-2 rounded transition-colors">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                                     </svg>
@@ -351,7 +361,7 @@
                         placeholder="Please be specific about what changes you need..."
                     ></textarea>
                     <p class="text-sm text-gray-500 mt-1">
-                        You have                                                                                                                                                                                                                                                                                                                                                                                                 <?php echo e($order['max_revisions'] - $order['revision_count']) ?> revision(s) remaining.
+                        You have                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 <?php echo e($order['max_revisions'] - $order['revision_count']) ?> revision(s) remaining.
                     </p>
                 </div>
 
