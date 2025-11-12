@@ -292,6 +292,7 @@ class ProfileController
     /**
      * Connect Stripe account
      */
+
     public function connectStripe(): void
     {
         // Ensure user is authenticated and is a student
@@ -365,21 +366,18 @@ class ProfileController
             // Generate a state token for security
             $stateToken = bin2hex(random_bytes(32));
 
-            // Store token in database (expires in 2 hours to account for Stripe onboarding time)
-            // Use UTC timezone to match database
-            $expiresAt = gmdate('Y-m-d H:i:s', time() + 7200);
-            $stmt      = $this->db->prepare('
+            // Store token in database (expires in 2 hours using UTC at DB level)
+            $stmt = $this->db->prepare('
                 INSERT INTO stripe_connect_tokens (token, user_id, stripe_account_id, expires_at)
-                VALUES (:token, :user_id, :account_id, :expires_at)
+                VALUES (:token, :user_id, :account_id, UTC_TIMESTAMP() + INTERVAL 2 HOUR)
             ');
             $stmt->execute([
                 'token'      => $stateToken,
                 'user_id'    => $userId,
                 'account_id' => $accountId,
-                'expires_at' => $expiresAt,
             ]);
 
-            error_log("Stripe Connect: Stored state token for user ID: $userId, expires at: $expiresAt UTC");
+            error_log("Stripe Connect: Stored state token for user ID: $userId, expires in 120 minutes (UTC)");
 
             // Get base URL
             $baseUrl = $this->getBaseUrl();
@@ -431,10 +429,10 @@ class ProfileController
                 return;
             }
 
-            // First, check if token exists at all (for debugging)
+            // First, check if token exists at all (for debugging) using UTC comparison
             $debugStmt = $this->db->prepare('
                 SELECT user_id, stripe_account_id, expires_at,
-                       TIMESTAMPDIFF(MINUTE, NOW(), expires_at) as minutes_until_expiry
+                       TIMESTAMPDIFF(MINUTE, UTC_TIMESTAMP(), expires_at) as minutes_until_expiry
                 FROM stripe_connect_tokens
                 WHERE token = :token
             ');
@@ -456,18 +454,18 @@ class ProfileController
 
             error_log("Stripe Connect Debug: Token found for user {$debugData['user_id']}, expires in {$debugData['minutes_until_expiry']} minutes");
 
-            // Look up token in database (with valid expiry)
+            // Look up token in database (with valid expiry) using UTC comparison
             $stmt = $this->db->prepare('
                 SELECT user_id, stripe_account_id, expires_at
                 FROM stripe_connect_tokens
                 WHERE token = :token
-                AND expires_at > NOW()
+                AND expires_at > UTC_TIMESTAMP()
             ');
             $stmt->execute(['token' => $stateToken]);
             $tokenData = $stmt->fetch();
 
             if (! $tokenData) {
-                error_log('Stripe Connect Error: Token expired. Expires at: ' . $debugData['expires_at'] . ', Current: ' . gmdate('Y-m-d H:i:s'));
+                error_log('Stripe Connect Error: Token expired. Expires at: ' . $debugData['expires_at'] . ', Current UTC: ' . gmdate('Y-m-d H:i:s'));
                 flash('error', 'Your session expired. Please try connecting Stripe again.');
 
                 // If user is already logged in, redirect to profile
