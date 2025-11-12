@@ -33,7 +33,7 @@
                 <div class="flex items-center gap-4 text-sm text-gray-600">
                     <span>Service ID: #<?php echo e($service['id']) ?></span>
                     <span>•</span>
-                    <span>Created:                                                                                                       <?php echo date('M j, Y', strtotime($service['created_at'])) ?></span>
+                    <span>Created:                                                                                                                                                                                                                                               <?php echo date('M j, Y', strtotime($service['created_at'])) ?></span>
                     <span>•</span>
                     <?php
                         $statusColors = [
@@ -51,7 +51,11 @@
 
             <!-- Action Buttons -->
             <div class="flex gap-2">
-                <?php if ($service['status'] !== 'inactive'): ?>
+                <?php if ($service['status'] === 'inactive'): ?>
+                    <button onclick="showActivateModal()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">
+                        Activate
+                    </button>
+                <?php else: ?>
                     <button onclick="showDeactivateModal()" class="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition">
                         Deactivate
                     </button>
@@ -116,9 +120,30 @@
                     <?php if (! empty($service['sample_files'])): ?>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Sample Files</label>
-                            <ul class="list-disc list-inside text-gray-900">
+                            <ul class="space-y-2">
                                 <?php foreach ($service['sample_files'] as $file): ?>
-                                    <li><?php echo e(is_array($file) ? ($file['name'] ?? 'Unknown file') : basename($file)) ?></li>
+                                    <?php
+                                        $fileName = '';
+                                        $filePath = '';
+
+                                        if (is_array($file)) {
+                                            $fileName = $file['original_name'] ?? $file['filename'] ?? 'Unknown file';
+                                            $filePath = $file['path'] ?? '';
+                                        } else {
+                                            $fileName = basename($file);
+                                            $filePath = $file;
+                                        }
+
+                                        $fileUrl = '/storage/file?path=' . urlencode($filePath);
+                                    ?>
+                                    <li class="flex items-center justify-between p-2 bg-gray-50 rounded">
+                                        <span class="text-gray-900"><?php echo e($fileName) ?></span>
+                                        <?php if ($filePath): ?>
+                                            <a href="<?php echo e($fileUrl) ?>" target="_blank" class="text-blue-600 hover:text-blue-800 text-sm">
+                                                View
+                                            </a>
+                                        <?php endif; ?>
+                                    </li>
                                 <?php endforeach; ?>
                             </ul>
                         </div>
@@ -231,7 +256,7 @@
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Rating</label>
                             <p class="text-gray-900">
-                                ⭐                                                                                                          <?php echo number_format($studentProfile['average_rating'], 1) ?>
+                                ⭐                                                                                                                                                                                                                                                      <?php echo number_format($studentProfile['average_rating'], 1) ?>
                                 (<?php echo $studentProfile['total_reviews'] ?> reviews)
                             </p>
                         </div>
@@ -250,6 +275,28 @@
                 </div>
             </div>
         </div>
+    </div>
+</div>
+
+<!-- Activate Modal -->
+<div id="activateModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+        <h3 class="text-xl font-bold text-gray-900 mb-4">Activate Service</h3>
+        <p class="text-gray-600 mb-4">
+            This will activate the service and make it visible to clients. The student will be notified.
+        </p>
+        <form method="POST" action="/admin/services/<?php echo e($service['id']) ?>/activate">
+            <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token'] ?? '' ?>">
+
+            <div class="flex gap-3">
+                <button type="button" onclick="hideActivateModal()" class="flex-1 px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition">
+                    Cancel
+                </button>
+                <button type="submit" class="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">
+                    Activate
+                </button>
+            </div>
+        </form>
     </div>
 </div>
 
@@ -320,6 +367,14 @@
 </div>
 
 <script>
+function showActivateModal() {
+    document.getElementById('activateModal').classList.remove('hidden');
+}
+
+function hideActivateModal() {
+    document.getElementById('activateModal').classList.add('hidden');
+}
+
 function showDeactivateModal() {
     document.getElementById('deactivateModal').classList.remove('hidden');
 }
@@ -337,6 +392,12 @@ function hideDeleteModal() {
 }
 
 // Close modals when clicking outside
+document.getElementById('activateModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        hideActivateModal();
+    }
+});
+
 document.getElementById('deactivateModal').addEventListener('click', function(e) {
     if (e.target === this) {
         hideDeactivateModal();

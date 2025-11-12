@@ -112,7 +112,8 @@ class FileController
 
         if (empty($path)) {
             http_response_code(404);
-            echo 'File not found';
+            echo 'File not found - No path provided';
+            error_log('FileController::serve - No path provided');
             return;
         }
 
@@ -122,10 +123,14 @@ class FileController
         // Build full file path
         $filePath = __DIR__ . '/../../storage/uploads/' . $path;
 
+        // Log the attempted file access for debugging
+        error_log("FileController::serve - Attempting to serve file: $filePath");
+
         // Check if file exists
         if (! file_exists($filePath) || ! is_file($filePath)) {
             http_response_code(404);
-            echo 'File not found';
+            echo 'File not found - Path: ' . htmlspecialchars($path);
+            error_log("FileController::serve - File not found: $filePath");
             return;
         }
 

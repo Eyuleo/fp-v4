@@ -56,15 +56,21 @@
                             <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
                                 <?php foreach ($service['sample_files'] as $index => $file): ?>
                                     <?php
-                                        $extension = strtolower(pathinfo($file['original_name'] ?? $file['filename'], PATHINFO_EXTENSION));
-                                        $isImage   = in_array($extension, ['jpg', 'jpeg', 'png', 'gif', 'webp']);
-                                        $filePath  = '/storage/file?path=' . urlencode($file['path']);
+                                        // Skip if file data is incomplete
+                                        if (! is_array($file) || empty($file['path'])) {
+                                            continue;
+                                        }
+
+                                        $originalName = $file['original_name'] ?? $file['filename'] ?? basename($file['path']);
+                                        $extension    = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
+                                        $isImage      = in_array($extension, ['jpg', 'jpeg', 'png', 'gif', 'webp']);
+                                        $filePath     = '/storage/file?path=' . urlencode($file['path']);
                                     ?>
                                     <?php if ($isImage): ?>
                                         <div class="relative group cursor-pointer" @click="selectedImage = '<?php echo e($filePath) ?>'">
                                             <img
                                                 src="<?php echo e($filePath) ?>"
-                                                alt="Sample                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    <?php echo $index + 1 ?>"
+                                                alt="Sample                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          <?php echo $index + 1 ?>"
                                                 class="w-full h-48 object-cover rounded-lg shadow-sm group-hover:shadow-md transition-shadow"
                                             >
                                             <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-opacity rounded-lg flex items-center justify-center">
@@ -78,7 +84,7 @@
                                             <svg class="w-12 h-12 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
                                             </svg>
-                                            <span class="text-sm text-gray-600 text-center break-all"><?php echo e($file['original_name'] ?? basename($file['path'])) ?></span>
+                                            <span class="text-sm text-gray-600 text-center break-all"><?php echo e($originalName) ?></span>
                                         </a>
                                     <?php endif; ?>
                                 <?php endforeach; ?>

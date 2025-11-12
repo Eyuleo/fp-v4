@@ -8,6 +8,11 @@
 
     if (! empty($service['sample_files']) && is_array($service['sample_files'])) {
         foreach ($service['sample_files'] as $file) {
+            // Skip if file data is incomplete
+            if (! is_array($file) || empty($file['path']) || empty($file['original_name'])) {
+                continue;
+            }
+
             $extension = strtolower(pathinfo($file['original_name'], PATHINFO_EXTENSION));
             // Use path as-is (new FileService format: services/2/filename.ext)
             $file['display_path'] = $file['path'];
@@ -21,7 +26,7 @@
     }
 ?>
 
-<div class="max-w-5xl mx-auto" x-data="{ galleryOpen: false, currentImage: 0, images:                                                                                                                                                                                                                                                                                                                                                                                                                                          <?php echo htmlspecialchars(json_encode(array_map(function ($f) {return '/storage/file?path=' . urlencode($f['display_path']);}, $imageFiles)), ENT_QUOTES, 'UTF-8') ?> }">
+<div class="max-w-5xl mx-auto" x-data="{ galleryOpen: false, currentImage: 0, images:                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               <?php echo htmlspecialchars(json_encode(array_map(function ($f) {return '/storage/file?path=' . urlencode($f['display_path']);}, $imageFiles)), ENT_QUOTES, 'UTF-8') ?> }">
     <div class="mb-6 flex items-center justify-between">
         <div>
             <a href="/student/services" class="text-blue-600 hover:text-blue-700 mb-2 inline-block">
@@ -86,7 +91,7 @@
                                 <?php foreach ($imageFiles as $index => $file): ?>
                                     <div
                                         class="relative aspect-square rounded-lg overflow-hidden cursor-pointer hover:opacity-90 transition"
-                                        @click="galleryOpen = true; currentImage =                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   <?php echo $index ?>"
+                                        @click="galleryOpen = true; currentImage =                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     <?php echo $index ?>"
                                     >
                                         <img
                                             src="/storage/file?path=<?php echo urlencode($file['display_path']) ?>"

@@ -30,7 +30,7 @@ class NotificationRepository
             'title'   => $data['title'],
             'message' => $data['message'],
             'link'    => $data['link'] ?? null,
-            'is_read' => $data['is_read'] ?? false,
+            'is_read' => isset($data['is_read']) ? (int) $data['is_read'] : 0,
         ]);
 
         return (int) $this->db->lastInsertId();

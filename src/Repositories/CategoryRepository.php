@@ -91,6 +91,27 @@ class CategoryRepository
     }
 
     /**
+     * Update a category
+     */
+    public function update(int $id, array $data): bool
+    {
+        $sql = "UPDATE categories
+                SET name = :name,
+                    slug = :slug,
+                    description = :description
+                WHERE id = :id";
+
+        $stmt = $this->db->prepare($sql);
+
+        return $stmt->execute([
+            'id'          => $id,
+            'name'        => $data['name'],
+            'slug'        => $data['slug'],
+            'description' => $data['description'] ?? null,
+        ]);
+    }
+
+    /**
      * Delete a category
      */
     public function delete(int $id): bool
@@ -118,7 +139,7 @@ class CategoryRepository
     /**
      * Generate a unique slug from name
      */
-    public function generateSlug(string $name): string
+    public function generateSlug(string $name, ?int $excludeId = null): string
     {
         // Convert to lowercase and replace spaces with hyphens
         $slug = strtolower(trim($name));
@@ -126,11 +147,24 @@ class CategoryRepository
         $slug = preg_replace('/-+/', '-', $slug);
         $slug = trim($slug, '-');
 
-        // Check if slug exists
+        // Check if slug exists (excluding current category if updating)
         $originalSlug = $slug;
         $counter      = 1;
 
-        while ($this->findBySlug($slug)) {
+        while (true) {
+            $existingCategory = $this->findBySlug($slug);
+
+            // If no category found with this slug, it's available
+            if (! $existingCategory) {
+                break;
+            }
+
+            // If updating and the slug belongs to the current category, it's fine
+            if ($excludeId && $existingCategory['id'] == $excludeId) {
+                break;
+            }
+
+            // Otherwise, try next variation
             $slug = $originalSlug . '-' . $counter;
             $counter++;
         }

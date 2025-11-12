@@ -206,7 +206,6 @@ class AdminController
         // Build query
         $sql = "SELECT
                     p.*,
-                    o.id as order_id,
                     o.status as order_status,
                     s.title as service_title,
                     client.email as client_email,
@@ -266,6 +265,97 @@ class AdminController
 
         // Render view
         include __DIR__ . '/../../views/admin/payments/index.php';
+    }
+
+    /**
+     * Show order management interface
+     *
+     * GET /admin/orders
+     */
+    public function orders(): void
+    {
+        // Check authentication
+        if (! Auth::check()) {
+            $_SESSION['error'] = 'Please login to access this page';
+            header('Location: /login');
+            exit;
+        }
+
+        // Check user is an admin
+        $user = Auth::user();
+        if ($user['role'] !== 'admin') {
+            http_response_code(403);
+            include __DIR__ . '/../../views/errors/403.php';
+            exit;
+        }
+
+        // Get filter parameters
+        $status   = $_GET['status'] ?? null;
+        $dateFrom = $_GET['date_from'] ?? null;
+        $dateTo   = $_GET['date_to'] ?? null;
+        $page     = isset($_GET['page']) ? (int) $_GET['page'] : 1;
+        $perPage  = 20;
+        $offset   = ($page - 1) * $perPage;
+
+        // Build query
+        $sql = "SELECT o.*,
+                       s.title as service_title,
+                       client.email as client_email, client.name as client_name,
+                       student.email as student_email, student.name as student_name
+                FROM orders o
+                INNER JOIN services s ON o.service_id = s.id
+                INNER JOIN users client ON o.client_id = client.id
+                INNER JOIN users student ON o.student_id = student.id
+                WHERE 1=1";
+
+        $params = [];
+
+        // Apply status filter
+        if ($status && in_array($status, ['pending', 'in_progress', 'delivered', 'revision_requested', 'completed', 'cancelled'])) {
+            $sql .= " AND o.status = :status";
+            $params['status'] = $status;
+        }
+
+        // Apply date range filter
+        if ($dateFrom) {
+            $sql .= " AND DATE(o.created_at) >= :date_from";
+            $params['date_from'] = $dateFrom;
+        }
+
+        if ($dateTo) {
+            $sql .= " AND DATE(o.created_at) <= :date_to";
+            $params['date_to'] = $dateTo;
+        }
+
+        // Get total count for pagination
+        $countSql  = "SELECT COUNT(*) as total FROM (" . $sql . ") as subquery";
+        $countStmt = $this->db->prepare($countSql);
+        $countStmt->execute($params);
+        $totalCount = $countStmt->fetch()['total'];
+        $totalPages = ceil($totalCount / $perPage);
+
+        // Add ordering and pagination
+        $sql .= " ORDER BY o.created_at DESC LIMIT :limit OFFSET :offset";
+        $params['limit']  = $perPage;
+        $params['offset'] = $offset;
+
+        // Execute query
+        $stmt = $this->db->prepare($sql);
+
+        // Bind parameters with correct types
+        foreach ($params as $key => $value) {
+            if ($key === 'limit' || $key === 'offset') {
+                $stmt->bindValue(':' . $key, $value, PDO::PARAM_INT);
+            } else {
+                $stmt->bindValue(':' . $key, $value);
+            }
+        }
+
+        $stmt->execute();
+        $orders = $stmt->fetchAll();
+
+        // Render view
+        include __DIR__ . '/../../views/admin/orders/index.php';
     }
 
     /**
@@ -567,6 +657,82 @@ class AdminController
     }
 
     /**
+     * Activate a service
+     *
+     * POST /admin/services/{id}/activate
+     */
+    public function activateService(int $id): void
+    {
+        // Check authentication
+        if (! Auth::check()) {
+            $_SESSION['error'] = 'Please login to access this page';
+            header('Location: /login');
+            exit;
+        }
+
+        // Check user is an admin
+        $adminUser = Auth::user();
+        if ($adminUser['role'] !== 'admin') {
+            http_response_code(403);
+            include __DIR__ . '/../../views/errors/403.php';
+            exit;
+        }
+
+        // Get the service
+        $service = $this->serviceRepository->findById($id);
+        if (! $service) {
+            $_SESSION['error'] = 'Service not found';
+            header('Location: /admin/services');
+            exit;
+        }
+
+        // Check if service is already active
+        if ($service['status'] === 'active') {
+            $_SESSION['error'] = 'Service is already active';
+            header('Location: /admin/services/' . $id);
+            exit;
+        }
+
+        // Update service status to active
+        $this->serviceRepository->update($id, ['status' => 'active']);
+
+        // Get student details
+        $student = $this->userRepository->findById($service['student_id']);
+
+        // Send notification to student
+        if ($student) {
+            $appUrl = getenv('APP_URL') ?: 'http://localhost:8000';
+
+            $this->notificationService->notify(
+                $student['id'],
+                $student['email'],
+                'service_activated',
+                'Service Activated',
+                "Your service '{$service['title']}' has been activated by an administrator",
+                'emails/service-moderation',
+                [
+                    'student_name'  => $student['name'] ?? $student['email'],
+                    'service_title' => $service['title'],
+                    'action'        => 'activated',
+                    'reason'        => 'Your service has been reviewed and approved',
+                    'service_url'   => $appUrl . '/services/' . $id,
+                ],
+                $appUrl . '/services/' . $id
+            );
+        }
+
+        // Log audit entry
+        $this->logAudit($adminUser['id'], 'service_activated', 'service', $id, [
+            'old_status' => $service['status'],
+            'new_status' => 'active',
+        ]);
+
+        $_SESSION['success'] = 'Service activated successfully. The student has been notified.';
+        header('Location: /admin/services/' . $id);
+        exit;
+    }
+
+    /**
      * Delete a service
      *
      * POST /admin/services/{id}/delete
@@ -749,7 +915,9 @@ class AdminController
         $offset     = ($page - 1) * $perPage;
 
         // Build query
-        $sql = "SELECT s.*, c.name as category_name,
+        $sql = "SELECT s.id, s.student_id, s.category_id, s.title, s.description, s.tags,
+                       s.price, s.delivery_days, s.sample_files, s.status, s.created_at, s.updated_at,
+                       c.name as category_name,
                        u.email as student_email, u.name as student_name,
                        sp.average_rating,
                        (SELECT COUNT(*) FROM orders WHERE service_id = s.id AND status IN ('pending', 'in_progress', 'delivered', 'revision_requested')) as active_orders_count
@@ -761,8 +929,9 @@ class AdminController
 
         $params = [];
 
-        // Apply status filter
-        if ($status && in_array($status, ['inactive', 'active', 'paused'])) {
+        // Apply status filter - only filter if a specific status is selected
+        // When status is empty/null, show all services regardless of status
+        if (! empty($status) && in_array($status, ['inactive', 'active', 'paused'])) {
             $sql .= " AND s.status = :status";
             $params['status'] = $status;
         }
@@ -1203,8 +1372,8 @@ class AdminController
         $sql = "INSERT INTO platform_settings (setting_key, setting_value, updated_by, updated_at)
                 VALUES (:key, :value, :updated_by, NOW())
                 ON DUPLICATE KEY UPDATE
-                    setting_value = :value,
-                    updated_by = :updated_by,
+                    setting_value = VALUES(setting_value),
+                    updated_by = VALUES(updated_by),
                     updated_at = NOW()";
 
         $stmt = $this->db->prepare($sql);
@@ -1310,6 +1479,125 @@ class AdminController
             error_log('Failed to create category: ' . $e->getMessage());
             $_SESSION['error'] = 'Failed to create category. Please try again.';
             header('Location: /admin/categories');
+            exit;
+        }
+    }
+
+    /**
+     * Show edit category form
+     *
+     * GET /admin/categories/{id}/edit
+     */
+    public function editCategory(int $id): void
+    {
+        // Check authentication
+        if (! Auth::check()) {
+            $_SESSION['error'] = 'Please login to access this page';
+            header('Location: /login');
+            exit;
+        }
+
+        // Check user is an admin
+        $user = Auth::user();
+        if ($user['role'] !== 'admin') {
+            http_response_code(403);
+            include __DIR__ . '/../../views/errors/403.php';
+            exit;
+        }
+
+        // Get the category
+        $category = $this->categoryRepository->findById($id);
+        if (! $category) {
+            $_SESSION['error'] = 'Category not found';
+            header('Location: /admin/categories');
+            exit;
+        }
+
+        // Render view
+        include __DIR__ . '/../../views/admin/categories/edit.php';
+    }
+
+    /**
+     * Update a category
+     *
+     * POST /admin/categories/{id}/update
+     */
+    public function updateCategory(int $id): void
+    {
+        // Check authentication
+        if (! Auth::check()) {
+            $_SESSION['error'] = 'Please login to access this page';
+            header('Location: /login');
+            exit;
+        }
+
+        // Check user is an admin
+        $adminUser = Auth::user();
+        if ($adminUser['role'] !== 'admin') {
+            http_response_code(403);
+            include __DIR__ . '/../../views/errors/403.php';
+            exit;
+        }
+
+        // Get the category
+        $category = $this->categoryRepository->findById($id);
+        if (! $category) {
+            $_SESSION['error'] = 'Category not found';
+            header('Location: /admin/categories');
+            exit;
+        }
+
+        // Get form data
+        $name        = trim($_POST['name'] ?? '');
+        $description = trim($_POST['description'] ?? '');
+
+        // Validate inputs
+        $errors = [];
+
+        if (empty($name)) {
+            $errors[] = 'Category name is required';
+        } elseif (strlen($name) > 100) {
+            $errors[] = 'Category name must not exceed 100 characters';
+        }
+
+        // If validation fails, redirect back with errors
+        if (! empty($errors)) {
+            $_SESSION['form_errors'] = $errors;
+            $_SESSION['old']         = $_POST;
+            header('Location: /admin/categories/' . $id . '/edit');
+            exit;
+        }
+
+        // Generate slug (excluding current category ID to allow keeping same name)
+        $slug = $this->categoryRepository->generateSlug($name, $id);
+
+        // Update category
+        try {
+            $this->categoryRepository->update($id, [
+                'name'        => $name,
+                'slug'        => $slug,
+                'description' => $description,
+            ]);
+
+            // Log audit entry
+            $this->logAudit($adminUser['id'], 'category_updated', 'category', $id, [
+                'old_status' => json_encode([
+                    'name'        => $category['name'],
+                    'description' => $category['description'],
+                ]),
+                'new_status' => json_encode([
+                    'name'        => $name,
+                    'description' => $description,
+                ]),
+            ]);
+
+            $_SESSION['success'] = 'Category updated successfully';
+            header('Location: /admin/categories');
+            exit;
+        } catch (Exception $e) {
+            error_log('Failed to update category: ' . $e->getMessage());
+            $_SESSION['error'] = 'Failed to update category. Please try again.';
+            header('Location: /admin/categories/' . $id . '/edit');
             exit;
         }
     }

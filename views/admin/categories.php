@@ -102,6 +102,9 @@
                                 </span>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                <a href="/admin/categories/<?php echo e($category['id']) ?>/edit" class="text-blue-600 hover:text-blue-900 mr-4">
+                                    Edit
+                                </a>
                                 <?php if ($category['service_count'] == 0): ?>
                                     <form method="POST" action="/admin/categories/<?php echo e($category['id']) ?>/delete" class="inline" onsubmit="return confirm('Are you sure you want to delete this category?');">
                                         <input type="hidden" name="csrf_token" value="<?php echo e($_SESSION['csrf_token'] ?? '') ?>">

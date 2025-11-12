@@ -71,6 +71,11 @@ class ServiceRepository
         $service['tags']         = $service['tags'] ? json_decode($service['tags'], true) : [];
         $service['sample_files'] = $service['sample_files'] ? json_decode($service['sample_files'], true) : [];
 
+        // Ensure sample_files is always an array
+        if (! is_array($service['sample_files'])) {
+            $service['sample_files'] = [];
+        }
+
         return $service;
     }
 
@@ -175,6 +180,11 @@ class ServiceRepository
         foreach ($services as &$service) {
             $service['tags']         = $service['tags'] ? json_decode($service['tags'], true) : [];
             $service['sample_files'] = $service['sample_files'] ? json_decode($service['sample_files'], true) : [];
+
+            // Ensure sample_files is always an array
+            if (! is_array($service['sample_files'])) {
+                $service['sample_files'] = [];
+            }
         }
 
         return $services;
@@ -296,6 +306,11 @@ class ServiceRepository
         foreach ($services as &$service) {
             $service['tags']         = $service['tags'] ? json_decode($service['tags'], true) : [];
             $service['sample_files'] = $service['sample_files'] ? json_decode($service['sample_files'], true) : [];
+
+            // Ensure sample_files is always an array
+            if (! is_array($service['sample_files'])) {
+                $service['sample_files'] = [];
+            }
         }
 
         return $services;
@@ -427,6 +442,11 @@ class ServiceRepository
         $service['tags']         = $service['tags'] ? json_decode($service['tags'], true) : [];
         $service['sample_files'] = $service['sample_files'] ? json_decode($service['sample_files'], true) : [];
         $service['skills']       = $service['skills'] ? json_decode($service['skills'], true) : [];
+
+        // Ensure sample_files is always an array
+        if (! is_array($service['sample_files'])) {
+            $service['sample_files'] = [];
+        }
 
         return $service;
     }

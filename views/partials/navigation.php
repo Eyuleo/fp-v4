@@ -61,14 +61,26 @@
                     </div>
 
                     <!-- Notifications -->
-                    <div x-data="{ open: false }" class="relative">
+                    <div x-data="{ open: false, unreadCount: 0 }" x-init="
+                        // Fetch unread count on load
+                        fetch('/notifications/unread-count')
+                            .then(r => r.json())
+                            .then(data => { if (data.success) unreadCount = data.unread_count; })
+                            .catch(e => console.error('Error fetching notification count:', e));
+
+                        // Poll for updates every 30 seconds
+                        setInterval(() => {
+                            fetch('/notifications/unread-count')
+                                .then(r => r.json())
+                                .then(data => { if (data.success) unreadCount = data.unread_count; })
+                                .catch(e => console.error('Error fetching notification count:', e));
+                        }, 30000);
+                    " class="relative">
                         <button @click="open = !open" class="relative p-2 text-gray-600 hover:text-gray-900">
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
                             </svg>
-                            <?php if (isset($unreadNotifications) && $unreadNotifications > 0): ?>
-                                <span class="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-500"></span>
-                            <?php endif; ?>
+                            <span x-show="unreadCount > 0" x-text="unreadCount" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center"></span>
                         </button>
 
                         <div

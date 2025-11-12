@@ -178,46 +178,50 @@
     - Generate and display reviewer initials as profile picture
     - _Requirements: 9.2, 9.3, 9.4_
 
-- [-] 10. Fix Notification Polling
+- [x] 10. Fix Notification Polling
 
-  - [ ] 10.1 Implement NotificationController unread count endpoint
+  - [x] 10.1 Implement NotificationController unread count endpoint
 
     - Create or update NotificationController
     - Implement unread-count method
     - Add route for /notifications/unread-count
     - _Requirements: 10.2, 10.3_
 
-  - [ ] 10.2 Update notification polling JavaScript
+  - [x] 10.2 Update notification polling JavaScript
+
     - Fix polling to call correct endpoint
     - Handle errors gracefully
     - Update notification badge on success
     - _Requirements: 10.1, 10.4_
 
-- [ ] 11. Add Category Editing
+- [x] 11. Add Category Editing
 
-  - [ ] 11.1 Create category edit form and controller method
+  - [x] 11.1 Create category edit form and controller method
+
     - Add edit button to category list view
     - Create edit category view with pre-populated form
     - Implement update method in CategoryController
     - Add validation for category updates
     - _Requirements: 11.1, 11.2, 11.3, 11.4_
 
-- [ ] 12. Fix Admin Service Filtering
+- [x] 12. Fix Admin Service Filtering
 
-  - [ ] 12.1 Fix "all" status filter to include active services
+  - [x] 12.1 Fix "all" status filter to include active services
 
     - Update SQL query in ServiceRepository
     - Ensure all statuses are included when "all" is selected
     - _Requirements: 12.1, 12.3_
 
-  - [ ] 12.2 Fix duplicate inactive service rendering
+  - [x] 12.2 Fix duplicate inactive service rendering
+
     - Add DISTINCT or GROUP BY to query
     - Review JOIN conditions
     - _Requirements: 12.2, 12.4_
 
-- [ ] 13. Implement Service Activation
+- [x] 13. Implement Service Activation
 
-  - [ ] 13.1 Add service activation functionality
+  - [x] 13.1 Add service activation functionality
+
     - Add "Activate" button to inactive service view in admin
     - Implement activate method in ServiceController
     - Update service status to "active"
@@ -225,8 +229,10 @@
     - Log activation in audit logs
     - _Requirements: 13.1, 13.2, 13.3, 13.4_
 
-- [ ] 14. Fix Service Sample Works Display
-  - [ ] 14.1 Fix sample works file retrieval and display
+- [x] 14. Fix Service Sample Works Display
+
+  - [x] 14.1 Fix sample works file retrieval and display
+
     - Review and fix FileService implementation for sample works
     - Ensure ServiceRepository fetches sample work files correctly
     - Fix file path resolution in service detail view

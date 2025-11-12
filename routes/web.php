@@ -69,6 +69,12 @@ $router->get('/admin/payments', 'AdminController@payments', [
     new RoleMiddleware('admin'),
 ]);
 
+// Admin order management
+$router->get('/admin/orders', 'AdminController@orders', [
+    new AuthMiddleware(),
+    new RoleMiddleware('admin'),
+]);
+
 // Admin user management
 $router->get('/admin/users', 'AdminController@users', [
     new AuthMiddleware(),
@@ -104,6 +110,12 @@ $router->get('/admin/services/{id}', 'AdminController@showService', [
 ]);
 
 $router->post('/admin/services/{id}/deactivate', 'AdminController@deactivateService', [
+    new AuthMiddleware(),
+    new RoleMiddleware('admin'),
+    new CsrfMiddleware(),
+]);
+
+$router->post('/admin/services/{id}/activate', 'AdminController@activateService', [
     new AuthMiddleware(),
     new RoleMiddleware('admin'),
     new CsrfMiddleware(),
@@ -267,6 +279,30 @@ $router->get('/messages/poll', 'MessageController@poll', [
 // Get unread message count (AJAX endpoint)
 $router->get('/messages/unread-count', 'MessageController@unreadCount', [
     new AuthMiddleware(),
+]);
+
+// Notification routes
+
+// Notification center
+$router->get('/notifications', 'NotificationController@index', [
+    new AuthMiddleware(),
+]);
+
+// Get unread notification count (AJAX endpoint)
+$router->get('/notifications/unread-count', 'NotificationController@getUnreadCount', [
+    new AuthMiddleware(),
+]);
+
+// Mark notification as read (AJAX endpoint)
+$router->post('/notifications/mark-as-read', 'NotificationController@markAsRead', [
+    new AuthMiddleware(),
+    new CsrfMiddleware(),
+]);
+
+// Mark all notifications as read (AJAX endpoint)
+$router->post('/notifications/mark-all-as-read', 'NotificationController@markAllAsRead', [
+    new AuthMiddleware(),
+    new CsrfMiddleware(),
 ]);
 
 // Student Profile routes
@@ -439,6 +475,17 @@ $router->get('/admin/categories', 'AdminController@categories', [
 ]);
 
 $router->post('/admin/categories/create', 'AdminController@createCategory', [
+    new AuthMiddleware(),
+    new RoleMiddleware('admin'),
+    new CsrfMiddleware(),
+]);
+
+$router->get('/admin/categories/{id}/edit', 'AdminController@editCategory', [
+    new AuthMiddleware(),
+    new RoleMiddleware('admin'),
+]);
+
+$router->post('/admin/categories/{id}/update', 'AdminController@updateCategory', [
     new AuthMiddleware(),
     new RoleMiddleware('admin'),
     new CsrfMiddleware(),
