@@ -47,7 +47,8 @@ class MessageController
         $conversations = $this->messageService->getUserConversations($user['id'], $user['role']);
 
         // Render messages index view
-        include __DIR__ . '/../../views/messages/index.php';
+        view('messages.index', compact('conversations'), 'dashboard');
+
     }
 
     /**

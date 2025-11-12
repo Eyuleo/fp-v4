@@ -914,58 +914,76 @@ class AdminController
         $perPage    = 20;
         $offset     = ($page - 1) * $perPage;
 
+        // Normalize "all" or empty status to no filter
+        if ($status === '' || strtolower((string) $status) === 'all') {
+            $status = null;
+        }
+
         // Build query
-        $sql = "SELECT s.id, s.student_id, s.category_id, s.title, s.description, s.tags,
-                       s.price, s.delivery_days, s.sample_files, s.status, s.created_at, s.updated_at,
-                       c.name as category_name,
-                       u.email as student_email, u.name as student_name,
-                       sp.average_rating,
-                       (SELECT COUNT(*) FROM orders WHERE service_id = s.id AND status IN ('pending', 'in_progress', 'delivered', 'revision_requested')) as active_orders_count
-                FROM services s
-                LEFT JOIN categories c ON s.category_id = c.id
-                LEFT JOIN users u ON s.student_id = u.id
-                LEFT JOIN student_profiles sp ON u.id = sp.user_id
-                WHERE 1=1";
+        $sql = "SELECT
+                s.id, s.student_id, s.category_id, s.title, s.description, s.tags,
+                s.price, s.delivery_days, s.sample_files, s.status, s.created_at, s.updated_at,
+                c.name as category_name,
+                u.email as student_email, u.name as student_name,
+                sp.average_rating,
+                (
+                    SELECT COUNT(*)
+                    FROM orders
+                    WHERE service_id = s.id
+                      AND status IN ('pending', 'in_progress', 'delivered', 'revision_requested')
+                ) as active_orders_count
+            FROM services s
+            LEFT JOIN categories c ON s.category_id = c.id
+            LEFT JOIN users u ON s.student_id = u.id
+            /* Ensure a single profile row per user to avoid duplicates */
+            LEFT JOIN (
+                SELECT user_id, MAX(average_rating) AS average_rating
+                FROM student_profiles
+                GROUP BY user_id
+            ) sp ON sp.user_id = u.id
+            WHERE 1=1";
 
         $params = [];
 
-        // Apply status filter - only filter if a specific status is selected
-        // When status is empty/null, show all services regardless of status
-        if (! empty($status) && in_array($status, ['inactive', 'active', 'paused'])) {
+        // Apply status filter only when a specific status is selected
+        if (! empty($status) && in_array($status, ['inactive', 'active', 'paused'], true)) {
             $sql .= " AND s.status = :status";
             $params['status'] = $status;
         }
 
         // Apply category filter
-        if ($categoryId) {
+        if (! empty($categoryId)) {
             $sql .= " AND s.category_id = :category_id";
-            $params['category_id'] = $categoryId;
+            $params['category_id'] = (int) $categoryId;
         }
 
-        // Get total count for pagination
-        $countSql  = "SELECT COUNT(*) as total FROM (" . $sql . ") as subquery";
-        $countStmt = $this->db->prepare($countSql);
-        $countStmt->execute($params);
-        $totalCount = $countStmt->fetch()['total'];
-        $totalPages = ceil($totalCount / $perPage);
+        // Deduplicate results if any 1:N joins exist
+        $sql .= " GROUP BY s.id";
 
-        // Add ordering and pagination - show flagged services at top
+        // Get total count for pagination (count grouped rows)
+        $countSql  = "SELECT COUNT(*) AS total FROM (" . $sql . ") AS subquery";
+        $countStmt = $this->db->prepare($countSql);
+        foreach ($params as $key => $value) {
+            $countStmt->bindValue(':' . $key, $value, ($key === 'category_id') ? PDO::PARAM_INT : PDO::PARAM_STR);
+        }
+        $countStmt->execute();
+        $totalCount = (int) $countStmt->fetch()['total'];
+        $totalPages = (int) ceil($totalCount / $perPage);
+
+        // Add ordering and pagination
         $sql .= " ORDER BY s.created_at DESC LIMIT :limit OFFSET :offset";
         $params['limit']  = $perPage;
         $params['offset'] = $offset;
 
         // Execute query
         $stmt = $this->db->prepare($sql);
-
-        // Bind parameters with correct types
         foreach ($params as $key => $value) {
             if ($key === 'limit' || $key === 'offset' || $key === 'category_id') {
-                $stmt->bindValue(':' . $key, $value, PDO::PARAM_INT);
+                $stmt->bindValue(':' . $key, (int) $value, PDO::PARAM_INT);
             } else {
                 $stmt->bindValue(':' . $key, $value);
             }
         }
-
         $stmt->execute();
         $services = $stmt->fetchAll();
 

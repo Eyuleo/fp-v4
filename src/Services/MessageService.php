@@ -197,51 +197,50 @@ class MessageService
         return $this->messageRepository->getUnreadCount($userId, $userRole);
     }
 
-    /**
-     * Get all conversations for a user
-     *
-     * @param int $userId
-     * @param string $userRole
-     * @return array
-     */
     public function getUserConversations(int $userId, string $userRole): array
     {
         // Build query based on user role
         if ($userRole === 'client') {
             $sql = "SELECT DISTINCT
-                        o.id as order_id,
-                        o.service_id,
-                        s.title as service_title,
-                        u.id as other_user_id,
-                        u.name as other_user_name,
-                        u.email as other_user_email,
-                        (SELECT content FROM messages WHERE order_id = o.id ORDER BY created_at DESC LIMIT 1) as last_message,
-                        (SELECT created_at FROM messages WHERE order_id = o.id ORDER BY created_at DESC LIMIT 1) as last_message_time,
-                        (SELECT COUNT(*) FROM messages WHERE order_id = o.id AND sender_id != :user_id AND read_by_client = FALSE) as unread_count
-                    FROM orders o
-                    LEFT JOIN services s ON o.service_id = s.id
-                    LEFT JOIN users u ON o.student_id = u.id
-                    WHERE o.client_id = :user_id
-                    AND EXISTS (SELECT 1 FROM messages WHERE order_id = o.id)
-                    ORDER BY last_message_time DESC";
+                    o.id as order_id,
+                    o.service_id,
+                    s.title as service_title,
+                    u.id as other_user_id,
+                    u.name as other_user_name,
+                    u.email as other_user_email,
+                    (SELECT content FROM messages WHERE order_id = o.id ORDER BY created_at DESC LIMIT 1) as last_message,
+                    (SELECT created_at FROM messages WHERE order_id = o.id ORDER BY created_at DESC LIMIT 1) as last_message_time,
+                    (SELECT COUNT(*) FROM messages m
+                     WHERE m.order_id = o.id
+                       AND m.sender_id != o.client_id
+                       AND m.read_by_client = FALSE) as unread_count
+                FROM orders o
+                LEFT JOIN services s ON o.service_id = s.id
+                LEFT JOIN users u ON o.student_id = u.id
+                WHERE o.client_id = :user_id
+                  AND EXISTS (SELECT 1 FROM messages WHERE order_id = o.id)
+                ORDER BY last_message_time DESC";
         } else {
             // student
             $sql = "SELECT DISTINCT
-                        o.id as order_id,
-                        o.service_id,
-                        s.title as service_title,
-                        u.id as other_user_id,
-                        u.name as other_user_name,
-                        u.email as other_user_email,
-                        (SELECT content FROM messages WHERE order_id = o.id ORDER BY created_at DESC LIMIT 1) as last_message,
-                        (SELECT created_at FROM messages WHERE order_id = o.id ORDER BY created_at DESC LIMIT 1) as last_message_time,
-                        (SELECT COUNT(*) FROM messages WHERE order_id = o.id AND sender_id != :user_id AND read_by_student = FALSE) as unread_count
-                    FROM orders o
-                    LEFT JOIN services s ON o.service_id = s.id
-                    LEFT JOIN users u ON o.client_id = u.id
-                    WHERE o.student_id = :user_id
-                    AND EXISTS (SELECT 1 FROM messages WHERE order_id = o.id)
-                    ORDER BY last_message_time DESC";
+                    o.id as order_id,
+                    o.service_id,
+                    s.title as service_title,
+                    u.id as other_user_id,
+                    u.name as other_user_name,
+                    u.email as other_user_email,
+                    (SELECT content FROM messages WHERE order_id = o.id ORDER BY created_at DESC LIMIT 1) as last_message,
+                    (SELECT created_at FROM messages WHERE order_id = o.id ORDER BY created_at DESC LIMIT 1) as last_message_time,
+                    (SELECT COUNT(*) FROM messages m
+                     WHERE m.order_id = o.id
+                       AND m.sender_id != o.student_id
+                       AND m.read_by_student = FALSE) as unread_count
+                FROM orders o
+                LEFT JOIN services s ON o.service_id = s.id
+                LEFT JOIN users u ON o.client_id = u.id
+                WHERE o.student_id = :user_id
+                  AND EXISTS (SELECT 1 FROM messages WHERE order_id = o.id)
+                ORDER BY last_message_time DESC";
         }
 
         $stmt = $this->db->prepare($sql);

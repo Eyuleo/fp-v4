@@ -28,14 +28,21 @@ class MessageRepository
             :order_id, :sender_id, :content, :attachments, :is_flagged, NOW()
         )";
 
+        $isFlaggedRaw = $data['is_flagged'] ?? null;
+        $isFlagged    = ($isFlaggedRaw === '' || $isFlaggedRaw === null) ? 0 : (int) $isFlaggedRaw;
+
+        $attachments = $data['attachments'] ?? [];
+        if (! is_array($attachments)) {
+            $attachments = [$attachments];
+        }
+
         $stmt = $this->db->prepare($sql);
-        $stmt->execute([
-            'order_id'    => $data['order_id'],
-            'sender_id'   => $data['sender_id'],
-            'content'     => $data['content'],
-            'attachments' => json_encode($data['attachments'] ?? []),
-            'is_flagged'  => $data['is_flagged'] ?? 0,
-        ]);
+        $stmt->bindValue(':order_id', (int) $data['order_id'], PDO::PARAM_INT);
+        $stmt->bindValue(':sender_id', (int) $data['sender_id'], PDO::PARAM_INT);
+        $stmt->bindValue(':content', $data['content'], PDO::PARAM_STR);
+        $stmt->bindValue(':attachments', json_encode($attachments), PDO::PARAM_STR);
+        $stmt->bindValue(':is_flagged', $isFlagged, PDO::PARAM_INT);
+        $stmt->execute();
 
         return (int) $this->db->lastInsertId();
     }
