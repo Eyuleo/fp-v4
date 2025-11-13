@@ -39,7 +39,7 @@
                         <?php if (! empty($user['profile_picture'])): ?>
                             <img
                                 id="profile-picture-preview"
-                                src="/storage/file?path=client-profiles/<?php echo e($user['id']) ?>/<?php echo e($user['profile_picture']) ?>"
+                                src="/storage/file?path=<?php echo e($user['profile_picture']) ?>"
                                 alt="Profile picture"
                                 class="h-24 w-24 object-cover rounded-full border-2 border-gray-300"
                             >
@@ -84,7 +84,7 @@
                     type="text"
                     id="name"
                     name="name"
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500                                                                                                                                  <?php echo isset($_SESSION['errors']['name']) ? 'border-red-500' : '' ?>"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500                                                                                                                                                                                                                                                                   <?php echo isset($_SESSION['errors']['name']) ? 'border-red-500' : '' ?>"
                     placeholder="Enter your name"
                     value="<?php echo e(old('name', $user['name'] ?? '')) ?>"
                 >

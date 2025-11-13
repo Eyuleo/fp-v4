@@ -1,6 +1,33 @@
 <?php
     // Get user role for navigation
     $userRole = $_SESSION['user_role'] ?? null;
+
+    // Determine profile image path (if any) for the current user
+    $navProfilePath = null;
+    $userId         = $_SESSION['user_id'] ?? null;
+
+    if ($userId) {
+        // Load DB and repositories
+        $db = require __DIR__ . '/../../config/database.php';
+        require_once __DIR__ . '/../../src/Repositories/UserRepository.php';
+        $userRepo = new UserRepository($db);
+        $navUser  = $userRepo->findById((int) $userId);
+
+        // Prefer users.profile_picture if present (e.g., clients)
+        if (! empty($navUser['profile_picture'])) {
+            // Already stored as "context/id/filename", e.g., "client-profiles/{id}/{file}"
+            $navProfilePath = $navUser['profile_picture'];
+        } elseif ($userRole === 'student') {
+            // For students, check the student profile table
+            require_once __DIR__ . '/../../src/Repositories/StudentProfileRepository.php';
+            $studentRepo    = new StudentProfileRepository($db);
+            $studentProfile = $studentRepo->getProfileWithUser((int) $userId);
+            if ($studentProfile && ! empty($studentProfile['profile_picture'])) {
+                // Student profile stores only the filename; build the path
+                $navProfilePath = 'profiles/' . (int) $userId . '/' . $studentProfile['profile_picture'];
+            }
+        }
+    }
 ?>
 <nav class="fixed top-0 left-0 right-0 z-50 bg-white shadow-md">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -54,7 +81,7 @@
                     " class="relative">
                         <a href="/messages" class="relative p-2 text-gray-600 hover:text-gray-900">
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4-4-4z"/>
                             </svg>
                             <span x-show="unreadCount > 0" x-text="unreadCount" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center"></span>
                         </a>
@@ -103,9 +130,17 @@
                     <!-- User Menu -->
                     <div x-data="{ open: false }" class="relative">
                         <button @click="open = !open" class="flex items-center space-x-2 text-gray-700 hover:text-gray-900">
-                            <div class="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold">
-                                <?php echo strtoupper(substr($_SESSION['user_email'] ?? 'U', 0, 1)) ?>
-                            </div>
+                            <?php if (! empty($navProfilePath)): ?>
+                                <img
+                                    src="/storage/file?path=<?php echo urlencode($navProfilePath) ?>"
+                                    alt="Profile picture"
+                                    class="w-8 h-8 rounded-full object-cover border border-gray-200"
+                                >
+                            <?php else: ?>
+                                <div class="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold">
+                                    <?php echo strtoupper(substr($_SESSION['user_email'] ?? 'U', 0, 1)) ?>
+                                </div>
+                            <?php endif; ?>
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                             </svg>

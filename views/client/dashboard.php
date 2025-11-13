@@ -3,18 +3,6 @@
     <!-- Profile Section -->
     <div class="bg-white rounded-lg shadow-sm p-6">
         <div class="flex items-center space-x-4">
-            <!-- Profile Picture -->
-            <a href="/client/profile/edit" class="flex-shrink-0">
-                <?php if (! empty($user['profile_picture'])): ?>
-                    <img src="/storage/file?path=<?php echo urlencode($user['profile_picture']) ?>"
-                         alt="Profile Picture"
-                         class="w-20 h-20 rounded-full object-cover border-2 border-gray-200 hover:border-blue-500 transition-colors">
-                <?php else: ?>
-                    <div class="w-20 h-20 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-2xl font-bold hover:from-blue-600 hover:to-purple-700 transition-colors">
-                        <?php echo strtoupper(substr($user['name'] ?? $user['email'], 0, 1)) ?>
-                    </div>
-                <?php endif; ?>
-            </a>
 
             <!-- Welcome Message -->
             <div class="flex-1">
@@ -22,12 +10,6 @@
                     Welcome back<?php echo ! empty($user['name']) ? ', ' . htmlspecialchars($user['name']) : '' ?>!
                 </h1>
                 <p class="text-gray-600">Browse services, manage your orders, and connect with talented students.</p>
-                <a href="/client/profile/edit" class="inline-flex items-center text-sm text-blue-600 hover:text-blue-700 mt-2">
-                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                    </svg>
-                    Edit Profile
-                </a>
             </div>
         </div>
     </div>
