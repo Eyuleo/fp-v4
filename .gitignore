@@ -20,6 +20,8 @@ vendor/
 *.swo
 *~
 
+.kiro/
+
 # OS files
 .DS_Store
 Thumbs.db

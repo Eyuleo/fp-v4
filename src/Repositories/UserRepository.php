@@ -268,4 +268,40 @@ class UserRepository
             'id'     => $userId,
         ]);
     }
+
+    /**
+     * Update user profile picture
+     */
+    public function updateProfilePicture(int $userId, ?string $profilePicture): bool
+    {
+        $stmt = $this->db->prepare('
+            UPDATE users
+            SET profile_picture = :profile_picture,
+                updated_at = NOW()
+            WHERE id = :id
+        ');
+
+        return $stmt->execute([
+            'profile_picture' => $profilePicture,
+            'id'              => $userId,
+        ]);
+    }
+
+    /**
+     * Update user name
+     */
+    public function updateName(int $userId, string $name): bool
+    {
+        $stmt = $this->db->prepare('
+            UPDATE users
+            SET name = :name,
+                updated_at = NOW()
+            WHERE id = :id
+        ');
+
+        return $stmt->execute([
+            'name' => $name,
+            'id'   => $userId,
+        ]);
+    }
 }

@@ -53,8 +53,16 @@ $router->get('/student/dashboard', function () {
 }, [new AuthMiddleware(), new RoleMiddleware('student')]);
 
 $router->get('/client/dashboard', function () {
+    // Get database connection
+    $db = require __DIR__ . '/../config/database.php';
+    require_once __DIR__ . '/../src/Repositories/UserRepository.php';
+
+    $userRepository = new UserRepository($db);
+    $user           = $userRepository->findById(user_id());
+
     view('client/dashboard', [
         'title' => 'Client Dashboard - Student Skills Marketplace',
+        'user'  => $user,
     ], 'dashboard');
 }, [new AuthMiddleware(), new RoleMiddleware('client')]);
 
@@ -331,6 +339,28 @@ $router->post('/student/profile/delete-file', 'ProfileController@deletePortfolio
 $router->post('/student/profile/delete-picture', 'ProfileController@deleteProfilePicture', [
     new AuthMiddleware(),
     new RoleMiddleware('student'),
+    new CsrfMiddleware(),
+]);
+
+// Client Profile routes
+
+// Edit profile (client only)
+$router->get('/client/profile/edit', 'ClientProfileController@edit', [
+    new AuthMiddleware(),
+    new RoleMiddleware('client'),
+]);
+
+// Update profile (client only)
+$router->post('/client/profile/update', 'ClientProfileController@update', [
+    new AuthMiddleware(),
+    new RoleMiddleware('client'),
+    new CsrfMiddleware(),
+]);
+
+// Delete profile picture (client only)
+$router->post('/client/profile/delete-picture', 'ClientProfileController@deleteProfilePicture', [
+    new AuthMiddleware(),
+    new RoleMiddleware('client'),
     new CsrfMiddleware(),
 ]);
 
