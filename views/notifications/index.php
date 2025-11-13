@@ -38,6 +38,9 @@
 
         return $colors[$type] ?? $colors['default'];
     }
+
+    // Ensure a CSRF token exists and expose it to the page
+    $csrfToken = CsrfMiddleware::getToken();
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -45,6 +48,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Notifications - Student Skills Marketplace</title>
+    <meta name="csrf-token" content="<?php echo e($csrfToken) ?>">
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-50">
@@ -166,14 +170,18 @@
     </div>
 
     <script>
+        const CSRF_TOKEN = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+
         // Mark single notification as read
         function markAsRead(notificationId) {
             const formData = new FormData();
             formData.append('notification_id', notificationId);
+            formData.append('csrf_token', CSRF_TOKEN);
 
             fetch('/notifications/mark-as-read', {
                 method: 'POST',
-                body: formData
+                body: formData,
+                credentials: 'same-origin'
             })
             .then(response => response.json())
             .then(data => {
@@ -207,8 +215,13 @@
                 return;
             }
 
+            const formData = new FormData();
+            formData.append('csrf_token', CSRF_TOKEN);
+
             fetch('/notifications/mark-all-as-read', {
-                method: 'POST'
+                method: 'POST',
+                body: formData,
+                credentials: 'same-origin'
             })
             .then(response => response.json())
             .then(data => {
