@@ -34,8 +34,8 @@ class PaymentRepository
 
         $stmt = $this->db->prepare($sql);
         $stmt->execute([
-            'order_id'                   => $data['order_id'],
-            'stripe_payment_intent_id'   => $data['stripe_payment_intent_id'] ?? '',
+            'order_id'                   => $data['order_id'] ?? null,
+            'stripe_payment_intent_id'   => $data['stripe_payment_intent_id'] ?? null, // allow NULL until webhook
             'stripe_checkout_session_id' => $data['stripe_checkout_session_id'] ?? null,
             'stripe_transfer_id'         => $data['stripe_transfer_id'] ?? null,
             'amount'                     => $data['amount'],
@@ -60,6 +60,12 @@ class PaymentRepository
     {
         $fields = [];
         $params = ['id' => $id];
+
+        // allow linking payment to order after order is created
+        if (array_key_exists('order_id', $data)) {
+            $fields[]           = 'order_id = :order_id';
+            $params['order_id'] = $data['order_id'];
+        }
 
         if (isset($data['stripe_payment_intent_id'])) {
             $fields[]                           = 'stripe_payment_intent_id = :stripe_payment_intent_id';

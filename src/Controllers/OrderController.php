@@ -354,6 +354,19 @@ class OrderController
             ]
         );
 
+        // Attempt to link the payment record to the newly created order
+        if ($result['success'] && isset($pendingOrder['payment_id'])) {
+            try {
+                $paymentRepository = new PaymentRepository($this->db);
+                $paymentRepository->update((int) $pendingOrder['payment_id'], [
+                    'order_id' => (int) $result['order_id'],
+                ]);
+            } catch (Exception $e) {
+                error_log('Failed to link payment to order: ' . $e->getMessage());
+                // continue; not fatal for user flow
+            }
+        }
+
         // Clean up temp files
         foreach ($pendingOrder['files'] as $fileData) {
             if (file_exists($fileData['temp_path'])) {

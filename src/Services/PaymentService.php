@@ -51,11 +51,24 @@ class PaymentService
      * @param array $order Order data
      * @param string $successUrl URL to redirect on success
      * @param string $cancelUrl URL to redirect on cancel
-     * @return array ['success' => bool, 'session_url' => string|null, 'session_id' => string|null, 'errors' => array]
+     * @return array ['success' => bool, 'session_url' => string|null, 'session_id' => string|null, 'payment_id' => int|null, 'errors' => array]
      */
     public function createCheckoutSession(array $order, string $successUrl, string $cancelUrl): array
     {
         try {
+            // Validate essential fields
+            foreach (['service_title', 'price', 'client_id', 'student_id'] as $required) {
+                if (! array_key_exists($required, $order)) {
+                    throw new Exception("Missing required field: {$required}");
+                }
+            }
+
+            $price          = (float) $order['price'];
+            $commissionRate = isset($order['commission_rate']) ? (float) $order['commission_rate'] : 0.0;
+
+            // Use a numeric order id if available; otherwise null (will be linked later)
+            $orderIdForPayment = (isset($order['id']) && is_numeric($order['id'])) ? (int) $order['id'] : null;
+
             // Create checkout session
             $session = \Stripe\Checkout\Session::create([
                 'payment_method_types' => ['card'],
@@ -64,9 +77,9 @@ class PaymentService
                         'currency'     => 'usd',
                         'product_data' => [
                             'name'        => $order['service_title'],
-                            'description' => 'Order #' . $order['id'],
+                            'description' => 'Order ' . ($orderIdForPayment ?? 'pending'),
                         ],
-                        'unit_amount'  => (int) ($order['price'] * 100), // Convert to cents
+                        'unit_amount'  => (int) round($price * 100), // Convert to cents
                     ],
                     'quantity'   => 1,
                 ]],
@@ -74,24 +87,30 @@ class PaymentService
                 'success_url'          => $successUrl,
                 'cancel_url'           => $cancelUrl,
                 'metadata'             => [
-                    'order_id'   => $order['id'],
+                    'order_id'   => $orderIdForPayment ?? '', // may be blank if order not yet created
                     'client_id'  => $order['client_id'],
                     'student_id' => $order['student_id'],
                 ],
             ]);
 
+            // Calculate commission and student amount
+            $commissionAmount = $price * ($commissionRate / 100);
+            $studentAmount    = $price - $commissionAmount;
+
             // Create payment record with pending status
             $paymentId = $this->repository->create([
-                'order_id'                   => $order['id'],
-                'stripe_payment_intent_id'   => '', // Will be updated by webhook
+                'order_id'                   => $orderIdForPayment, // may be NULL and linked later
+                'stripe_payment_intent_id'   => null,               // Will be updated by webhook
                 'stripe_checkout_session_id' => $session->id,
-                'amount'                     => $order['price'],
-                'commission_amount'          => $order['price'] * ($order['commission_rate'] / 100),
-                'student_amount'             => $order['price'] - ($order['price'] * ($order['commission_rate'] / 100)),
+                'amount'                     => $price,
+                'commission_amount'          => $commissionAmount,
+                'student_amount'             => $studentAmount,
                 'status'                     => 'pending',
                 'metadata'                   => json_encode([
-                    'session_id' => $session->id,
-                    'created_at' => date('Y-m-d H:i:s'),
+                    'session_id'      => $session->id,
+                    'commission_rate' => $commissionRate,
+                    'created_at'      => date('Y-m-d H:i:s'),
+                    'has_real_order'  => $orderIdForPayment !== null,
                 ]),
             ]);
 
@@ -220,13 +239,10 @@ class PaymentService
      */
     private function handleCheckoutSessionCompleted($session): void
     {
-        $orderId = $session->metadata->order_id ?? null;
+        $rawOrderId = $session->metadata->order_id ?? null;
+        $orderId    = (is_numeric($rawOrderId)) ? (int) $rawOrderId : null;
 
-        if (! $orderId) {
-            throw new Exception('Order ID not found in session metadata');
-        }
-
-        // Update payment record
+        // Update payment record first
         $this->repository->updateByCheckoutSession($session->id, [
             'stripe_payment_intent_id' => $session->payment_intent,
             'status'                   => 'succeeded',
@@ -237,22 +253,25 @@ class PaymentService
             ]),
         ]);
 
-        // Update order status to pending (payment confirmed, awaiting student acceptance)
-        $this->repository->updateOrderStatus($orderId, 'pending');
+        // If we have a real order id, update order status and notify
+        if ($orderId !== null) {
+            // Update order status to pending (payment confirmed, awaiting student acceptance)
+            $this->repository->updateOrderStatus($orderId, 'pending');
 
-        // Send notification to student about new order
-        try {
-            $order   = $this->orderRepository->findById($orderId);
-            $student = $this->userRepository->findById($order['student_id']);
-            $client  = $this->userRepository->findById($order['client_id']);
-            $service = $this->serviceRepository->findById($order['service_id']);
+            // Send notification to student about new order
+            try {
+                $order   = $this->orderRepository->findById($orderId);
+                $student = $this->userRepository->findById($order['student_id']);
+                $client  = $this->userRepository->findById($order['client_id']);
+                $service = $this->serviceRepository->findById($order['service_id']);
 
-            if ($order && $student && $client && $service) {
-                $this->notificationService->notifyOrderPlaced($order, $student, $client, $service);
+                if ($order && $student && $client && $service) {
+                    $this->notificationService->notifyOrderPlaced($order, $student, $client, $service);
+                }
+            } catch (Exception $e) {
+                // Log error but don't fail the payment processing
+                error_log('Failed to send order placed notification: ' . $e->getMessage());
             }
-        } catch (Exception $e) {
-            // Log error but don't fail the payment processing
-            error_log('Failed to send order placed notification: ' . $e->getMessage());
         }
     }
 
@@ -296,7 +315,7 @@ class PaymentService
         }
 
         // Update payment record with transfer ID
-        $this->repository->updateByOrderId($orderId, [
+        $this->repository->updateByOrderId((int) $orderId, [
             'stripe_transfer_id' => $transfer->id,
         ]);
     }
