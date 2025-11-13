@@ -151,7 +151,8 @@ class MessageController
         $this->messageService->markMessagesAsRead($orderId, $user['id'], $user['role']);
 
         // Render message thread view
-        include __DIR__ . '/../../views/messages/thread.php';
+        view('messages.thread', compact('order', 'messages', 'user'), 'dashboard');
+
     }
 
     /**

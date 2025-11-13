@@ -13,7 +13,6 @@ class OrderRepository
     {
         $this->db = $db;
     }
-
     /**
      * Create a new order
      *
@@ -76,7 +75,7 @@ class OrderRepository
             return null;
         }
 
-        // Decode JSON fields (handle NULL values)
+        // Decode JSON fields (handle NULL)
         $order['requirement_files'] = $order['requirement_files'] ? json_decode($order['requirement_files'], true) : [];
         $order['delivery_files']    = $order['delivery_files'] ? json_decode($order['delivery_files'], true) : [];
 
@@ -98,6 +97,16 @@ class OrderRepository
         if (isset($data['status'])) {
             $fields[]         = 'status = :status';
             $params['status'] = $data['status'];
+        }
+
+        if (isset($data['requirements'])) {
+            $fields[]               = 'requirements = :requirements';
+            $params['requirements'] = $data['requirements'];
+        }
+
+        if (isset($data['requirement_files'])) {
+            $fields[]                    = 'requirement_files = :requirement_files';
+            $params['requirement_files'] = json_encode($data['requirement_files']);
         }
 
         if (isset($data['delivery_message'])) {

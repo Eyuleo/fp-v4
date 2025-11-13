@@ -8,25 +8,13 @@
     require_once __DIR__ . '/../../src/Helpers.php';
 
     $pageTitle = 'Messages - Order #' . $order['id'];
-?>
 
-<!DOCTYPE html>
-<html lang="en" x-data="{ sidebarOpen: false }">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo e($pageTitle) ?> - Student Skills Marketplace</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <style>
-        [x-cloak] { display: none !important; }
-    </style>
-</head>
-<body class="bg-gray-50">
-    <?php
-        $userRole = $_SESSION['user_role'] ?? 'guest';
-        include __DIR__ . '/../partials/navigation.php';
-    ?>
+    $userRole = $_SESSION['user_role'] ?? 'guest';
+    include __DIR__ . '/../partials/navigation.php';
+
+    require_once __DIR__ . '/../../src/Services/FileService.php';
+    $fileService = new FileService();
+?>
 
     <div class="pt-16 min-h-screen">
         <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -82,13 +70,26 @@
                                         <?php if (! empty($message['attachments'])): ?>
                                             <div class="mt-3 space-y-2">
                                                 <?php foreach ($message['attachments'] as $attachment): ?>
-                                                    <a href="/<?php echo e($attachment['path']) ?>"
-                                                       target="_blank"
-                                                       class="flex items-center space-x-2                                                                                          <?php echo $isOwnMessage ? 'text-blue-100 hover:text-white' : 'text-blue-600 hover:text-blue-700' ?>">
+                                                    <?php
+                                                        if (empty($attachment['path'])) {
+                                                            continue;
+                                                        }
+
+                                                        $signedUrl = $fileService->generateSignedUrl($attachment['path'], 1800);
+                                                    ?>
+                                                    <a href="<?php echo e($signedUrl) ?>"
+                                                    target="_blank"
+                                                    class="flex items-center space-x-2                                                                                                                                                                             <?php echo $isOwnMessage ? 'text-blue-100 hover:text-white' : 'text-blue-600 hover:text-blue-700' ?>">
                                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/>
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                                d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.586"/>
                                                         </svg>
-                                                        <span class="text-sm underline"><?php echo e($attachment['original_name']) ?></span>
+                                                        <span class="text-sm underline">
+                                                            <?php echo e($attachment['original_name'] ?? basename($attachment['path'])) ?>
+                                                        </span>
+                                                        <span class="text-xs text-gray-400">
+                                                            <?php echo isset($attachment['size']) ? number_format($attachment['size'] / 1024, 1) . ' KB' : '' ?>
+                                                        </span>
                                                     </a>
                                                 <?php endforeach; ?>
                                             </div>
@@ -103,7 +104,7 @@
                                     </div>
 
                                     <!-- Timestamp -->
-                                    <div class="text-xs text-gray-500 mt-1                                                                           <?php echo $isOwnMessage ? 'text-right' : 'text-left' ?>">
+                                    <div class="text-xs text-gray-500 mt-1                                                                                                                                                                                                                                                                                                                                                                                   <?php echo $isOwnMessage ? 'text-right' : 'text-left' ?>">
                                         <?php echo date('M d, Y g:i A', strtotime($message['created_at'])) ?>
                                     </div>
                                 </div>
@@ -162,11 +163,30 @@
     </div>
 
     <script>
+
+        // Attachment preview for new message
+    document.querySelector('input[name="attachments[]"]').addEventListener('change', function (e) {
+        const listId = 'attachment-preview';
+        let list = document.getElementById(listId);
+        if (!list) {
+            list = document.createElement('ul');
+            list.id = listId;
+            list.className = 'mt-2 text-xs text-gray-600 space-y-1';
+            this.closest('div').appendChild(list);
+        }
+        list.innerHTML = '';
+        [...this.files].forEach(f => {
+            const li = document.createElement('li');
+            li.textContent = `${f.name} (${(f.size/1024).toFixed(1)} KB)`;
+            list.appendChild(li);
+        });
+    });
+
         function messageThread(orderId, currentUserId) {
             return {
                 orderId: orderId,
                 currentUserId: currentUserId,
-                lastMessageId:                               <?php echo ! empty($messages) ? end($messages)['id'] : 0 ?>,
+                lastMessageId:                                                                                                                                                       <?php echo ! empty($messages) ? end($messages)['id'] : 0 ?>,
                 pollingInterval: null,
 
                 init() {
@@ -255,5 +275,3 @@
             }
         }
     </script>
-</body>
-</html>

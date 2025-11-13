@@ -32,7 +32,8 @@ class NotificationController
         $unreadCount   = $this->notificationService->getUnreadCount($userId);
 
         // Render notification center view
-        require __DIR__ . '/../../views/notifications/index.php';
+        view('notifications/index', compact('notifications', 'unreadCount'), 'dashboard');
+
     }
 
     /**

@@ -78,15 +78,18 @@ class ServiceService
             // Create service first to get ID
             $serviceId = $this->repository->create($serviceData);
 
-            // Handle file uploads if provided
-            if (! empty($files) && $serviceId) {
-                $uploadedFiles = $this->handleFileUploads($serviceId, $files);
+            // Handle sample files
+            if (! empty($files)) {
+                $fileService  = new FileService();
+                $uploadResult = $fileService->uploadMultiple($files, 'services', $serviceId);
 
-                if (! empty($uploadedFiles)) {
-                    // Update service with file paths
+                if ($uploadResult['success'] && ! empty($uploadResult['files'])) {
                     $this->repository->update($serviceId, [
-                        'sample_files' => $uploadedFiles,
+                        'sample_files' => $uploadResult['files'],
                     ]);
+                } elseif (! empty($uploadResult['errors'])) {
+                    // Optionally collect errors
+                    $errors['sample_files'] = implode(', ', $uploadResult['errors']);
                 }
             }
 

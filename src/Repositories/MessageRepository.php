@@ -115,21 +115,24 @@ class MessageRepository
             $sql = "SELECT COUNT(*) as count
                     FROM messages m
                     INNER JOIN orders o ON m.order_id = o.id
-                    WHERE o.client_id = :user_id
-                    AND m.sender_id != :user_id
+                    WHERE o.client_id = :owner_id
+                    AND m.sender_id != :exclude_user_id
                     AND m.read_by_client = FALSE";
         } else {
             // student
             $sql = "SELECT COUNT(*) as count
                     FROM messages m
                     INNER JOIN orders o ON m.order_id = o.id
-                    WHERE o.student_id = :user_id
-                    AND m.sender_id != :user_id
+                    WHERE o.student_id = :owner_id
+                    AND m.sender_id != :exclude_user_id
                     AND m.read_by_student = FALSE";
         }
 
         $stmt = $this->db->prepare($sql);
-        $stmt->execute(['user_id' => $userId]);
+        $stmt->execute([
+            'owner_id'        => $userId,
+            'exclude_user_id' => $userId,
+        ]);
 
         $result = $stmt->fetch();
 

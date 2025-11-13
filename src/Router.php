@@ -175,13 +175,13 @@ class Router
 
         if (is_string($handler) && strpos($handler, '@') !== false) {
             // Controller@method format
-            list($controller, $method) = explode('@', $handler);
+            [$controller, $method] = explode('@', $handler);
 
             if (! class_exists($controller)) {
                 throw new Exception("Controller {$controller} not found");
             }
 
-            $controllerInstance = new $controller();
+            $controllerInstance = $this->instantiateController($controller);
 
             if (! method_exists($controllerInstance, $method)) {
                 throw new Exception("Method {$method} not found in controller {$controller}");
@@ -191,6 +191,63 @@ class Router
         }
 
         throw new Exception('Invalid route handler');
+    }
+
+    /**
+     * Instantiate controller with basic autowiring.
+     * Supports typed, non-builtin constructor parameters only.
+     */
+    private function instantiateController(string $controller): object
+    {
+        $ref  = new ReflectionClass($controller);
+        $ctor = $ref->getConstructor();
+
+        if (! $ctor || $ctor->getNumberOfParameters() === 0) {
+            return new $controller();
+        }
+
+        $dependencies = [];
+        foreach ($ctor->getParameters() as $param) {
+            $type = $param->getType();
+
+            if (! $type || $type->isBuiltin()) {
+                throw new Exception(
+                    "Cannot autowire parameter \${$param->getName()} in {$controller}; missing or builtin type."
+                );
+            }
+
+            $depClass       = $type->getName();
+            $dependencies[] = $this->buildDependency($depClass);
+        }
+
+        return $ref->newInstanceArgs($dependencies);
+    }
+
+    /**
+     * Build a dependency instance.
+     * Extend this switch as more services need wiring.
+     */
+    private function buildDependency(string $class)
+    {
+        $db = getDatabaseConnection();
+        switch ($class) {
+            case NotificationService::class:
+                return new NotificationService(
+                    $this->buildDependency(MailService::class),
+                    $this->buildDependency(NotificationRepository::class)
+                );
+
+            case MailService::class:
+                return new MailService();
+
+            case NotificationRepository::class:
+                // Assumes a global Database helper. Adjust as needed.
+                return new NotificationRepository($db);
+
+            default:
+                // Fallback: attempt direct instantiation (must have no required scalars).
+                return new $class();
+        }
     }
 
     /**
