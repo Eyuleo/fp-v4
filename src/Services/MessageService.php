@@ -64,18 +64,26 @@ class MessageService
      * @param int $senderId
      * @param int $orderId
      * @param string $content
-     * @param array $attachments Uploaded files
+     * @param array $attachments Uploaded files (can be raw $_FILES shape or already-normalized)
      * @return array ['success' => bool, 'message_id' => int|null, 'errors' => array]
      */
     public function sendMessage(int $senderId, int $orderId, string $content, array $attachments = []): array
     {
-        // Validate content
-        $content = trim($content);
-        if (empty($content)) {
+        // Normalize and validate content/attachments
+        $content = trim($content ?? '');
+
+        // Allow messages that have either text or attachments (or both)
+        $hasAttachments = ! empty($attachments) &&
+            (
+            (isset($attachments['name']) && (! empty($attachments['name']) || (is_array($attachments['name']) && count(array_filter($attachments['name'])) > 0)))
+            || (is_array($attachments) && ! isset($attachments['name']) && count($attachments) > 0)
+        );
+
+        if ($content === '' && ! $hasAttachments) {
             return [
                 'success'    => false,
                 'message_id' => null,
-                'errors'     => ['content' => 'Message content is required'],
+                'errors'     => ['content' => 'Message must include text or at least one attachment'],
             ];
         }
 
@@ -104,7 +112,7 @@ class MessageService
 
         // Handle file uploads
         $uploadedFiles = [];
-        if (! empty($attachments)) {
+        if ($hasAttachments) {
             $uploadResult = $this->handleFileUploads($orderId, $attachments);
 
             if (! $uploadResult['success']) {
@@ -127,7 +135,24 @@ class MessageService
             'is_flagged'  => $isFlagged,
         ];
 
-        $messageId = $this->messageRepository->create($messageData);
+        try {
+            $messageId = $this->messageRepository->create($messageData);
+        } catch (Exception $e) {
+            error_log('Message create failed: ' . $e->getMessage());
+            return [
+                'success'    => false,
+                'message_id' => null,
+                'errors'     => ['database' => 'Failed to send message'],
+            ];
+        }
+
+        if ($messageId <= 0) {
+            return [
+                'success'    => false,
+                'message_id' => null,
+                'errors'     => ['database' => 'Failed to send message'],
+            ];
+        }
 
         // Determine recipient
         $recipientId = $order['client_id'] == $senderId ? $order['student_id'] : $order['client_id'];
@@ -270,7 +295,7 @@ class MessageService
     private function moderateMessage(string $content): bool
     {
         foreach ($this->suspiciousPatterns as $pattern) {
-            if (preg_match($pattern, $content)) {
+            if ($content !== '' && preg_match($pattern, $content)) {
                 return true;
             }
         }

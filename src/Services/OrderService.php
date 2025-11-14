@@ -5,6 +5,7 @@ require_once __DIR__ . '/../Repositories/ServiceRepository.php';
 require_once __DIR__ . '/../Repositories/PaymentRepository.php';
 require_once __DIR__ . '/../Repositories/UserRepository.php';
 require_once __DIR__ . '/../Repositories/NotificationRepository.php';
+require_once __DIR__ . '/../Repositories/MessageRepository.php'; // Added to log revision as a system message
 require_once __DIR__ . '/../Validators/OrderValidator.php';
 require_once __DIR__ . '/PaymentService.php';
 require_once __DIR__ . '/EmailService.php';
@@ -27,6 +28,7 @@ class OrderService
     private EmailService $emailService;
     private FileService $fileService;
     private NotificationService $notificationService;
+    private MessageRepository $messageRepository; // Added
 
     public function __construct(OrderRepository $orderRepository, ServiceRepository $serviceRepository, PaymentService $paymentService = null)
     {
@@ -39,6 +41,7 @@ class OrderService
         // Initialize repositories and services
         $db                        = $orderRepository->getDb();
         $this->userRepository      = new UserRepository($db);
+        $this->messageRepository   = new MessageRepository($db); // Added
         $mailService               = new MailService();
         $notificationRepository    = new NotificationRepository($db);
         $this->notificationService = new NotificationService($mailService, $notificationRepository);
@@ -517,7 +520,7 @@ class OrderService
 
         // Check revision limit
         $maxRevisions = $order['max_revisions'] ?? 3;
-        if ($order['revision_count'] >= $maxRevisions) {
+        if (($order['revision_count'] ?? 0) >= $maxRevisions) {
             return [
                 'success' => false,
                 'errors'  => ['revision_limit' => 'Maximum number of revisions reached. Please open a dispute if needed.'],
@@ -538,16 +541,26 @@ class OrderService
 
         try {
             // Update order status and increment revision count
-            $newRevisionCount = $order['revision_count'] + 1;
+            $newRevisionCount = ($order['revision_count'] ?? 0) + 1;
 
             $this->orderRepository->update($orderId, [
                 'status'         => 'revision_requested',
                 'revision_count' => $newRevisionCount,
             ]);
 
-            // Store revision reason in a note or message (for now, just log it)
-            // In a full implementation, this would be stored in a revisions table or messages
-            error_log("Order #{$orderId} revision requested by client #{$clientId}. Reason: {$reason}. Revision count: {$newRevisionCount}/{$maxRevisions}");
+            // Log the revision reason as a system message in the thread so both parties can see it
+            try {
+                $this->messageRepository->create([
+                    'order_id'    => $orderId,
+                    'sender_id'   => $clientId,
+                    'content'     => "Revision requested: " . $reason,
+                    'attachments' => [],
+                    'is_flagged'  => 0,
+                ]);
+            } catch (Exception $e) {
+                // Non-fatal; continue
+                error_log("Failed to create revision system message for order #{$orderId}: " . $e->getMessage());
+            }
 
             // Send notification to student about revision request
             try {

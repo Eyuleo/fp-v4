@@ -43,10 +43,20 @@
                         'cancelled'          => 'bg-red-100 text-red-800',
                     ];
                 ?>
-                <span class="px-4 py-2 rounded-full text-sm font-medium<?php echo $statusColors[$order['status']] ?>">
+                <span class="px-4 py-2 rounded-full text-sm font-medium<?php echo $statusColors[$order['status']] ?? 'bg-gray-100 text-gray-800' ?>">
                     <?php echo ucfirst(str_replace('_', ' ', e($order['status']))) ?>
                 </span>
             </div>
+
+            <?php if ($order['status'] === 'revision_requested'): ?>
+                <div class="mb-4 p-4 border border-orange-200 bg-orange-50 rounded">
+                    <div class="font-medium text-orange-900">Revision requested</div>
+                    <div class="text-sm text-orange-800 mt-1">
+                        The client has requested a revision. Previously delivered files remain visible below.
+                        Please review the messages for the revision details.
+                    </div>
+                </div>
+            <?php endif; ?>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
@@ -91,15 +101,17 @@
                     <h3 class="text-sm font-medium text-gray-700 mb-2">Attached Files:</h3>
                     <div class="space-y-2">
                         <?php foreach ($order['requirement_files'] as $file): ?>
-                            <?php
-                                $signedUrl = $fileService->generateSignedUrl($file['path'], 3600); // 1 hour expiry
+                            <?php if (empty($file['path'])) {
+                                    continue;
+                                }
                             ?>
+                            <?php $signedUrl = $fileService->generateSignedUrl($file['path'], 3600); ?>
                             <a href="<?php echo e($signedUrl) ?>" target="_blank" class="flex items-center space-x-2 text-sm text-blue-600 hover:text-blue-800 hover:bg-blue-50 p-2 rounded transition-colors">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414A1 1 0 0119 9.414V19a2 2 0 01-2 2z"/>
                                 </svg>
                                 <span class="font-medium"><?php echo e($file['original_name']) ?></span>
-                                <span class="text-gray-400">(<?php echo number_format($file['size'] / 1024, 2) ?> KB)</span>
+                                <span class="text-gray-400">(<?php echo number_format(($file['size'] ?? 0) / 1024, 2) ?> KB)</span>
                             </a>
                         <?php endforeach; ?>
                     </div>
@@ -107,12 +119,12 @@
             <?php endif; ?>
         </div>
 
-        <!-- Delivery (if delivered) -->
-        <?php if ($order['status'] === 'delivered' || $order['status'] === 'completed'): ?>
+        <!-- Delivery (show for delivered, revision_requested, completed) -->
+        <?php if (in_array($order['status'], ['delivered', 'revision_requested', 'completed'])): ?>
             <div class="bg-white rounded-lg shadow-md p-6 mb-6">
                 <h2 class="text-xl font-bold text-gray-900 mb-4">Delivery</h2>
 
-                <?php if ($order['delivery_message']): ?>
+                <?php if (! empty($order['delivery_message'])): ?>
                     <p class="text-gray-700 whitespace-pre-wrap mb-4"><?php echo e($order['delivery_message']) ?></p>
                 <?php endif; ?>
 
@@ -121,19 +133,23 @@
                         <h3 class="text-sm font-medium text-gray-700 mb-2">Delivered Files:</h3>
                         <div class="space-y-2">
                             <?php foreach ($order['delivery_files'] as $file): ?>
-                                <?php
-                                    $signedUrl = $fileService->generateSignedUrl($file['path'], 3600); // 1 hour expiry
+                                <?php if (empty($file['path'])) {
+                                        continue;
+                                    }
                                 ?>
+                                <?php $signedUrl = $fileService->generateSignedUrl($file['path'], 3600); ?>
                                 <a href="<?php echo e($signedUrl) ?>" target="_blank" class="flex items-center space-x-2 text-sm text-blue-600 hover:text-blue-800 hover:bg-blue-50 p-2 rounded transition-colors">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414A1 1 0 0119 9.414V19a2 2 0 01-2 2z"/>
                                     </svg>
                                     <span class="font-medium"><?php echo e($file['original_name']) ?></span>
-                                    <span class="text-gray-400">(<?php echo number_format($file['size'] / 1024, 2) ?> KB)</span>
+                                    <span class="text-gray-400">(<?php echo number_format(($file['size'] ?? 0) / 1024, 2) ?> KB)</span>
                                 </a>
                             <?php endforeach; ?>
                         </div>
                     </div>
+                <?php else: ?>
+                    <p class="text-sm text-gray-500">No delivered files available.</p>
                 <?php endif; ?>
             </div>
         <?php endif; ?>
@@ -148,7 +164,7 @@
                         <div class="flex items-center">
                             <?php for ($i = 1; $i <= 5; $i++): ?>
                                 <svg class="w-5 h-5<?php echo $i <= $review['rating'] ? 'text-yellow-400' : 'text-gray-300' ?>" fill="currentColor" viewBox="0 0 20 20">
-                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.7 1.8-1.59 1.118L10 13.347l-2.49 1.618c-.89.683-1.89-.197-1.59-1.118l1.07-3.292a1 1 0 00-.364-1.118L3.827 8.72c-.783-.57-.38-1.81.588-1.81h3.462a1 1 0 00.95-.69l1.07-3.292z"/>
                                 </svg>
                             <?php endfor; ?>
                             <span class="ml-2 text-sm font-medium text-gray-700"><?php echo e($review['rating']) ?>/5</span>
@@ -161,11 +177,11 @@
                             <p class="text-sm text-gray-500"><?php echo date('M d, Y', strtotime($review['created_at'])) ?></p>
                         </div>
 
-                        <?php if ($review['comment']): ?>
+                        <?php if (! empty($review['comment'])): ?>
                             <p class="text-gray-700 mb-3"><?php echo e($review['comment']) ?></p>
                         <?php endif; ?>
 
-                        <?php if ($review['student_reply']): ?>
+                        <?php if (! empty($review['student_reply'])): ?>
                             <div class="mt-4 pl-4 border-l-2 border-gray-200">
                                 <p class="text-sm font-medium text-gray-900 mb-1">Student Reply:</p>
                                 <p class="text-gray-700"><?php echo e($review['student_reply']) ?></p>
@@ -200,7 +216,7 @@
                     </a>
                     <a href="/messages/thread/<?php echo e($order['id']) ?>" class="flex items-center space-x-2 text-blue-600 hover:text-blue-700">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 4v-4"/>
                         </svg>
                         <span>Messages</span>
                     </a>
@@ -230,9 +246,9 @@
                             </button>
                         </form>
 
-                        <?php if ($order['revision_count'] < $order['max_revisions']): ?>
+                        <?php if (($order['revision_count'] ?? 0) < ($order['max_revisions'] ?? 0)): ?>
                             <button onclick="showRevisionForm()" class="bg-orange-600 text-white px-6 py-2 rounded-md hover:bg-orange-700">
-                                Request Revision (<?php echo e($order['max_revisions'] - $order['revision_count']) ?> left)
+                                Request Revision (<?php echo e(($order['max_revisions'] ?? 0) - ($order['revision_count'] ?? 0)) ?> left)
                             </button>
                         <?php endif; ?>
                     <?php endif; ?>
@@ -361,7 +377,7 @@
                         placeholder="Please be specific about what changes you need..."
                     ></textarea>
                     <p class="text-sm text-gray-500 mt-1">
-                        You have                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 <?php echo e($order['max_revisions'] - $order['revision_count']) ?> revision(s) remaining.
+                        You have                                 <?php echo e(($order['max_revisions'] ?? 0) - ($order['revision_count'] ?? 0)); ?> revision(s) left.
                     </p>
                 </div>
 
@@ -446,23 +462,18 @@
         }
 
         // Close modals when clicking outside
-        document.getElementById('cancelModal').addEventListener('click', function(e) {
-            if (e.target === this) hideCancelModal();
+        ['cancelModal', 'deliverModal', 'revisionModal'<?php if (! empty($review) && empty($review['student_reply']) && $order['student_id'] === Auth::user()['id']): ?>, 'replyModal'<?php endif; ?>]
+        .forEach(id => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.addEventListener('click', function(e) {
+                if (e.target !== this) return;
+                if (id === 'cancelModal') hideCancelModal();
+                if (id === 'deliverModal') hideDeliverForm();
+                if (id === 'revisionModal') hideRevisionForm();
+                if (id === 'replyModal') hideReplyForm();
+            });
         });
-
-        document.getElementById('deliverModal').addEventListener('click', function(e) {
-            if (e.target === this) hideDeliverForm();
-        });
-
-        document.getElementById('revisionModal').addEventListener('click', function(e) {
-            if (e.target === this) hideRevisionForm();
-        });
-
-        <?php if (! empty($review) && empty($review['student_reply']) && $order['student_id'] === Auth::user()['id']): ?>
-        document.getElementById('replyModal').addEventListener('click', function(e) {
-            if (e.target === this) hideReplyForm();
-        });
-        <?php endif; ?>
     </script>
 
 <?php

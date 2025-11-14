@@ -1,8 +1,7 @@
 <?php
     /**
-     * Message Thread View (secure attachments)
+     * Message Thread View (secure attachments, robust polling)
      */
-
     require_once __DIR__ . '/../../src/Helpers.php';
     require_once __DIR__ . '/../../src/Services/FileService.php';
 
@@ -10,7 +9,7 @@
     $userRole    = $_SESSION['user_role'] ?? 'guest';
     $fileService = new FileService();
 
-    // Signed URLs are pre-attached in controller for initial messages; fallback here if missing
+    // Ensure initial attachments have signed URLs available
     foreach ($messages as &$m) {
         if (! empty($m['attachments']) && is_array($m['attachments'])) {
             foreach ($m['attachments'] as &$a) {
@@ -78,8 +77,7 @@
                                     <?php if (! empty($message['attachments'])): ?>
                                         <div class="mt-3 space-y-2">
                                             <?php foreach ($message['attachments'] as $attachment): ?>
-                                                <?php
-                                                    if (empty($attachment['signed_url'])) {
+                                                <?php if (empty($attachment['signed_url'])) {
                                                         continue;
                                                     }
                                                 ?>
@@ -128,9 +126,9 @@
                             name="content"
                             rows="3"
                             class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                            placeholder="Type your message..."
-                            required
+                            placeholder="Type your message... (or attach files below)"
                         ></textarea>
+                        <p class="text-xs text-gray-500 mt-1">You can send just attachments without text.</p>
                     </div>
 
                     <div class="flex items-center justify-between">
