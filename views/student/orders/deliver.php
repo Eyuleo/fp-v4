@@ -1,3 +1,18 @@
+<?php
+    require_once __DIR__ . '/../../../src/Services/FileService.php';
+    $fileService = new FileService();
+
+    // Pre-sign requirement files
+    $signedRequirementFiles = [];
+    if (! empty($order['requirement_files']) && is_array($order['requirement_files'])) {
+        foreach ($order['requirement_files'] as $f) {
+            if (! empty($f['path'])) {
+                $f['signed_url']          = $fileService->generateSignedUrl($f['path'], 1800);
+                $signedRequirementFiles[] = $f;
+            }
+        }
+    }
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -11,34 +26,35 @@
         <div class="max-w-3xl mx-auto px-4">
             <!-- Header -->
             <div class="mb-6">
-                <a href="/orders/<?php echo $order['id']?>" class="text-blue-600 hover:text-blue-800 mb-4 inline-block">
+                <a href="/orders/<?php echo $order['id'] ?>" class="text-blue-600 hover:text-blue-800 mb-4 inline-block">
                     ← Back to Order
                 </a>
                 <h1 class="text-3xl font-bold text-gray-900">Deliver Order</h1>
-                <p class="text-gray-600 mt-2">Order #<?php echo $order['id']?> - <?php echo e($order['service_title'])?></p>
+                <p class="text-gray-600 mt-2">Order #<?php echo $order['id'] ?> -<?php echo e($order['service_title']) ?></p>
             </div>
 
             <!-- Order Requirements -->
             <div class="bg-white rounded-lg shadow-md p-6 mb-6">
                 <h2 class="text-xl font-semibold text-gray-900 mb-4">Order Requirements</h2>
                 <div class="prose max-w-none">
-                    <p class="text-gray-700 whitespace-pre-wrap"><?php echo e($order['requirements'])?></p>
+                    <p class="text-gray-700 whitespace-pre-wrap"><?php echo e($order['requirements']) ?></p>
                 </div>
 
-                <?php if (! empty($order['requirement_files'])): ?>
+                <?php if (! empty($signedRequirementFiles)): ?>
                     <div class="mt-4">
                         <h3 class="font-medium text-gray-900 mb-2">Requirement Files:</h3>
                         <ul class="space-y-2">
-                            <?php foreach ($order['requirement_files'] as $file): ?>
+                            <?php foreach ($signedRequirementFiles as $file): ?>
                                 <li>
-                                    <a href="/<?php echo e($file['path'])?>"
+                                    <a href="<?php echo e($file['signed_url']) ?>"
                                        class="text-blue-600 hover:text-blue-800 flex items-center"
                                        download>
                                         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                  d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414A1 1 0 0119 9.414V19a2 2 0 01-2 2z"/>
                                         </svg>
-                                        <?php echo e($file['original_name'])?>
-                                        <span class="text-gray-500 text-sm ml-2">(<?php echo number_format($file['size'] / 1024, 2)?> KB)</span>
+                                        <?php echo e($file['original_name']) ?>
+                                        <span class="text-gray-500 text-sm ml-2">(<?php echo number_format(($file['size'] ?? 0) / 1024, 2) ?> KB)</span>
                                     </a>
                                 </li>
                             <?php endforeach; ?>
@@ -53,13 +69,13 @@
 
                 <?php if (isset($_SESSION['error'])): ?>
                     <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-                        <?php echo e($_SESSION['error'])?>
+                        <?php echo e($_SESSION['error']) ?>
                         <?php unset($_SESSION['error']); ?>
                     </div>
                 <?php endif; ?>
 
-                <form action="/orders/<?php echo $order['id']?>/deliver" method="POST" enctype="multipart/form-data">
-                    <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']?>">
+                <form action="/orders/<?php echo $order['id'] ?>/deliver" method="POST" enctype="multipart/form-data">
+                    <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token'] ?>">
 
                     <!-- Delivery Message -->
                     <div class="mb-6">
@@ -73,7 +89,7 @@
                             required
                             class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                             placeholder="Describe what you've delivered and any important notes for the client..."
-                        ><?php echo isset($_POST['delivery_message']) ? e($_POST['delivery_message']) : ''?></textarea>
+                        ><?php echo isset($_POST['delivery_message']) ? e($_POST['delivery_message']) : '' ?></textarea>
                         <p class="text-sm text-gray-500 mt-1">
                             Explain what you've completed and provide any instructions for the client.
                         </p>
@@ -106,7 +122,7 @@
 
                     <!-- Submit Button -->
                     <div class="flex items-center justify-between">
-                        <a href="/orders/<?php echo $order['id']?>" class="text-gray-600 hover:text-gray-800">
+                        <a href="/orders/<?php echo $order['id'] ?>" class="text-gray-600 hover:text-gray-800">
                             Cancel
                         </a>
                         <button
@@ -127,7 +143,7 @@
                     <li>Include source files if applicable</li>
                     <li>Provide clear instructions on how to use/access your work</li>
                     <li>Double-check file quality before submitting</li>
-                    <li>The client can request revisions if needed (up to <?php echo $order['max_revisions']?> times)</li>
+                    <li>The client can request revisions if needed (up to                                                                          <?php echo $order['max_revisions'] ?> times)</li>
                 </ul>
             </div>
         </div>
@@ -154,7 +170,6 @@
                     fileList.appendChild(li);
                 }
 
-                // Check total size
                 const maxSize = 25 * 1024 * 1024; // 25MB
                 if (totalSize > maxSize) {
                     const warning = document.createElement('li');

@@ -152,15 +152,16 @@ class FileService
             return ['success' => true, 'files' => [], 'errors' => []];
         }
 
+        // Case 1: Classic PHP $_FILES multiple shape
         if (isset($files['name']) && is_array($files['name'])) {
             $fileCount = count($files['name']);
             for ($i = 0; $i < $fileCount; $i++) {
                 $file = [
-                    'name'     => $files['name'][$i],
-                    'type'     => $files['type'][$i],
-                    'tmp_name' => $files['tmp_name'][$i],
-                    'error'    => $files['error'][$i],
-                    'size'     => $files['size'][$i],
+                    'name'     => $files['name'][$i] ?? null,
+                    'type'     => $files['type'][$i] ?? null,
+                    'tmp_name' => $files['tmp_name'][$i] ?? null,
+                    'error'    => $files['error'][$i] ?? UPLOAD_ERR_NO_FILE,
+                    'size'     => $files['size'][$i] ?? 0,
                 ];
                 $result = $this->upload($file, $context, $contextId);
                 if ($result['success']) {
@@ -169,12 +170,28 @@ class FileService
                     $errors[] = $result['error'];
                 }
             }
-        } elseif (! empty($files['name'])) {
+        }
+        // Case 2: Single file (classic $_FILES one-file shape)
+        elseif (isset($files['name'])) {
             $result = $this->upload($files, $context, $contextId);
             if ($result['success']) {
                 $uploadedFiles[] = $result['file'];
             } else {
                 $errors[] = $result['error'];
+            }
+        }
+        // Case 3: Array of individual file arrays: [ ['name'=>..., 'tmp_name'=>...], ... ]
+        elseif (is_array($files)) {
+            foreach ($files as $file) {
+                if (! is_array($file) || ! isset($file['name'])) {
+                    continue;
+                }
+                $result = $this->upload($file, $context, $contextId);
+                if ($result['success']) {
+                    $uploadedFiles[] = $result['file'];
+                } else {
+                    $errors[] = $result['error'];
+                }
             }
         }
 

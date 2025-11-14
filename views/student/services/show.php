@@ -1,10 +1,13 @@
 <?php
     $pageTitle = 'Service Details';
 
-    // Separate image and non-image files
+    require_once __DIR__ . '/../../../src/Services/FileService.php';
+    $fileService = new FileService();
+
+    // Separate image and non-image files, generate signed URLs
     $imageFiles      = [];
     $otherFiles      = [];
-    $imageExtensions = ['jpg', 'jpeg', 'png', 'gif'];
+    $imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
 
     if (! empty($service['sample_files']) && is_array($service['sample_files'])) {
         foreach ($service['sample_files'] as $file) {
@@ -14,7 +17,10 @@
             }
 
             $extension = strtolower(pathinfo($file['original_name'], PATHINFO_EXTENSION));
-            // Use path as-is (new FileService format: services/2/filename.ext)
+            $signedUrl = $fileService->generateSignedUrl($file['path'], 1800);
+
+            // Add signed URL for display/download
+            $file['signed_url']   = $signedUrl;
             $file['display_path'] = $file['path'];
 
             if (in_array($extension, $imageExtensions)) {
@@ -26,7 +32,18 @@
     }
 ?>
 
-<div class="max-w-5xl mx-auto" x-data="{ galleryOpen: false, currentImage: 0, images:                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               <?php echo htmlspecialchars(json_encode(array_map(function ($f) {return '/storage/file?path=' . urlencode($f['display_path']);}, $imageFiles)), ENT_QUOTES, 'UTF-8') ?> }">
+<div class="max-w-5xl mx-auto"
+     x-data="{
+        galleryOpen: false,
+        currentImage: 0,
+        images: [<?php
+                     echo implode(',', array_map(
+                         fn($f) => '\'' . e($f['signed_url']) . '\'',
+                         $imageFiles
+                 ));
+                 ?>]
+     }"
+>
     <div class="mb-6 flex items-center justify-between">
         <div>
             <a href="/student/services" class="text-blue-600 hover:text-blue-700 mb-2 inline-block">
@@ -34,11 +51,7 @@
             </a>
             <h1 class="text-3xl font-bold text-gray-900"><?php echo e($service['title']) ?></h1>
         </div>
-        <!-- <div class="flex space-x-3">
-            <a href="/student/services/<?php echo e($service['id']) ?>/edit" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition">
-                Edit Service
-            </a>
-        </div> -->
+        <!-- Potential extra actions could go here -->
     </div>
 
     <?php require __DIR__ . '/../../partials/alert.php'; ?>
@@ -91,16 +104,17 @@
                                 <?php foreach ($imageFiles as $index => $file): ?>
                                     <div
                                         class="relative aspect-square rounded-lg overflow-hidden cursor-pointer hover:opacity-90 transition"
-                                        @click="galleryOpen = true; currentImage =                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     <?php echo $index ?>"
+                                        @click="galleryOpen = true; currentImage =                                                                                                                                                                     <?php echo (int) $index ?>"
                                     >
                                         <img
-                                            src="/storage/file?path=<?php echo urlencode($file['display_path']) ?>"
+                                            src="<?php echo e($file['signed_url']) ?>"
                                             alt="<?php echo e($file['original_name']) ?>"
                                             class="w-full h-full object-cover"
                                         >
                                         <div class="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-10 transition flex items-center justify-center">
                                             <svg class="w-8 h-8 text-white opacity-0 hover:opacity-100 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"/>
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"/>
                                             </svg>
                                         </div>
                                     </div>
@@ -117,14 +131,15 @@
                                     <div class="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
                                         <div class="flex items-center space-x-3">
                                             <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                      d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
                                             </svg>
                                             <div>
                                                 <div class="text-sm font-medium text-gray-900"><?php echo e($file['original_name']) ?></div>
-                                                <div class="text-xs text-gray-500"><?php echo number_format($file['size'] / 1024, 1) ?> KB</div>
+                                                <div class="text-xs text-gray-500"><?php echo number_format(($file['size'] ?? 0) / 1024, 1) ?> KB</div>
                                             </div>
                                         </div>
-                                        <a href="/storage/file?path=<?php echo urlencode($file['display_path']) ?>" download class="text-blue-600 hover:text-blue-700 text-sm">
+                                        <a href="<?php echo e($file['signed_url']) ?>" download class="text-blue-600 hover:text-blue-700 text-sm">
                                             Download
                                         </a>
                                     </div>
@@ -150,7 +165,8 @@
 
                 <div class="flex items-center text-gray-600 mb-4">
                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                     </svg>
                     <span><?php echo e($service['delivery_days']) ?> day<?php echo $service['delivery_days'] != 1 ? 's' : '' ?> delivery</span>
                 </div>
@@ -178,9 +194,12 @@
                         Edit Service
                     </a>
 
-                    <form action="/student/services/<?php echo e($service['id']) ?>/delete" method="POST" onsubmit="return confirm('Are you sure you want to delete this service? This action cannot be undone.');">
+                    <form action="/student/services/<?php echo e($service['id']) ?>/delete"
+                          method="POST"
+                          onsubmit="return confirm('Are you sure you want to delete this service? This action cannot be undone.')">
                         <?php echo csrf_field() ?>
-                        <button type="submit" class="w-full px-4 py-2 border border-red-300 text-red-700 rounded-lg hover:bg-red-50 transition">
+                        <button type="submit"
+                                class="w-full px-4 py-2 border border-red-300 text-red-700 rounded-lg hover:bg-red-50 transition">
                             Delete Service
                         </button>
                     </form>
@@ -218,7 +237,8 @@
                 class="absolute top-4 right-4 text-white hover:text-gray-300 z-10"
             >
                 <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M6 18L18 6M6 6l12 12"/>
                 </svg>
             </button>
 
@@ -229,7 +249,8 @@
                 x-show="images.length > 1"
             >
                 <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M15 19l-7-7 7-7"/>
                 </svg>
             </button>
 
@@ -252,7 +273,8 @@
                 x-show="images.length > 1"
             >
                 <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M9 5l7 7-7 7"/>
                 </svg>
             </button>
 

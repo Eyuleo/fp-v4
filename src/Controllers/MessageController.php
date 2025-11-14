@@ -1,11 +1,11 @@
 <?php
-
 require_once __DIR__ . '/../Services/MessageService.php';
 require_once __DIR__ . '/../Repositories/MessageRepository.php';
 require_once __DIR__ . '/../Repositories/OrderRepository.php';
 require_once __DIR__ . '/../Auth.php';
 require_once __DIR__ . '/../Helpers.php';
 require_once __DIR__ . '/../../config/database.php';
+require_once __DIR__ . '/../Services/FileService.php'; // Added for signed URLs
 
 /**
  * Message Controller
@@ -27,38 +27,21 @@ class MessageController
         $this->messageService  = new MessageService($messageRepository, $this->orderRepository);
     }
 
-    /**
-     * Display all message conversations
-     *
-     * GET /messages
-     */
     public function index(): void
     {
-        // Check authentication
         if (! Auth::check()) {
             $_SESSION['error'] = 'Please login to view messages';
             header('Location: /login');
             exit;
         }
 
-        $user = Auth::user();
-
-        // Get all conversations for the user
+        $user          = Auth::user();
         $conversations = $this->messageService->getUserConversations($user['id'], $user['role']);
-
-        // Render messages index view
         view('messages.index', compact('conversations'), 'dashboard');
-
     }
 
-    /**
-     * Send a message
-     *
-     * POST /messages/send
-     */
     public function send(): void
     {
-        // Check authentication
         if (! Auth::check()) {
             http_response_code(401);
             echo json_encode(['success' => false, 'error' => 'Unauthorized']);
@@ -67,36 +50,21 @@ class MessageController
 
         $user = Auth::user();
 
-        // Validate CSRF token
         if (! isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
             http_response_code(403);
             echo json_encode(['success' => false, 'error' => 'Invalid request']);
             exit;
         }
 
-        // Get form data
         $orderId = (int) ($_POST['order_id'] ?? 0);
         $content = $_POST['content'] ?? '';
 
-        // Handle file uploads
         $files = [];
-        if (isset($_FILES['attachments']) && is_array($_FILES['attachments']['name'])) {
-            // Restructure $_FILES array for multiple files
-            $fileCount = count($_FILES['attachments']['name']);
-            for ($i = 0; $i < $fileCount; $i++) {
-                if ($_FILES['attachments']['error'][$i] === UPLOAD_ERR_OK) {
-                    $files[] = [
-                        'name'     => $_FILES['attachments']['name'][$i],
-                        'type'     => $_FILES['attachments']['type'][$i],
-                        'tmp_name' => $_FILES['attachments']['tmp_name'][$i],
-                        'error'    => $_FILES['attachments']['error'][$i],
-                        'size'     => $_FILES['attachments']['size'][$i],
-                    ];
-                }
-            }
+        if (isset($_FILES['attachments'])) {
+            // pass raw $_FILES to FileService (it handles multi-file shape)
+            $files = $_FILES['attachments'];
         }
 
-        // Send message
         $result = $this->messageService->sendMessage($user['id'], $orderId, $content, $files);
 
         if (! $result['success']) {
@@ -110,23 +78,15 @@ class MessageController
         exit;
     }
 
-    /**
-     * View message thread for an order
-     *
-     * GET /messages/thread/{orderId}
-     */
     public function thread(int $orderId): void
     {
-        // Check authentication
         if (! Auth::check()) {
             $_SESSION['error'] = 'Please login to view messages';
             header('Location: /login');
             exit;
         }
 
-        $user = Auth::user();
-
-        // Get order
+        $user  = Auth::user();
         $order = $this->orderRepository->findById($orderId);
 
         if (! $order) {
@@ -135,43 +95,47 @@ class MessageController
             exit;
         }
 
-        // Check authorization (client or student can view)
-        if ($order['client_id'] !== $user['id'] &&
-            $order['student_id'] !== $user['id'] &&
-            $user['role'] !== 'admin') {
+        if ($order['client_id'] !== $user['id']
+            && $order['student_id'] !== $user['id']
+            && $user['role'] !== 'admin') {
             http_response_code(403);
             include __DIR__ . '/../../views/errors/403.php';
             exit;
         }
 
-        // Get all messages for the order
-        $messages = $this->messageService->getOrderMessages($orderId);
+        $messages    = $this->messageService->getOrderMessages($orderId);
+        $fileService = new FileService();
+        // attach signed URLs for existing attachments
+        foreach ($messages as &$m) {
+            if (! empty($m['attachments']) && is_array($m['attachments'])) {
+                foreach ($m['attachments'] as &$a) {
+                    if (! empty($a['path'])) {
+                        $a['signed_url'] = $fileService->generateSignedUrl($a['path'], 1800);
+                    }
+                }
+                unset($a);
+            }
+        }
+        unset($m);
 
-        // Mark messages as read for current user
         $this->messageService->markMessagesAsRead($orderId, $user['id'], $user['role']);
 
-        // Render message thread view
-        view('messages.thread', compact('order', 'messages', 'user'), 'dashboard');
-
+        view('messages.thread', [
+            'order'    => $order,
+            'messages' => $messages,
+            'user'     => $user,
+        ], 'dashboard');
     }
 
-    /**
-     * Poll for new messages (AJAX endpoint)
-     *
-     * GET /messages/poll?order_id={id}&after={messageId}
-     */
     public function poll(): void
     {
-        // Check authentication
         if (! Auth::check()) {
             http_response_code(401);
             echo json_encode(['success' => false, 'error' => 'Unauthorized']);
             exit;
         }
 
-        $user = Auth::user();
-
-        // Get parameters
+        $user    = Auth::user();
         $orderId = (int) ($_GET['order_id'] ?? 0);
         $afterId = (int) ($_GET['after'] ?? 0);
 
@@ -181,33 +145,39 @@ class MessageController
             exit;
         }
 
-        // Get order to verify authorization
         $order = $this->orderRepository->findById($orderId);
-
         if (! $order) {
             http_response_code(404);
             echo json_encode(['success' => false, 'error' => 'Order not found']);
             exit;
         }
 
-        // Check authorization
-        if ($order['client_id'] !== $user['id'] &&
-            $order['student_id'] !== $user['id'] &&
-            $user['role'] !== 'admin') {
+        if ($order['client_id'] !== $user['id']
+            && $order['student_id'] !== $user['id']
+            && $user['role'] !== 'admin') {
             http_response_code(403);
             echo json_encode(['success' => false, 'error' => 'Unauthorized']);
             exit;
         }
 
-        // Get new messages
         $newMessages = $this->messageService->getNewMessages($orderId, $afterId);
 
-        // Mark new messages as read
         if (! empty($newMessages)) {
             $this->messageService->markMessagesAsRead($orderId, $user['id'], $user['role']);
+            $fileService = new FileService();
+            foreach ($newMessages as &$m) {
+                if (! empty($m['attachments']) && is_array($m['attachments'])) {
+                    foreach ($m['attachments'] as &$a) {
+                        if (! empty($a['path'])) {
+                            $a['signed_url'] = $fileService->generateSignedUrl($a['path'], 1800);
+                        }
+                    }
+                    unset($a);
+                }
+            }
+            unset($m);
         }
 
-        // Return JSON response
         header('Content-Type: application/json');
         echo json_encode([
             'success'  => true,
@@ -216,26 +186,17 @@ class MessageController
         exit;
     }
 
-    /**
-     * Get unread message count (AJAX endpoint)
-     *
-     * GET /messages/unread-count
-     */
     public function unreadCount(): void
     {
-        // Check authentication
         if (! Auth::check()) {
             http_response_code(401);
             echo json_encode(['success' => false, 'error' => 'Unauthorized']);
             exit;
         }
 
-        $user = Auth::user();
-
-        // Get unread count
+        $user  = Auth::user();
         $count = $this->messageService->getUnreadCount($user['id'], $user['role']);
 
-        // Return JSON response
         header('Content-Type: application/json');
         echo json_encode([
             'success' => true,
