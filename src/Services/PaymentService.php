@@ -100,7 +100,7 @@ class PaymentService
             // Create payment record with pending status
             $paymentId = $this->repository->create([
                 'order_id'                   => $orderIdForPayment, // may be NULL and linked later
-                'stripe_payment_intent_id'   => null,               // Will be updated by webhook
+                'stripe_payment_intent_id'   => null,               // Will be updated after success (no webhook path)
                 'stripe_checkout_session_id' => $session->id,
                 'amount'                     => $price,
                 'commission_amount'          => $commissionAmount,
@@ -141,6 +141,68 @@ class PaymentService
                 'payment_id'  => null,
                 'errors'      => ['payment' => 'An error occurred. Please try again.'],
             ];
+        }
+    }
+
+    /**
+     * Finalize payment without using Stripe webhooks.
+     * Retrieves the Checkout Session, extracts payment_intent, and updates payment row.
+     *
+     * @param int    $paymentId
+     * @param string $stripeSessionId
+     * @param int    $orderId
+     * @return array
+     */
+    public function finalizePaymentWithoutWebhook(int $paymentId, string $stripeSessionId, int $orderId): array
+    {
+        try {
+            $session = \Stripe\Checkout\Session::retrieve($stripeSessionId);
+
+            if (! $session) {
+                throw new Exception('Stripe session not found for finalization');
+            }
+
+            if ($session->payment_status !== 'paid') {
+                throw new Exception('Stripe session not in paid state: ' . $session->payment_status);
+            }
+
+            $paymentIntentId = $session->payment_intent ?? null;
+            if (! $paymentIntentId) {
+                throw new Exception('Payment intent missing on session');
+            }
+
+            // Fetch existing payment row
+            $existing = $this->repositoryPaymentById($paymentId);
+            if (! $existing) {
+                throw new Exception('Local payment record not found');
+            }
+
+            // Only update if still pending
+            if ($existing['status'] !== 'pending') {
+                return ['success' => true, 'updated' => false, 'reason' => 'Payment already finalized'];
+            }
+
+            $metadata = [
+                'session_id'        => $stripeSessionId,
+                'payment_intent'    => $paymentIntentId,
+                'finalized_at'      => date('Y-m-d H:i:s'),
+                'finalization_mode' => 'no_webhook',
+            ];
+
+            $this->repository->update($paymentId, [
+                'order_id'                 => $orderId,
+                'stripe_payment_intent_id' => $paymentIntentId,
+                'status'                   => 'succeeded',
+                'metadata'                 => json_encode($metadata),
+            ]);
+
+            return ['success' => true, 'updated' => true];
+        } catch (\Stripe\Exception\ApiErrorException $e) {
+            error_log('Stripe API error during finalizePaymentWithoutWebhook: ' . $e->getMessage());
+            return ['success' => false, 'error' => 'Stripe API error: ' . $e->getMessage()];
+        } catch (Exception $e) {
+            error_log('Finalize payment error: ' . $e->getMessage());
+            return ['success' => false, 'error' => $e->getMessage()];
         }
     }
 
@@ -565,8 +627,11 @@ class PaymentService
             ];
         }
 
-        // Begin transaction for database updates
-        $this->db->beginTransaction();
+        // Transaction-safe section: only manage transaction if we own it
+        $ownsTx = ! $this->db->inTransaction();
+        if ($ownsTx) {
+            $this->db->beginTransaction();
+        }
 
         try {
             // Update payment record
@@ -608,8 +673,10 @@ class PaymentService
                 'user_agent'    => $_SERVER['HTTP_USER_AGENT'] ?? null,
             ]);
 
-            // Commit transaction
-            $this->db->commit();
+            // Commit transaction only if we started it
+            if ($ownsTx) {
+                $this->db->commit();
+            }
 
             // Log successful refund completion
             error_log(json_encode([
@@ -628,8 +695,10 @@ class PaymentService
                 'errors'  => [],
             ];
         } catch (Exception $e) {
-            // Rollback transaction on database error
-            $this->db->rollBack();
+            // Rollback transaction only if we started it
+            if ($ownsTx && $this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
 
             // Log transaction rollback
             error_log(json_encode([
@@ -677,5 +746,16 @@ class PaymentService
             'ip_address'    => $data['ip_address'] ?? null,
             'user_agent'    => $data['user_agent'] ?? null,
         ]);
+    }
+
+    /**
+     * Helper: fetch payment by id directly (since repository lacks dedicated method).
+     */
+    private function repositoryPaymentById(int $id): ?array
+    {
+        $stmt = $this->db->prepare("SELECT * FROM payments WHERE id = :id");
+        $stmt->execute(['id' => $id]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $row ?: null;
     }
 }

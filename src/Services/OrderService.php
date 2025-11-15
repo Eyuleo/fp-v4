@@ -628,32 +628,28 @@ class OrderService
             $reason = 'Order cancelled by administrator';
         }
 
-        // Begin transaction
+        // IMPORTANT: First process the refund WITHOUT wrapping in an outer transaction
+        $refundResult = $this->paymentService->refundPayment($order);
+        if (! $refundResult['success']) {
+            // Log complete error context
+            error_log(json_encode([
+                'error'     => 'Refund failed during order cancellation',
+                'order_id'  => $orderId,
+                'admin_id'  => $user['id'],
+                'errors'    => $refundResult['errors'],
+                'timestamp' => date('Y-m-d H:i:s'),
+            ]));
+
+            return [
+                'success' => false,
+                'errors'  => ['refund' => 'Failed to process refund. Please contact support.'],
+            ];
+        }
+
+        // Now start a transaction just for the order status update
         $this->orderRepository->beginTransaction();
 
         try {
-            // Process full refund first
-            $refundResult = $this->paymentService->refundPayment($order);
-
-            if (! $refundResult['success']) {
-                // Rollback if refund fails
-                $this->orderRepository->rollback();
-
-                // Log complete error context
-                error_log(json_encode([
-                    'error'     => 'Refund failed during order cancellation',
-                    'order_id'  => $orderId,
-                    'admin_id'  => $user['id'],
-                    'errors'    => $refundResult['errors'],
-                    'timestamp' => date('Y-m-d H:i:s'),
-                ]));
-
-                return [
-                    'success' => false,
-                    'errors'  => ['refund' => 'Failed to process refund. Please contact support.'],
-                ];
-            }
-
             // Update order status to cancelled only after successful refund
             $this->orderRepository->update($orderId, [
                 'status'              => 'cancelled',
