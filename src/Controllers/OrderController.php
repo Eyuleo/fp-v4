@@ -9,11 +9,6 @@ require_once __DIR__ . '/../Auth.php';
 require_once __DIR__ . '/../Helpers.php';
 require_once __DIR__ . '/../../config/database.php';
 
-/**
- * Order Controller
- *
- * Handles order-related HTTP requests
- */
 class OrderController
 {
     private OrderService $orderService;
@@ -32,11 +27,6 @@ class OrderController
         $this->orderService   = new OrderService($orderRepository, $serviceRepository, $this->paymentService);
     }
 
-    /**
-     * Show order creation form
-     *
-     * GET /orders/create?service_id={id}
-     */
     public function create(): void
     {
         if (! Auth::check()) {
@@ -44,46 +34,34 @@ class OrderController
             header('Location: /login');
             exit;
         }
-
         $user = Auth::user();
         if ($user['role'] !== 'client') {
             http_response_code(403);
             include __DIR__ . '/../../views/errors/403.php';
             exit;
         }
-
         $serviceId = $_GET['service_id'] ?? null;
-
         if (! $serviceId) {
             $_SESSION['error'] = 'Service not specified';
             header('Location: /services');
             exit;
         }
-
         $serviceRepository = new ServiceRepository($this->db);
         $service           = $serviceRepository->findByIdWithStudent((int) $serviceId);
-
         if (! $service) {
             $_SESSION['error'] = 'Service not found';
             header('Location: /services');
             exit;
         }
-
         if ($service['status'] !== 'active') {
             $_SESSION['error'] = 'This service is not available';
             header('Location: /services/' . $serviceId);
             exit;
         }
-
         include __DIR__ . '/../../views/client/orders/create.php';
         clear_old_input();
     }
 
-    /**
-     * Store new order and redirect to Stripe checkout
-     *
-     * POST /orders/store
-     */
     public function store(): void
     {
         if (! Auth::check()) {
@@ -91,7 +69,6 @@ class OrderController
             header('Location: /login');
             exit;
         }
-
         $user = Auth::user();
         if ($user['role'] !== 'client') {
             http_response_code(403);
@@ -106,9 +83,8 @@ class OrderController
             exit;
         }
 
-        $serviceId    = (int) ($_POST['service_id'] ?? 0);
-        $requirements = $_POST['requirements'] ?? '';
-
+        $serviceId         = (int) ($_POST['service_id'] ?? 0);
+        $requirements      = $_POST['requirements'] ?? '';
         $serviceRepository = new ServiceRepository($this->db);
         $service           = $serviceRepository->findByIdWithStudent($serviceId);
 
@@ -125,7 +101,6 @@ class OrderController
             exit;
         }
 
-        // Temporary file handling
         $uploadedFiles = [];
         if (isset($_FILES['requirement_files']) && is_array($_FILES['requirement_files']['name'])) {
             $fileCount = count($_FILES['requirement_files']['name']);
@@ -135,7 +110,6 @@ class OrderController
                     if (! is_dir($tempDir)) {
                         mkdir($tempDir, 0755, true);
                     }
-
                     $tempFile = $tempDir . '/' . uniqid() . '_' . $_FILES['requirement_files']['name'][$i];
                     if (move_uploaded_file($_FILES['requirement_files']['tmp_name'][$i], $tempFile)) {
                         $uploadedFiles[] = [
@@ -148,7 +122,6 @@ class OrderController
             }
         }
 
-        // Save pending order data (will add payment info after successful session creation)
         $_SESSION['pending_order'] = [
             'client_id'    => $user['id'],
             'service_id'   => $serviceId,
@@ -177,13 +150,11 @@ class OrderController
                 }
             }
             unset($_SESSION['pending_order']);
-
             $_SESSION['error'] = implode(', ', array_values($paymentResult['errors']));
             header('Location: /orders/create?service_id=' . $serviceId);
             exit;
         }
 
-        // PATCH: Persist payment identifiers to session so we can finalize without webhook
         $_SESSION['pending_order']['payment_id']        = $paymentResult['payment_id'];
         $_SESSION['pending_order']['stripe_session_id'] = $paymentResult['session_id'];
 
@@ -191,11 +162,6 @@ class OrderController
         exit;
     }
 
-    /**
-     * Handle successful payment and create order
-     *
-     * GET /orders/payment-success
-     */
     public function paymentSuccess(): void
     {
         if (! Auth::check()) {
@@ -203,17 +169,13 @@ class OrderController
             header('Location: /login');
             exit;
         }
-
         $user = Auth::user();
-
         if (! isset($_SESSION['pending_order'])) {
             $_SESSION['error'] = 'No pending order found';
             header('Location: /services/search');
             exit;
         }
-
         $pendingOrder = $_SESSION['pending_order'];
-
         if ($pendingOrder['client_id'] != $user['id']) {
             $_SESSION['error'] = 'Invalid order data';
             unset($_SESSION['pending_order']);
@@ -221,7 +183,6 @@ class OrderController
             exit;
         }
 
-        // Reconstruct files from temp paths
         $files = [];
         foreach ($pendingOrder['files'] as $fileData) {
             if (file_exists($fileData['temp_path'])) {
@@ -235,7 +196,6 @@ class OrderController
             }
         }
 
-        // Create order now (starts as in_progress per service logic)
         $result = $this->orderService->createOrder(
             $pendingOrder['client_id'],
             $pendingOrder['service_id'],
@@ -252,7 +212,6 @@ class OrderController
                 }
             }
             unset($_SESSION['pending_order']);
-
             $_SESSION['error'] = 'Failed to create order: ' . implode(', ', array_values($result['errors']));
             header('Location: /services/search');
             exit;
@@ -262,7 +221,6 @@ class OrderController
         $paymentId       = $pendingOrder['payment_id'] ?? null;
         $stripeSessionId = $pendingOrder['stripe_session_id'] ?? null;
 
-        // PATCH: Finalize payment without webhook (link order + mark succeeded)
         if ($paymentId && $stripeSessionId) {
             try {
                 $this->paymentService->finalizePaymentWithoutWebhook(
@@ -272,17 +230,14 @@ class OrderController
                 );
             } catch (Exception $e) {
                 error_log('Failed to finalize payment without webhook: ' . $e->getMessage());
-                // Non-fatal: order exists, but payment may appear pending.
             }
         }
 
-        // Clean up temp files
         foreach ($pendingOrder['files'] as $fileData) {
             if (file_exists($fileData['temp_path'])) {
                 unlink($fileData['temp_path']);
             }
         }
-
         unset($_SESSION['pending_order']);
 
         $_SESSION['success'] = 'Order placed successfully! The student will be notified.';
@@ -290,11 +245,6 @@ class OrderController
         exit;
     }
 
-    /**
-     * Show order details
-     *
-     * GET /orders/{id}
-     */
     public function show(int $id): void
     {
         if (! Auth::check()) {
@@ -302,7 +252,6 @@ class OrderController
             header('Location: /login');
             exit;
         }
-
         $user  = Auth::user();
         $order = $this->orderService->getOrderById($id);
 
@@ -332,22 +281,15 @@ class OrderController
         if ($order['status'] === 'completed') {
             require_once __DIR__ . '/../Services/ReviewService.php';
             require_once __DIR__ . '/../Repositories/ReviewRepository.php';
-
             $reviewRepository = new ReviewRepository($this->db);
             $orderRepository  = new OrderRepository($this->db);
             $reviewService    = new ReviewService($reviewRepository, $orderRepository);
-
-            $review = $reviewService->getReviewByOrderId($id);
+            $review           = $reviewService->getReviewByOrderId($id);
         }
 
         include __DIR__ . '/../../views/orders/show.php';
     }
 
-    /**
-     * List orders for current user
-     *
-     * GET /orders
-     */
     public function index(): void
     {
         if (! Auth::check()) {
@@ -355,7 +297,6 @@ class OrderController
             header('Location: /login');
             exit;
         }
-
         $user   = Auth::user();
         $status = $_GET['status'] ?? null;
 
@@ -366,14 +307,11 @@ class OrderController
             $orders = $this->orderService->getOrdersForStudent($user['id'], $status);
             view('student/orders/index', ['orders' => $orders], 'dashboard');
         } else {
-            $orders = []; // Admin list not implemented
+            $orders = [];
             view('admin/orders/index', ['orders' => $orders], 'dashboard');
         }
     }
 
-    /**
-     * Deprecated acceptance route
-     */
     public function accept(int $id): void
     {
         http_response_code(410);
@@ -389,27 +327,21 @@ class OrderController
             header('Location: /login');
             exit;
         }
-
         $user = Auth::user();
-
         if (! isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
             http_response_code(403);
             $_SESSION['error'] = 'Invalid request';
             header('Location: /orders/' . $id);
             exit;
         }
-
         $order = $this->orderService->getOrderById($id);
-
         if (! $order) {
             http_response_code(404);
             include __DIR__ . '/../../views/errors/404.php';
             exit;
         }
-
         require_once __DIR__ . '/../Policies/OrderPolicy.php';
         $policy = new OrderPolicy();
-
         if (! $policy->canDeliver($user, $order)) {
             http_response_code(403);
             $_SESSION['error'] = 'You are not authorized to deliver this order';
@@ -458,27 +390,21 @@ class OrderController
             header('Location: /login');
             exit;
         }
-
         $user = Auth::user();
-
         if (! isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
             http_response_code(403);
             $_SESSION['error'] = 'Invalid request';
             header('Location: /orders/' . $id);
             exit;
         }
-
         $order = $this->orderService->getOrderById($id);
-
         if (! $order) {
             http_response_code(404);
             include __DIR__ . '/../../views/errors/404.php';
             exit;
         }
-
         require_once __DIR__ . '/../Policies/OrderPolicy.php';
         $policy = new OrderPolicy();
-
         if (! $policy->canComplete($user, $order)) {
             http_response_code(403);
             $_SESSION['error'] = 'You are not authorized to complete this order';
@@ -487,7 +413,6 @@ class OrderController
         }
 
         $result = $this->orderService->completeOrder($id, $user['id']);
-
         if (! $result['success']) {
             $_SESSION['error'] = implode(', ', array_values($result['errors']));
             header('Location: /orders/' . $id);
@@ -506,27 +431,21 @@ class OrderController
             header('Location: /login');
             exit;
         }
-
         $user = Auth::user();
-
         if (! isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
             http_response_code(403);
             $_SESSION['error'] = 'Invalid request';
             header('Location: /orders/' . $id);
             exit;
         }
-
         $order = $this->orderService->getOrderById($id);
-
         if (! $order) {
             http_response_code(404);
             include __DIR__ . '/../../views/errors/404.php';
             exit;
         }
-
         require_once __DIR__ . '/../Policies/OrderPolicy.php';
         $policy = new OrderPolicy();
-
         if (! $policy->canRequestRevision($user, $order)) {
             http_response_code(403);
             $_SESSION['error'] = 'You are not authorized to request revision on this order';
@@ -535,8 +454,7 @@ class OrderController
         }
 
         $revisionReason = $_POST['revision_reason'] ?? '';
-
-        $result = $this->orderService->requestRevision($id, $user['id'], $revisionReason);
+        $result         = $this->orderService->requestRevision($id, $user['id'], $revisionReason);
 
         if (! $result['success']) {
             $_SESSION['error'] = implode(', ', array_values($result['errors']));
@@ -556,34 +474,27 @@ class OrderController
             header('Location: /login');
             exit;
         }
-
         $user = Auth::user();
-
         if ($user['role'] !== 'admin') {
             http_response_code(403);
             $_SESSION['error'] = 'Only administrators can cancel orders';
             header('Location: /orders/' . $id);
             exit;
         }
-
         if (! isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
             http_response_code(403);
             $_SESSION['error'] = 'Invalid request';
             header('Location: /orders/' . $id);
             exit;
         }
-
         $order = $this->orderService->getOrderById($id);
-
         if (! $order) {
             http_response_code(404);
             include __DIR__ . '/../../views/errors/404.php';
             exit;
         }
-
         require_once __DIR__ . '/../Policies/OrderPolicy.php';
         $policy = new OrderPolicy();
-
         if (! $policy->canCancel($user, $order)) {
             http_response_code(403);
             $_SESSION['error'] = 'You are not authorized to cancel this order';
@@ -592,8 +503,7 @@ class OrderController
         }
 
         $cancellationReason = $_POST['cancellation_reason'] ?? '';
-
-        $result = $this->orderService->cancelOrder($id, $user, $cancellationReason);
+        $result             = $this->orderService->cancelOrder($id, $user, $cancellationReason);
 
         if (! $result['success']) {
             $_SESSION['error'] = implode(', ', array_values($result['errors']));
@@ -602,6 +512,49 @@ class OrderController
         }
 
         $_SESSION['success'] = 'Order cancelled successfully. A full refund has been processed.';
+        header('Location: /orders/' . $id);
+        exit;
+    }
+
+    // PATCH: Admin force complete endpoint
+    public function forceComplete(int $id): void
+    {
+        if (! Auth::check()) {
+            $_SESSION['error'] = 'Please login';
+            header('Location: /login');
+            exit;
+        }
+        $user = Auth::user();
+        if ($user['role'] !== 'admin') {
+            http_response_code(403);
+            $_SESSION['error'] = 'Only administrators can force complete orders';
+            header('Location: /orders/' . $id);
+            exit;
+        }
+        if (! isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
+            http_response_code(403);
+            $_SESSION['error'] = 'Invalid request';
+            header('Location: /orders/' . $id);
+            exit;
+        }
+
+        $order = $this->orderService->getOrderById($id);
+        if (! $order) {
+            http_response_code(404);
+            include __DIR__ . '/../../views/errors/404.php';
+            exit;
+        }
+
+        $reason = $_POST['force_complete_reason'] ?? '';
+        $result = $this->orderService->adminForceComplete($id, $user, $reason);
+
+        if (! $result['success']) {
+            $_SESSION['error'] = implode(', ', array_values($result['errors']));
+            header('Location: /orders/' . $id);
+            exit;
+        }
+
+        $_SESSION['success'] = 'Order force-completed. Funds credited to student.';
         header('Location: /orders/' . $id);
         exit;
     }
