@@ -61,36 +61,49 @@ class AuthorizationTest
     {
         $policy = new OrderPolicy();
 
-        // Test: Student can accept pending order
+        // Test: Order acceptance has been removed from workflow - always returns false
         $student = ['id' => 2, 'role' => 'student'];
         $order   = ['id' => 1, 'client_id' => 1, 'student_id' => 2, 'status' => 'pending'];
-        $this->assert($policy->canAccept($student, $order), "Student can accept pending order");
+        $this->assert(! $policy->canAccept($student, $order), "Student cannot accept order (workflow simplified)");
 
         // Test: Client cannot accept order
         $client = ['id' => 1, 'role' => 'client'];
         $this->assert(! $policy->canAccept($client, $order), "Client cannot accept order");
 
-        // Test: Student cannot accept in_progress order
-        $order['status'] = 'in_progress';
-        $this->assert(! $policy->canAccept($student, $order), "Student cannot accept in_progress order");
+        // Test: Admin cannot accept order
+        $admin = ['id' => 3, 'role' => 'admin'];
+        $this->assert(! $policy->canAccept($admin, $order), "Admin cannot accept order");
     }
 
     private function testOrderPolicyDeliver(): void
     {
         $policy = new OrderPolicy();
 
-        // Test: Student can deliver in_progress order
+        // Test: Student can deliver in_progress order (before deadline)
         $student = ['id' => 2, 'role' => 'student'];
-        $order   = ['id' => 1, 'client_id' => 1, 'student_id' => 2, 'status' => 'in_progress'];
-        $this->assert($policy->canDeliver($student, $order), "Student can deliver in_progress order");
+        $order   = ['id' => 1, 'client_id' => 1, 'student_id' => 2, 'status' => 'in_progress', 'deadline' => date('Y-m-d H:i:s', strtotime('+1 day'))];
+        $this->assert($policy->canDeliver($student, $order), "Student can deliver in_progress order before deadline");
 
-        // Test: Student can deliver revision_requested order
+        // Test: Student can deliver revision_requested order (before deadline)
         $order['status'] = 'revision_requested';
-        $this->assert($policy->canDeliver($student, $order), "Student can deliver revision_requested order");
+        $this->assert($policy->canDeliver($student, $order), "Student can deliver revision_requested order before deadline");
+
+        // Test: Student cannot deliver order past deadline
+        $order['deadline'] = date('Y-m-d H:i:s', strtotime('-1 day'));
+        $this->assert(! $policy->canDeliver($student, $order), "Student cannot deliver order past deadline");
+
+        // Test: Student cannot deliver order without deadline set (before deadline)
+        unset($order['deadline']);
+        $order['status'] = 'in_progress';
+        $this->assert($policy->canDeliver($student, $order), "Student can deliver order without deadline set");
 
         // Test: Client cannot deliver order
         $client = ['id' => 1, 'role' => 'client'];
         $this->assert(! $policy->canDeliver($client, $order), "Client cannot deliver order");
+
+        // Test: Student cannot deliver completed order
+        $order['status'] = 'completed';
+        $this->assert(! $policy->canDeliver($student, $order), "Student cannot deliver completed order");
     }
 
     private function testOrderPolicyComplete(): void
@@ -115,22 +128,26 @@ class AuthorizationTest
     {
         $policy = new OrderPolicy();
 
-        // Test: Client can cancel pending order
+        // Test: Only admins can cancel orders (workflow simplified)
         $client = ['id' => 1, 'role' => 'client'];
         $order  = ['id' => 1, 'client_id' => 1, 'student_id' => 2, 'status' => 'pending'];
-        $this->assert($policy->canCancel($client, $order), "Client can cancel pending order");
+        $this->assert(! $policy->canCancel($client, $order), "Client cannot cancel order");
 
-        // Test: Student can cancel pending order
+        // Test: Student cannot cancel order
         $student = ['id' => 2, 'role' => 'student'];
-        $this->assert($policy->canCancel($student, $order), "Student can cancel pending order");
+        $this->assert(! $policy->canCancel($student, $order), "Student cannot cancel order");
 
         // Test: Admin can cancel any order
-        $admin           = ['id' => 3, 'role' => 'admin'];
-        $order['status'] = 'in_progress';
-        $this->assert($policy->canCancel($admin, $order), "Admin can cancel any order");
+        $admin = ['id' => 3, 'role' => 'admin'];
+        $this->assert($policy->canCancel($admin, $order), "Admin can cancel pending order");
 
-        // Test: Client cannot cancel in_progress order
-        $this->assert(! $policy->canCancel($client, $order), "Client cannot cancel in_progress order");
+        // Test: Admin can cancel in_progress order
+        $order['status'] = 'in_progress';
+        $this->assert($policy->canCancel($admin, $order), "Admin can cancel in_progress order");
+
+        // Test: Admin can cancel delivered order
+        $order['status'] = 'delivered';
+        $this->assert($policy->canCancel($admin, $order), "Admin can cancel delivered order");
     }
 
     private function testServicePolicyEdit(): void
