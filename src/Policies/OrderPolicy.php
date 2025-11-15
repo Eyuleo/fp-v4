@@ -35,33 +35,6 @@ class OrderPolicy implements Policy
     }
 
     /**
-     * Check if user can accept an order
-     *
-     * @param array $user The authenticated user
-     * @param array $order The order to check
-     * @return bool
-     */
-    public function canAccept(array $user, array $order): bool
-    {
-        // Only students can accept orders
-        if ($user['role'] !== 'student') {
-            return false;
-        }
-
-        // Must be the student who owns the service
-        if ($order['student_id'] != $user['id']) {
-            return false;
-        }
-
-        // Order must be in pending status
-        if ($order['status'] !== 'pending') {
-            return false;
-        }
-
-        return true;
-    }
-
-    /**
      * Check if user can deliver an order
      *
      * @param array $user The authenticated user
