@@ -35,33 +35,6 @@ class OrderPolicy implements Policy
     }
 
     /**
-     * Check if user can accept an order
-     *
-     * @param array $user The authenticated user
-     * @param array $order The order to check
-     * @return bool
-     */
-    public function canAccept(array $user, array $order): bool
-    {
-        // Only students can accept orders
-        if ($user['role'] !== 'student') {
-            return false;
-        }
-
-        // Must be the student who owns the service
-        if ($order['student_id'] != $user['id']) {
-            return false;
-        }
-
-        // Order must be in pending status
-        if ($order['status'] !== 'pending') {
-            return false;
-        }
-
-        return true;
-    }
-
-    /**
      * Check if user can deliver an order
      *
      * @param array $user The authenticated user
@@ -157,26 +130,6 @@ class OrderPolicy implements Policy
      */
     public function canCancel(array $user, array $order): bool
     {
-        // Admin can cancel any order
-        if ($user['role'] === 'admin') {
-            return true;
-        }
-
-        // Order must be in pending status for regular users
-        if ($order['status'] !== 'pending') {
-            return false;
-        }
-
-        // Client can cancel their own pending orders
-        if ($user['role'] === 'client' && $order['client_id'] == $user['id']) {
-            return true;
-        }
-
-        // Student can cancel pending orders for their services
-        if ($user['role'] === 'student' && $order['student_id'] == $user['id']) {
-            return true;
-        }
-
-        return false;
+        return $user['role'] === 'admin';
     }
 }

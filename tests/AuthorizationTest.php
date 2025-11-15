@@ -21,7 +21,6 @@ class AuthorizationTest
         echo "Running Authorization Tests...\n\n";
 
         $this->testOrderPolicyView();
-        $this->testOrderPolicyAccept();
         $this->testOrderPolicyDeliver();
         $this->testOrderPolicyComplete();
         $this->testOrderPolicyCancel();
@@ -55,24 +54,6 @@ class AuthorizationTest
         // Test: Other client cannot view order
         $otherClient = ['id' => 4, 'role' => 'client'];
         $this->assert(! $policy->canView($otherClient, $order), "Other client cannot view order");
-    }
-
-    private function testOrderPolicyAccept(): void
-    {
-        $policy = new OrderPolicy();
-
-        // Test: Student can accept pending order
-        $student = ['id' => 2, 'role' => 'student'];
-        $order   = ['id' => 1, 'client_id' => 1, 'student_id' => 2, 'status' => 'pending'];
-        $this->assert($policy->canAccept($student, $order), "Student can accept pending order");
-
-        // Test: Client cannot accept order
-        $client = ['id' => 1, 'role' => 'client'];
-        $this->assert(! $policy->canAccept($client, $order), "Client cannot accept order");
-
-        // Test: Student cannot accept in_progress order
-        $order['status'] = 'in_progress';
-        $this->assert(! $policy->canAccept($student, $order), "Student cannot accept in_progress order");
     }
 
     private function testOrderPolicyDeliver(): void
@@ -115,22 +96,25 @@ class AuthorizationTest
     {
         $policy = new OrderPolicy();
 
-        // Test: Client can cancel pending order
-        $client = ['id' => 1, 'role' => 'client'];
-        $order  = ['id' => 1, 'client_id' => 1, 'student_id' => 2, 'status' => 'pending'];
-        $this->assert($policy->canCancel($client, $order), "Client can cancel pending order");
-
-        // Test: Student can cancel pending order
-        $student = ['id' => 2, 'role' => 'student'];
-        $this->assert($policy->canCancel($student, $order), "Student can cancel pending order");
-
         // Test: Admin can cancel any order
-        $admin           = ['id' => 3, 'role' => 'admin'];
-        $order['status'] = 'in_progress';
-        $this->assert($policy->canCancel($admin, $order), "Admin can cancel any order");
+        $admin = ['id' => 3, 'role' => 'admin'];
+        $order = ['id' => 1, 'client_id' => 1, 'student_id' => 2, 'status' => 'pending'];
+        $this->assert($policy->canCancel($admin, $order), "Admin can cancel pending order");
 
-        // Test: Client cannot cancel in_progress order
-        $this->assert(! $policy->canCancel($client, $order), "Client cannot cancel in_progress order");
+        $order['status'] = 'in_progress';
+        $this->assert($policy->canCancel($admin, $order), "Admin can cancel in_progress order");
+
+        // Test: Client cannot cancel any order
+        $client = ['id' => 1, 'role' => 'client'];
+        $order['status'] = 'pending';
+        $this->assert(! $policy->canCancel($client, $order), "Client cannot cancel pending order");
+
+        // Test: Student cannot cancel any order
+        $student = ['id' => 2, 'role' => 'student'];
+        $this->assert(! $policy->canCancel($student, $order), "Student cannot cancel pending order");
+
+        $order['status'] = 'in_progress';
+        $this->assert(! $policy->canCancel($student, $order), "Student cannot cancel in_progress order");
     }
 
     private function testServicePolicyEdit(): void

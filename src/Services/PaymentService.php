@@ -255,8 +255,8 @@ class PaymentService
 
         // If we have a real order id, update order status and notify
         if ($orderId !== null) {
-            // Update order status to pending (payment confirmed, awaiting student acceptance)
-            $this->repository->updateOrderStatus($orderId, 'pending');
+            // Update order status to in_progress (payment confirmed)
+            $this->repository->updateOrderStatus($orderId, 'in_progress');
 
             // Send notification to student about new order
             try {

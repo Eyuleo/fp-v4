@@ -121,7 +121,7 @@ class OrderService
             'client_id'         => $clientId,
             'student_id'        => $service['student_id'],
             'service_id'        => $serviceId,
-            'status'            => 'pending', // Will be updated after payment
+            'status'            => 'in_progress',
             'requirements'      => trim($data['requirements']),
             'requirement_files' => [],
             'price'             => $service['price'],
@@ -204,83 +204,6 @@ class OrderService
     }
 
     /**
-     * Accept an order (student)
-     *
-     * @param int $orderId
-     * @param int $studentId
-     * @return array ['success' => bool, 'errors' => array]
-     */
-    public function acceptOrder(int $orderId, int $studentId): array
-    {
-        // Get order
-        $order = $this->orderRepository->findById($orderId);
-
-        if (! $order) {
-            return [
-                'success' => false,
-                'errors'  => ['order' => 'Order not found'],
-            ];
-        }
-
-        // Verify order belongs to student
-        if ($order['student_id'] != $studentId) {
-            return [
-                'success' => false,
-                'errors'  => ['authorization' => 'You are not authorized to accept this order'],
-            ];
-        }
-
-        // Verify order is in pending status
-        if ($order['status'] !== 'pending') {
-            return [
-                'success' => false,
-                'errors'  => ['status' => 'Order cannot be accepted in its current status'],
-            ];
-        }
-
-        // Begin transaction
-        $this->orderRepository->beginTransaction();
-
-        try {
-            // Update order status to in_progress
-            $this->orderRepository->update($orderId, [
-                'status' => 'in_progress',
-            ]);
-
-            // Send notification to client about order acceptance
-            try {
-                $client  = $this->userRepository->findById($order['client_id']);
-                $student = $this->userRepository->findById($order['student_id']);
-                $service = $this->serviceRepository->findById($order['service_id']);
-
-                if ($client && $student && $service) {
-                    $updatedOrder = $this->orderRepository->findById($orderId);
-                    $this->notificationService->notifyOrderAccepted($updatedOrder, $client, $student, $service);
-                }
-            } catch (Exception $e) {
-                error_log('Failed to send order accepted notification: ' . $e->getMessage());
-            }
-
-            // Commit transaction
-            $this->orderRepository->commit();
-
-            return [
-                'success' => true,
-                'errors'  => [],
-            ];
-        } catch (Exception $e) {
-            // Rollback on error
-            $this->orderRepository->rollback();
-            error_log('Order acceptance error: ' . $e->getMessage());
-
-            return [
-                'success' => false,
-                'errors'  => ['database' => 'Failed to accept order. Please try again.'],
-            ];
-        }
-    }
-
-    /**
      * Deliver an order (student)
      *
      * @param int $orderId
@@ -313,6 +236,15 @@ class OrderService
             return [
                 'success' => false,
                 'errors'  => ['status' => 'Order cannot be delivered in its current status'],
+            ];
+        }
+
+        // Check if delivery deadline has passed
+        $deadlineTs = strtotime($order['deadline'] ?? '');
+        if ($deadlineTs !== false && time() > $deadlineTs) {
+            return [
+                'success' => false,
+                'errors'  => ['deadline' => 'The delivery deadline has passed. Please contact support.'],
             ];
         }
 

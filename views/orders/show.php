@@ -58,6 +58,15 @@
                 </div>
             <?php endif; ?>
 
+            <?php if ($order['status'] === 'in_progress' && time() > strtotime($order['deadline'])): ?>
+                <div class="mb-4 p-4 border border-red-200 bg-red-50 rounded">
+                    <div class="font-medium text-red-900">Delivery deadline passed</div>
+                    <div class="text-sm text-red-800 mt-1">
+                        The delivery deadline for this order has passed. Please contact support for assistance.
+                    </div>
+                </div>
+            <?php endif; ?>
+
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                     <h3 class="text-sm font-medium text-gray-500 mb-1">Service</h3>
@@ -223,16 +232,11 @@
                 </div>
 
                 <div class="space-x-3">
-                    <?php if ($order['status'] === 'pending' && $order['student_id'] === Auth::user()['id']): ?>
-                        <form action="/orders/<?php echo e($order['id']) ?>/accept" method="POST" class="inline">
-                            <input type="hidden" name="csrf_token" value="<?php echo e($_SESSION['csrf_token']) ?>">
-                            <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700">
-                                Accept Order
-                            </button>
-                        </form>
-                    <?php endif; ?>
-
-                    <?php if (($order['status'] === 'in_progress' || $order['status'] === 'revision_requested') && $order['student_id'] === Auth::user()['id']): ?>
+                    <?php if (
+                        (in_array($order['status'], ['in_progress', 'revision_requested'])) &&
+                        $order['student_id'] === Auth::user()['id'] &&
+                        time() <= strtotime($order['deadline'])
+                    ): ?>
                         <button onclick="showDeliverForm()" class="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700">
                             Deliver Order
                         </button>
@@ -258,12 +262,6 @@
                             Leave Review
                         </a>
                     <?php endif; ?>
-
-                    <?php if ($order['status'] === 'pending'): ?>
-                        <button onclick="showCancelModal()" class="bg-red-600 text-white px-6 py-2 rounded-md hover:bg-red-700">
-                            Cancel Order
-                        </button>
-                    <?php endif; ?>
                 </div>
             </div>
         </div>
@@ -276,38 +274,6 @@
     // Start capturing additional scripts
     ob_start();
 ?>
-
-    <!-- Cancel Order Modal -->
-    <div id="cancelModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
-        <div class="bg-white rounded-lg max-w-md w-full mx-4 p-6">
-            <h3 class="text-xl font-bold text-gray-900 mb-4">Cancel Order</h3>
-            <form action="/orders/<?php echo e($order['id']) ?>/cancel" method="POST">
-                <input type="hidden" name="csrf_token" value="<?php echo e($_SESSION['csrf_token']) ?>">
-
-                <div class="mb-4">
-                    <label for="cancellation_reason" class="block text-sm font-medium text-gray-700 mb-2">
-                        Reason for cancellation (optional)
-                    </label>
-                    <textarea
-                        id="cancellation_reason"
-                        name="cancellation_reason"
-                        rows="4"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
-                        placeholder="Please provide a reason for cancelling this order..."
-                    ></textarea>
-                </div>
-
-                <div class="flex items-center justify-end space-x-3">
-                    <button type="button" onclick="hideCancelModal()" class="px-4 py-2 text-gray-700 hover:text-gray-900">
-                        Keep Order
-                    </button>
-                    <button type="submit" class="bg-red-600 text-white px-6 py-2 rounded-md hover:bg-red-700">
-                        Cancel Order
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
 
     <!-- Deliver Order Modal -->
     <div id="deliverModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center overflow-y-auto">
@@ -429,14 +395,6 @@
     <?php endif; ?>
 
     <script>
-        function showCancelModal() {
-            document.getElementById('cancelModal').classList.remove('hidden');
-        }
-
-        function hideCancelModal() {
-            document.getElementById('cancelModal').classList.add('hidden');
-        }
-
         function showDeliverForm() {
             document.getElementById('deliverModal').classList.remove('hidden');
         }
@@ -462,13 +420,12 @@
         }
 
         // Close modals when clicking outside
-        ['cancelModal', 'deliverModal', 'revisionModal'<?php if (! empty($review) && empty($review['student_reply']) && $order['student_id'] === Auth::user()['id']): ?>, 'replyModal'<?php endif; ?>]
+        ['deliverModal', 'revisionModal'<?php if (! empty($review) && empty($review['student_reply']) && $order['student_id'] === Auth::user()['id']): ?>, 'replyModal'<?php endif; ?>]
         .forEach(id => {
             const el = document.getElementById(id);
             if (!el) return;
             el.addEventListener('click', function(e) {
                 if (e.target !== this) return;
-                if (id === 'cancelModal') hideCancelModal();
                 if (id === 'deliverModal') hideDeliverForm();
                 if (id === 'revisionModal') hideRevisionForm();
                 if (id === 'replyModal') hideReplyForm();

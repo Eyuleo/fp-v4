@@ -184,13 +184,6 @@ $router->get("/orders/payment-success", "OrderController@paymentSuccess", [
 // View order (accessible by client, student, or admin)
 $router->get("/orders/{id}", "OrderController@show", [new AuthMiddleware()]);
 
-// Accept order (student only)
-$router->post("/orders/{id}/accept", "OrderController@accept", [
-    new AuthMiddleware(),
-    new RoleMiddleware("student"),
-    new CsrfMiddleware(),
-]);
-
 // Deliver order (student only)
 $router->post("/orders/{id}/deliver", "OrderController@deliver", [
     new AuthMiddleware(),
@@ -209,13 +202,6 @@ $router->post(
 $router->post("/orders/{id}/complete", "OrderController@complete", [
     new AuthMiddleware(),
     new RoleMiddleware("client"),
-    new CsrfMiddleware(),
-]);
-
-// Cancel order (client or student)
-$router->post("/orders/{id}/cancel", "OrderController@cancel", [
-    new AuthMiddleware(),
-    new RoleMiddleware(["client", "student"]),
     new CsrfMiddleware(),
 ]);
 
