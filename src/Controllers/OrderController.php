@@ -389,64 +389,6 @@ class OrderController
     }
 
     /**
-     * Accept an order (student only)
-     *
-     * POST /orders/{id}/accept
-     */
-    public function accept(int $id): void
-    {
-        // Check authentication
-        if (! Auth::check()) {
-            $_SESSION['error'] = 'Please login to accept orders';
-            header('Location: /login');
-            exit;
-        }
-
-        $user = Auth::user();
-
-        // Validate CSRF token
-        if (! isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
-            http_response_code(403);
-            $_SESSION['error'] = 'Invalid request';
-            header('Location: /orders/' . $id);
-            exit;
-        }
-
-        // Get order
-        $order = $this->orderService->getOrderById($id);
-
-        if (! $order) {
-            http_response_code(404);
-            include __DIR__ . '/../../views/errors/404.php';
-            exit;
-        }
-
-        // Check authorization using OrderPolicy
-        require_once __DIR__ . '/../Policies/OrderPolicy.php';
-        $policy = new OrderPolicy();
-
-        if (! $policy->canAccept($user, $order)) {
-            http_response_code(403);
-            $_SESSION['error'] = 'You are not authorized to accept this order';
-            header('Location: /orders/' . $id);
-            exit;
-        }
-
-        // Accept the order
-        $result = $this->orderService->acceptOrder($id, $user['id']);
-
-        if (! $result['success']) {
-            $_SESSION['error'] = implode(', ', array_values($result['errors']));
-            header('Location: /orders/' . $id);
-            exit;
-        }
-
-        $_SESSION['success'] = 'Order accepted successfully! You can now start working on it.';
-        header('Location: /orders/' . $id);
-        exit;
-    }
-
-    /**
      * Deliver an order (student only)
      *
      * POST /orders/{id}/deliver
@@ -643,67 +585,6 @@ class OrderController
         }
 
         $_SESSION['success'] = 'Revision requested successfully! The student will be notified.';
-        header('Location: /orders/' . $id);
-        exit;
-    }
-
-    /**
-     * Cancel an order (client or student, only in pending status)
-     *
-     * POST /orders/{id}/cancel
-     */
-    public function cancel(int $id): void
-    {
-        // Check authentication
-        if (! Auth::check()) {
-            $_SESSION['error'] = 'Please login to cancel orders';
-            header('Location: /login');
-            exit;
-        }
-
-        $user = Auth::user();
-
-        // Validate CSRF token
-        if (! isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
-            http_response_code(403);
-            $_SESSION['error'] = 'Invalid request';
-            header('Location: /orders/' . $id);
-            exit;
-        }
-
-        // Get order
-        $order = $this->orderService->getOrderById($id);
-
-        if (! $order) {
-            http_response_code(404);
-            include __DIR__ . '/../../views/errors/404.php';
-            exit;
-        }
-
-        // Check authorization using OrderPolicy
-        require_once __DIR__ . '/../Policies/OrderPolicy.php';
-        $policy = new OrderPolicy();
-
-        if (! $policy->canCancel($user, $order)) {
-            http_response_code(403);
-            $_SESSION['error'] = 'You are not authorized to cancel this order';
-            header('Location: /orders/' . $id);
-            exit;
-        }
-
-        // Get cancellation reason
-        $cancellationReason = $_POST['cancellation_reason'] ?? '';
-
-        // Cancel the order
-        $result = $this->orderService->cancelOrder($id, $user['id'], $cancellationReason);
-
-        if (! $result['success']) {
-            $_SESSION['error'] = implode(', ', array_values($result['errors']));
-            header('Location: /orders/' . $id);
-            exit;
-        }
-
-        $_SESSION['success'] = 'Order cancelled successfully. A full refund has been processed.';
         header('Location: /orders/' . $id);
         exit;
     }

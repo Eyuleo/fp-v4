@@ -157,26 +157,6 @@ class OrderPolicy implements Policy
      */
     public function canCancel(array $user, array $order): bool
     {
-        // Admin can cancel any order
-        if ($user['role'] === 'admin') {
-            return true;
-        }
-
-        // Order must be in pending status for regular users
-        if ($order['status'] !== 'pending') {
-            return false;
-        }
-
-        // Client can cancel their own pending orders
-        if ($user['role'] === 'client' && $order['client_id'] == $user['id']) {
-            return true;
-        }
-
-        // Student can cancel pending orders for their services
-        if ($user['role'] === 'student' && $order['student_id'] == $user['id']) {
-            return true;
-        }
-
-        return false;
+        return $user['role'] === 'admin';
     }
 }

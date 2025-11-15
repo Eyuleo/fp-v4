@@ -121,7 +121,7 @@ class OrderService
             'client_id'         => $clientId,
             'student_id'        => $service['student_id'],
             'service_id'        => $serviceId,
-            'status'            => 'pending', // Will be updated after payment
+            'status'            => 'in_progress',
             'requirements'      => trim($data['requirements']),
             'requirement_files' => [],
             'price'             => $service['price'],
@@ -313,6 +313,15 @@ class OrderService
             return [
                 'success' => false,
                 'errors'  => ['status' => 'Order cannot be delivered in its current status'],
+            ];
+        }
+
+        // Check if delivery deadline has passed
+        $deadlineTs = strtotime($order['deadline'] ?? '');
+        if ($deadlineTs !== false && time() > $deadlineTs) {
+            return [
+                'success' => false,
+                'errors'  => ['deadline' => 'The delivery deadline has passed. Please contact support.'],
             ];
         }
 
