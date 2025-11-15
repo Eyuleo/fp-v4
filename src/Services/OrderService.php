@@ -557,23 +557,10 @@ class OrderService
             $newRevisionCount = ($order['revision_count'] ?? 0) + 1;
 
             $this->orderRepository->update($orderId, [
-                'status'         => 'revision_requested',
-                'revision_count' => $newRevisionCount,
+                'status'          => 'revision_requested',
+                'revision_count'  => $newRevisionCount,
+                'revision_reason' => $reason,
             ]);
-
-            // Log the revision reason as a system message in the thread so both parties can see it
-            try {
-                $this->messageRepository->create([
-                    'order_id'    => $orderId,
-                    'sender_id'   => $clientId,
-                    'content'     => "Revision requested: " . $reason,
-                    'attachments' => [],
-                    'is_flagged'  => 0,
-                ]);
-            } catch (Exception $e) {
-                // Non-fatal; continue
-                error_log("Failed to create revision system message for order #{$orderId}: " . $e->getMessage());
-            }
 
             // Send notification to student about revision request
             try {

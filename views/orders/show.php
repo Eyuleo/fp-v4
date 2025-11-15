@@ -53,7 +53,7 @@
                     <div class="font-medium text-orange-900">Revision requested</div>
                     <div class="text-sm text-orange-800 mt-1">
                         The client has requested a revision. Previously delivered files remain visible below.
-                        Please review the messages for the revision details.
+                        Please review the revision request details below.
                     </div>
                 </div>
             <?php endif; ?>
@@ -193,6 +193,27 @@
                 </div>
             <?php endif; ?>
         </div>
+
+        <!-- Revision Request (show if status is revision_requested) -->
+        <?php if ($order['status'] === 'revision_requested' && ! empty($order['revision_reason'])): ?>
+            <div class="bg-white rounded-lg shadow-md p-6 mb-6 border-l-4 border-orange-500">
+                <div class="flex items-start">
+                    <svg class="w-6 h-6 text-orange-600 mr-3 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                    <div class="flex-1">
+                        <h2 class="text-xl font-bold text-gray-900 mb-2">Revision Request</h2>
+                        <div class="bg-orange-50 p-4 rounded-md">
+                            <p class="text-sm font-medium text-orange-900 mb-2">Client's revision request:</p>
+                            <p class="text-gray-700 whitespace-pre-wrap"><?php echo e($order['revision_reason']) ?></p>
+                        </div>
+                        <p class="text-sm text-gray-600 mt-3">
+                            <strong>Revisions used:</strong>                                                                                                                         <?php echo e($order['revision_count'] ?? 0) ?> of<?php echo e($order['max_revisions'] ?? 3) ?>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        <?php endif; ?>
 
         <!-- Delivery (show for delivered, revision_requested, completed) -->
         <?php if (in_array($order['status'], ['delivered', 'revision_requested', 'completed'])): ?>
@@ -458,7 +479,7 @@
                         placeholder="Please be specific about what changes you need..."
                     ></textarea>
                     <p class="text-sm text-gray-500 mt-1">
-                        You have                                                                                                                                                                                                                                                                                                                                                                 <?php echo e(($order['max_revisions'] ?? 0) - ($order['revision_count'] ?? 0)); ?> revision(s) left.
+                        You have                                                                                                                                                                                                                                                                                                                                                                                                                                 <?php echo e(($order['max_revisions'] ?? 0) - ($order['revision_count'] ?? 0)); ?> revision(s) left.
                     </p>
                 </div>
 
