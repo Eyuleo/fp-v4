@@ -32,15 +32,15 @@ class ServiceRepository
 
         $stmt = $this->db->prepare($sql);
         $stmt->execute([
-            'student_id'    => $data['student_id'],
-            'category_id'   => $data['category_id'],
-            'title'         => $data['title'],
-            'description'   => $data['description'],
-            'tags'          => json_encode($data['tags'] ?? []),
-            'price'         => $data['price'],
-            'delivery_days' => $data['delivery_days'],
-            'sample_files'  => json_encode($data['sample_files'] ?? []),
-            'status'        => $data['status'] ?? 'inactive',
+            "student_id" => $data["student_id"],
+            "category_id" => $data["category_id"],
+            "title" => $data["title"],
+            "description" => $data["description"],
+            "tags" => json_encode($data["tags"] ?? []),
+            "price" => $data["price"],
+            "delivery_days" => $data["delivery_days"],
+            "sample_files" => json_encode($data["sample_files"] ?? []),
+            "status" => $data["status"] ?? "inactive",
         ]);
 
         return (int) $this->db->lastInsertId();
@@ -59,21 +59,25 @@ class ServiceRepository
                 LEFT JOIN categories c ON s.category_id = c.id
                 WHERE s.id = :id";
         $stmt = $this->db->prepare($sql);
-        $stmt->execute(['id' => $id]);
+        $stmt->execute(["id" => $id]);
 
         $service = $stmt->fetch();
 
-        if (! $service) {
+        if (!$service) {
             return null;
         }
 
         // Decode JSON fields (handle NULL values)
-        $service['tags']         = $service['tags'] ? json_decode($service['tags'], true) : [];
-        $service['sample_files'] = $service['sample_files'] ? json_decode($service['sample_files'], true) : [];
+        $service["tags"] = $service["tags"]
+            ? json_decode($service["tags"], true)
+            : [];
+        $service["sample_files"] = $service["sample_files"]
+            ? json_decode($service["sample_files"], true)
+            : [];
 
         // Ensure sample_files is always an array
-        if (! is_array($service['sample_files'])) {
-            $service['sample_files'] = [];
+        if (!is_array($service["sample_files"])) {
+            $service["sample_files"] = [];
         }
 
         return $service;
@@ -89,55 +93,56 @@ class ServiceRepository
     public function update(int $id, array $data): bool
     {
         $fields = [];
-        $params = ['id' => $id];
+        $params = ["id" => $id];
 
-        if (isset($data['category_id'])) {
-            $fields[]              = 'category_id = :category_id';
-            $params['category_id'] = $data['category_id'];
+        if (isset($data["category_id"])) {
+            $fields[] = "category_id = :category_id";
+            $params["category_id"] = $data["category_id"];
         }
 
-        if (isset($data['title'])) {
-            $fields[]        = 'title = :title';
-            $params['title'] = $data['title'];
+        if (isset($data["title"])) {
+            $fields[] = "title = :title";
+            $params["title"] = $data["title"];
         }
 
-        if (isset($data['description'])) {
-            $fields[]              = 'description = :description';
-            $params['description'] = $data['description'];
+        if (isset($data["description"])) {
+            $fields[] = "description = :description";
+            $params["description"] = $data["description"];
         }
 
-        if (isset($data['tags'])) {
-            $fields[]       = 'tags = :tags';
-            $params['tags'] = json_encode($data['tags']);
+        if (isset($data["tags"])) {
+            $fields[] = "tags = :tags";
+            $params["tags"] = json_encode($data["tags"]);
         }
 
-        if (isset($data['price'])) {
-            $fields[]        = 'price = :price';
-            $params['price'] = $data['price'];
+        if (isset($data["price"])) {
+            $fields[] = "price = :price";
+            $params["price"] = $data["price"];
         }
 
-        if (isset($data['delivery_days'])) {
-            $fields[]                = 'delivery_days = :delivery_days';
-            $params['delivery_days'] = $data['delivery_days'];
+        if (isset($data["delivery_days"])) {
+            $fields[] = "delivery_days = :delivery_days";
+            $params["delivery_days"] = $data["delivery_days"];
         }
 
-        if (isset($data['sample_files'])) {
-            $fields[]               = 'sample_files = :sample_files';
-            $params['sample_files'] = json_encode($data['sample_files']);
+        if (isset($data["sample_files"])) {
+            $fields[] = "sample_files = :sample_files";
+            $params["sample_files"] = json_encode($data["sample_files"]);
         }
 
-        if (isset($data['status'])) {
-            $fields[]         = 'status = :status';
-            $params['status'] = $data['status'];
+        if (isset($data["status"])) {
+            $fields[] = "status = :status";
+            $params["status"] = $data["status"];
         }
 
         if (empty($fields)) {
             return false;
         }
 
-        $fields[] = 'updated_at = NOW()';
+        $fields[] = "updated_at = NOW()";
 
-        $sql  = "UPDATE services SET " . implode(', ', $fields) . " WHERE id = :id";
+        $sql =
+            "UPDATE services SET " . implode(", ", $fields) . " WHERE id = :id";
         $stmt = $this->db->prepare($sql);
 
         return $stmt->execute($params);
@@ -151,10 +156,10 @@ class ServiceRepository
      */
     public function delete(int $id): bool
     {
-        $sql  = "DELETE FROM services WHERE id = :id";
+        $sql = "DELETE FROM services WHERE id = :id";
         $stmt = $this->db->prepare($sql);
 
-        return $stmt->execute(['id' => $id]);
+        return $stmt->execute(["id" => $id]);
     }
 
     /**
@@ -172,18 +177,22 @@ class ServiceRepository
                 ORDER BY s.created_at DESC";
 
         $stmt = $this->db->prepare($sql);
-        $stmt->execute(['student_id' => $studentId]);
+        $stmt->execute(["student_id" => $studentId]);
 
         $services = $stmt->fetchAll();
 
         // Decode JSON fields for each service (handle NULL values)
         foreach ($services as &$service) {
-            $service['tags']         = $service['tags'] ? json_decode($service['tags'], true) : [];
-            $service['sample_files'] = $service['sample_files'] ? json_decode($service['sample_files'], true) : [];
+            $service["tags"] = $service["tags"]
+                ? json_decode($service["tags"], true)
+                : [];
+            $service["sample_files"] = $service["sample_files"]
+                ? json_decode($service["sample_files"], true)
+                : [];
 
             // Ensure sample_files is always an array
-            if (! is_array($service['sample_files'])) {
-                $service['sample_files'] = [];
+            if (!is_array($service["sample_files"])) {
+                $service["sample_files"] = [];
             }
         }
 
@@ -203,11 +212,11 @@ class ServiceRepository
                 AND status IN ('pending', 'in_progress', 'delivered', 'revision_requested')";
 
         $stmt = $this->db->prepare($sql);
-        $stmt->execute(['service_id' => $serviceId]);
+        $stmt->execute(["service_id" => $serviceId]);
 
         $result = $stmt->fetch();
 
-        return $result['count'] > 0;
+        return $result["count"] > 0;
     }
 
     /**
@@ -217,7 +226,7 @@ class ServiceRepository
      */
     public function getAllCategories(): array
     {
-        $sql  = "SELECT * FROM categories ORDER BY name ASC";
+        $sql = "SELECT * FROM categories ORDER BY name ASC";
         $stmt = $this->db->query($sql);
 
         return $stmt->fetchAll();
@@ -233,54 +242,71 @@ class ServiceRepository
      * @param int $offset Offset for pagination
      * @return array
      */
-    public function search(string $query, array $filters, string $sortBy, int $limit, int $offset): array
-    {
+    public function search(
+        string $query,
+        array $filters,
+        string $sortBy,
+        int $limit,
+        int $offset,
+    ): array {
         $params = [];
-        $where  = ["s.status = 'active'"];
+        $where = ["s.status = 'active'"];
+        $hasQuery = !empty($query);
 
         // Fulltext search on title and description
-        if (! empty($query)) {
-            $where[]         = "MATCH(s.title, s.description) AGAINST (:query IN NATURAL LANGUAGE MODE)";
-            $params['query'] = $query;
+        if ($hasQuery) {
+            $where[] =
+                "MATCH(s.title, s.description) AGAINST (:query IN NATURAL LANGUAGE MODE)";
+            $params["query"] = $query;
         }
 
         // Category filter
-        if (! empty($filters['category_id'])) {
-            $where[]               = "s.category_id = :category_id";
-            $params['category_id'] = $filters['category_id'];
+        if (!empty($filters["category_id"])) {
+            $where[] = "s.category_id = :category_id";
+            $params["category_id"] = $filters["category_id"];
         }
 
         // Price range filter
-        if (isset($filters['min_price']) && $filters['min_price'] !== null) {
-            $where[]             = "s.price >= :min_price";
-            $params['min_price'] = $filters['min_price'];
+        if (isset($filters["min_price"]) && $filters["min_price"] !== null) {
+            $where[] = "s.price >= :min_price";
+            $params["min_price"] = $filters["min_price"];
         }
-
-        if (isset($filters['max_price']) && $filters['max_price'] !== null) {
-            $where[]             = "s.price <= :max_price";
-            $params['max_price'] = $filters['max_price'];
+        if (isset($filters["max_price"]) && $filters["max_price"] !== null) {
+            $where[] = "s.price <= :max_price";
+            $params["max_price"] = $filters["max_price"];
         }
 
         // Delivery time filter
-        if (! empty($filters['max_delivery'])) {
-            $where[]                = "s.delivery_days <= :max_delivery";
-            $params['max_delivery'] = $filters['max_delivery'];
+        if (!empty($filters["max_delivery"])) {
+            $where[] = "s.delivery_days <= :max_delivery";
+            $params["max_delivery"] = $filters["max_delivery"];
         }
 
         // Rating filter
-        if (! empty($filters['min_rating'])) {
-            $where[]              = "sp.average_rating >= :min_rating";
-            $params['min_rating'] = $filters['min_rating'];
+        if (!empty($filters["min_rating"])) {
+            $where[] = "sp.average_rating >= :min_rating";
+            $params["min_rating"] = $filters["min_rating"];
         }
 
-        $whereClause = implode(' AND ', $where);
+        $whereClause = implode(" AND ", $where);
+
+        // Build SELECT relevance part (use DISTINCT placeholder name)
+        $relevanceSelect = "";
+        if ($hasQuery) {
+            $relevanceSelect =
+                "MATCH(s.title, s.description) AGAINST (:query_relevance IN NATURAL LANGUAGE MODE) AS relevance,";
+            $params["query_relevance"] = $query; // distinct binding to avoid duplicate placeholder names
+        }
 
         // Determine sort order
-        $orderBy = $this->getSortOrder($sortBy, ! empty($query));
+        $orderBy = $this->determineOrderBy($sortBy, $hasQuery);
 
-        $sql = "SELECT s.*, c.name as category_name,
-                       u.email as student_email, u.name as student_name,
-                       sp.average_rating, sp.total_reviews
+        $sql = "SELECT
+                    {$relevanceSelect}
+                    s.*,
+                    c.name as category_name,
+                    u.email as student_email, u.name as student_name,
+                    sp.average_rating, sp.total_reviews
                 FROM services s
                 LEFT JOIN categories c ON s.category_id = c.id
                 LEFT JOIN users u ON s.student_id = u.id
@@ -295,21 +321,24 @@ class ServiceRepository
         foreach ($params as $key => $value) {
             $stmt->bindValue(":{$key}", $value);
         }
-
-        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
-        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+        $stmt->bindValue(":limit", $limit, PDO::PARAM_INT);
+        $stmt->bindValue(":offset", $offset, PDO::PARAM_INT);
 
         $stmt->execute();
         $services = $stmt->fetchAll();
 
         // Decode JSON fields for each service (handle NULL values)
         foreach ($services as &$service) {
-            $service['tags']         = $service['tags'] ? json_decode($service['tags'], true) : [];
-            $service['sample_files'] = $service['sample_files'] ? json_decode($service['sample_files'], true) : [];
+            $service["tags"] = $service["tags"]
+                ? json_decode($service["tags"], true)
+                : [];
+            $service["sample_files"] = $service["sample_files"]
+                ? json_decode($service["sample_files"], true)
+                : [];
 
             // Ensure sample_files is always an array
-            if (! is_array($service['sample_files'])) {
-                $service['sample_files'] = [];
+            if (!is_array($service["sample_files"])) {
+                $service["sample_files"] = [];
             }
         }
 
@@ -326,44 +355,45 @@ class ServiceRepository
     public function countSearch(string $query, array $filters): int
     {
         $params = [];
-        $where  = ["s.status = 'active'"];
+        $where = ["s.status = 'active'"];
 
         // Fulltext search on title and description
-        if (! empty($query)) {
-            $where[]         = "MATCH(s.title, s.description) AGAINST (:query IN NATURAL LANGUAGE MODE)";
-            $params['query'] = $query;
+        if (!empty($query)) {
+            $where[] =
+                "MATCH(s.title, s.description) AGAINST (:query IN NATURAL LANGUAGE MODE)";
+            $params["query"] = $query;
         }
 
         // Category filter
-        if (! empty($filters['category_id'])) {
-            $where[]               = "s.category_id = :category_id";
-            $params['category_id'] = $filters['category_id'];
+        if (!empty($filters["category_id"])) {
+            $where[] = "s.category_id = :category_id";
+            $params["category_id"] = $filters["category_id"];
         }
 
         // Price range filter
-        if (isset($filters['min_price']) && $filters['min_price'] !== null) {
-            $where[]             = "s.price >= :min_price";
-            $params['min_price'] = $filters['min_price'];
+        if (isset($filters["min_price"]) && $filters["min_price"] !== null) {
+            $where[] = "s.price >= :min_price";
+            $params["min_price"] = $filters["min_price"];
         }
 
-        if (isset($filters['max_price']) && $filters['max_price'] !== null) {
-            $where[]             = "s.price <= :max_price";
-            $params['max_price'] = $filters['max_price'];
+        if (isset($filters["max_price"]) && $filters["max_price"] !== null) {
+            $where[] = "s.price <= :max_price";
+            $params["max_price"] = $filters["max_price"];
         }
 
         // Delivery time filter
-        if (! empty($filters['max_delivery'])) {
-            $where[]                = "s.delivery_days <= :max_delivery";
-            $params['max_delivery'] = $filters['max_delivery'];
+        if (!empty($filters["max_delivery"])) {
+            $where[] = "s.delivery_days <= :max_delivery";
+            $params["max_delivery"] = $filters["max_delivery"];
         }
 
         // Rating filter
-        if (! empty($filters['min_rating'])) {
-            $where[]              = "sp.average_rating >= :min_rating";
-            $params['min_rating'] = $filters['min_rating'];
+        if (!empty($filters["min_rating"])) {
+            $where[] = "sp.average_rating >= :min_rating";
+            $params["min_rating"] = $filters["min_rating"];
         }
 
-        $whereClause = implode(' AND ', $where);
+        $whereClause = implode(" AND ", $where);
 
         $sql = "SELECT COUNT(*) as count
                 FROM services s
@@ -380,35 +410,30 @@ class ServiceRepository
         $stmt->execute();
         $result = $stmt->fetch();
 
-        return (int) $result['count'];
+        return (int) $result["count"];
     }
 
     /**
-     * Get sort order SQL clause
-     *
-     * @param string $sortBy Sort option
-     * @param bool $hasQuery Whether there's a search query
-     * @return string
+     * Determine ORDER BY clause
      */
-    private function getSortOrder(string $sortBy, bool $hasQuery): string
+    private function determineOrderBy(string $sortBy, bool $hasQuery): string
     {
         switch ($sortBy) {
-            case 'price_asc':
-                return 'ORDER BY s.price ASC';
-            case 'price_desc':
-                return 'ORDER BY s.price DESC';
-            case 'rating':
-                return 'ORDER BY sp.average_rating DESC, sp.total_reviews DESC';
-            case 'delivery':
-                return 'ORDER BY s.delivery_days ASC';
-            case 'relevance':
+            case "price_asc":
+                return "ORDER BY s.price ASC";
+            case "price_desc":
+                return "ORDER BY s.price DESC";
+            case "rating":
+                return "ORDER BY sp.average_rating DESC, sp.total_reviews DESC";
+            case "delivery":
+                return "ORDER BY s.delivery_days ASC";
+            case "relevance":
             default:
-                // If there's a search query, sort by relevance score
                 if ($hasQuery) {
-                    return 'ORDER BY MATCH(s.title, s.description) AGAINST (:query IN NATURAL LANGUAGE MODE) DESC';
+                    // We selected relevance as an alias when $hasQuery === true
+                    return "ORDER BY relevance DESC";
                 }
-                // Otherwise, sort by newest first
-                return 'ORDER BY s.created_at DESC';
+                return "ORDER BY s.created_at DESC";
         }
     }
 
@@ -430,22 +455,28 @@ class ServiceRepository
                 WHERE s.id = :id AND s.status = 'active'";
 
         $stmt = $this->db->prepare($sql);
-        $stmt->execute(['id' => $id]);
+        $stmt->execute(["id" => $id]);
 
         $service = $stmt->fetch();
 
-        if (! $service) {
+        if (!$service) {
             return null;
         }
 
         // Decode JSON fields (handle NULL values)
-        $service['tags']         = $service['tags'] ? json_decode($service['tags'], true) : [];
-        $service['sample_files'] = $service['sample_files'] ? json_decode($service['sample_files'], true) : [];
-        $service['skills']       = $service['skills'] ? json_decode($service['skills'], true) : [];
+        $service["tags"] = $service["tags"]
+            ? json_decode($service["tags"], true)
+            : [];
+        $service["sample_files"] = $service["sample_files"]
+            ? json_decode($service["sample_files"], true)
+            : [];
+        $service["skills"] = $service["skills"]
+            ? json_decode($service["skills"], true)
+            : [];
 
         // Ensure sample_files is always an array
-        if (! is_array($service['sample_files'])) {
-            $service['sample_files'] = [];
+        if (!is_array($service["sample_files"])) {
+            $service["sample_files"] = [];
         }
 
         return $service;
@@ -459,8 +490,11 @@ class ServiceRepository
      * @param int $offset
      * @return array
      */
-    public function getStudentReviews(int $studentId, int $limit, int $offset): array
-    {
+    public function getStudentReviews(
+        int $studentId,
+        int $limit,
+        int $offset,
+    ): array {
         $sql = "SELECT r.*, u.name as client_name, u.email as client_email, o.id as order_id, s.title as service_title
                 FROM reviews r
                 LEFT JOIN users u ON r.client_id = u.id
@@ -471,9 +505,9 @@ class ServiceRepository
                 LIMIT :limit OFFSET :offset";
 
         $stmt = $this->db->prepare($sql);
-        $stmt->bindValue(':student_id', $studentId, PDO::PARAM_INT);
-        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
-        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+        $stmt->bindValue(":student_id", $studentId, PDO::PARAM_INT);
+        $stmt->bindValue(":limit", $limit, PDO::PARAM_INT);
+        $stmt->bindValue(":offset", $offset, PDO::PARAM_INT);
 
         $stmt->execute();
 
