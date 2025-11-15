@@ -31,7 +31,7 @@
                     <div>
                         <h3 class="font-medium text-blue-900 mb-1">Revision Request</h3>
                         <p class="text-sm text-blue-800">
-                            You have used                                          <?php echo $order['revision_count'] ?> of<?php echo $order['max_revisions'] ?> available revisions.
+                            You have used                                                                                   <?php echo $order['revision_count'] ?> of<?php echo $order['max_revisions'] ?> available revisions.
                             <?php if ($order['revision_count'] < $order['max_revisions']): ?>
                                 You have<?php echo $order['max_revisions'] - $order['revision_count'] ?> revision(s) remaining.
                             <?php else: ?>
@@ -135,7 +135,7 @@
                     <li>Provide examples or references if possible</li>
                     <li>Keep your feedback constructive and professional</li>
                     <li>Remember that revisions should be within the original scope of work</li>
-                    <li>If you've reached the maximum revisions, you may need to open a dispute</li>
+                    <li>If you've reached the maximum revisions, please contact an administrator for assistance</li>
                 </ul>
             </div>
         </div>

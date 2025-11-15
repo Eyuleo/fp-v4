@@ -14,7 +14,6 @@
             'message_received'   => '💬',
             'review_submitted'   => '⭐',
             'payment_received'   => '💰',
-            'dispute_opened'     => '⚠️',
             'default'            => '🔔',
         ];
 
@@ -32,7 +31,6 @@
             'message_received'   => 'blue',
             'review_submitted'   => 'yellow',
             'payment_received'   => 'green',
-            'dispute_opened'     => 'red',
             'default'            => 'gray',
         ];
 
