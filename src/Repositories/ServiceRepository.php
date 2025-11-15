@@ -253,11 +253,13 @@ class ServiceRepository
         $where    = ["s.status = 'active'"];
         $hasQuery = ! empty($query);
 
-        // Fulltext search on title and description
+        // Fulltext search on title and description + tags JSON fallback
         if ($hasQuery) {
             $where[] =
-                "MATCH(s.title, s.description) AGAINST (:query IN NATURAL LANGUAGE MODE)";
-            $params["query"] = $query;
+                "(MATCH(s.title, s.description) AGAINST (:query IN NATURAL LANGUAGE MODE)
+                  OR JSON_SEARCH(s.tags, 'one', :tag_query) IS NOT NULL)";
+            $params["query"]     = $query;
+            $params["tag_query"] = '%' . $query . '%';
         }
 
         // Category filter
@@ -290,12 +292,12 @@ class ServiceRepository
 
         $whereClause = implode(" AND ", $where);
 
-        // Build SELECT relevance part (use DISTINCT placeholder name)
+        // Build SELECT relevance part (based only on FULLTEXT)
         $relevanceSelect = "";
         if ($hasQuery) {
             $relevanceSelect =
                 "MATCH(s.title, s.description) AGAINST (:query_relevance IN NATURAL LANGUAGE MODE) AS relevance,";
-            $params["query_relevance"] = $query; // distinct binding to avoid duplicate placeholder names
+            $params["query_relevance"] = $query;
         }
 
         // Determine sort order
@@ -357,11 +359,13 @@ class ServiceRepository
         $params = [];
         $where  = ["s.status = 'active'"];
 
-        // Fulltext search on title and description
+        // Fulltext search on title and description + tags JSON fallback
         if (! empty($query)) {
             $where[] =
-                "MATCH(s.title, s.description) AGAINST (:query IN NATURAL LANGUAGE MODE)";
-            $params["query"] = $query;
+                "(MATCH(s.title, s.description) AGAINST (:query IN NATURAL LANGUAGE MODE)
+                  OR JSON_SEARCH(s.tags, 'one', :tag_query) IS NOT NULL)";
+            $params["query"]     = $query;
+            $params["tag_query"] = '%' . $query . '%';
         }
 
         // Category filter
