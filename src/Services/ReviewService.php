@@ -164,8 +164,9 @@ class ReviewService
     }
 
     /**
-     * Update a review (within 24-hour window)
+     * Update a review (DEPRECATED - clients can no longer edit reviews)
      *
+     * @deprecated This method is deprecated and will always return an error
      * @param int $reviewId
      * @param int $clientId
      * @param int $rating
@@ -174,82 +175,11 @@ class ReviewService
      */
     public function updateReview(int $reviewId, int $clientId, int $rating, ?string $comment): array
     {
-        // Validate rating
-        if ($rating < 1 || $rating > 5) {
-            return [
-                'success' => false,
-                'review'  => null,
-                'errors'  => ['rating' => 'Rating must be between 1 and 5 stars'],
-            ];
-        }
-
-        // Get review
-        $review = $this->reviewRepository->findById($reviewId);
-
-        if (! $review) {
-            return [
-                'success' => false,
-                'review'  => null,
-                'errors'  => ['review' => 'Review not found'],
-            ];
-        }
-
-        // Check review belongs to client
-        if ($review['client_id'] != $clientId) {
-            return [
-                'success' => false,
-                'review'  => null,
-                'errors'  => ['authorization' => 'You are not authorized to edit this review'],
-            ];
-        }
-
-        // Check can_edit_until is not expired
-        $now          = time();
-        $canEditUntil = strtotime($review['can_edit_until']);
-
-        if ($now > $canEditUntil) {
-            return [
-                'success' => false,
-                'review'  => null,
-                'errors'  => ['expired' => 'The 24-hour edit window has expired'],
-            ];
-        }
-
-        // Begin transaction
-        $this->reviewRepository->beginTransaction();
-
-        try {
-            // Update review
-            $this->reviewRepository->update($reviewId, [
-                'rating'  => $rating,
-                'comment' => $comment ? trim($comment) : null,
-            ]);
-
-            // Recalculate student average_rating
-            $this->reviewRepository->updateStudentRating($review['student_id']);
-
-            // Commit transaction
-            $this->reviewRepository->commit();
-
-            // Get the updated review
-            $updatedReview = $this->reviewRepository->findById($reviewId);
-
-            return [
-                'success' => true,
-                'review'  => $updatedReview,
-                'errors'  => [],
-            ];
-        } catch (Exception $e) {
-            // Rollback on error
-            $this->reviewRepository->rollback();
-            error_log('Review update error: ' . $e->getMessage());
-
-            return [
-                'success' => false,
-                'review'  => null,
-                'errors'  => ['database' => 'Failed to update review. Please try again.'],
-            ];
-        }
+        return [
+            'success' => false,
+            'review'  => null,
+            'errors'  => ['authorization' => 'Review editing is no longer available. Please contact support if you need to modify a review.'],
+        ];
     }
 
     /**
@@ -381,5 +311,231 @@ class ReviewService
     public function getReviewCount(int $studentId): int
     {
         return $this->reviewRepository->countByStudentId($studentId);
+    }
+
+    /**
+     * Flag a review (hide from public display)
+     *
+     * @param int $reviewId
+     * @param int $adminId
+     * @param string|null $moderationNotes
+     * @return array ['success' => bool, 'review' => array|null, 'errors' => array]
+     */
+    public function flagReview(int $reviewId, int $adminId, ?string $moderationNotes = null): array
+    {
+        // Get review
+        $review = $this->reviewRepository->findById($reviewId);
+
+        if (! $review) {
+            return [
+                'success' => false,
+                'review'  => null,
+                'errors'  => ['review' => 'Review not found'],
+            ];
+        }
+
+        // Check if already hidden
+        if ($review['is_hidden']) {
+            return [
+                'success' => false,
+                'review'  => null,
+                'errors'  => ['review' => 'Review is already hidden'],
+            ];
+        }
+
+        // Begin transaction
+        $this->reviewRepository->beginTransaction();
+
+        try {
+            // Hide the review
+            $this->reviewRepository->hideReview($reviewId, $adminId, $moderationNotes);
+
+            // Recalculate student average_rating (excluding hidden reviews)
+            $this->reviewRepository->updateStudentRating($review['student_id']);
+
+            // Log audit action
+            $this->logAuditAction($adminId, 'flag_review', 'review', $reviewId, [
+                'is_hidden' => 0,
+            ], [
+                'is_hidden'        => 1,
+                'moderation_notes' => $moderationNotes,
+            ]);
+
+            // Commit transaction
+            $this->reviewRepository->commit();
+
+            // Get the updated review
+            $updatedReview = $this->reviewRepository->findById($reviewId);
+
+            return [
+                'success' => true,
+                'review'  => $updatedReview,
+                'errors'  => [],
+            ];
+        } catch (Exception $e) {
+            // Rollback on error
+            $this->reviewRepository->rollback();
+            error_log('Review flag error: ' . $e->getMessage());
+
+            return [
+                'success' => false,
+                'review'  => null,
+                'errors'  => ['database' => 'Failed to flag review. Please try again.'],
+            ];
+        }
+    }
+
+    /**
+     * Unflag a review (restore to public display)
+     *
+     * @param int $reviewId
+     * @param int $adminId
+     * @return array ['success' => bool, 'review' => array|null, 'errors' => array]
+     */
+    public function unflagReview(int $reviewId, int $adminId): array
+    {
+        // Get review
+        $review = $this->reviewRepository->findById($reviewId);
+
+        if (! $review) {
+            return [
+                'success' => false,
+                'review'  => null,
+                'errors'  => ['review' => 'Review not found'],
+            ];
+        }
+
+        // Check if not hidden
+        if (! $review['is_hidden']) {
+            return [
+                'success' => false,
+                'review'  => null,
+                'errors'  => ['review' => 'Review is not hidden'],
+            ];
+        }
+
+        // Begin transaction
+        $this->reviewRepository->beginTransaction();
+
+        try {
+            // Unhide the review
+            $this->reviewRepository->unhideReview($reviewId, $adminId);
+
+            // Recalculate student average_rating (including restored review)
+            $this->reviewRepository->updateStudentRating($review['student_id']);
+
+            // Log audit action
+            $this->logAuditAction($adminId, 'unflag_review', 'review', $reviewId, [
+                'is_hidden'        => 1,
+                'moderation_notes' => $review['moderation_notes'],
+            ], [
+                'is_hidden'        => 0,
+                'moderation_notes' => null,
+            ]);
+
+            // Commit transaction
+            $this->reviewRepository->commit();
+
+            // Get the updated review
+            $updatedReview = $this->reviewRepository->findById($reviewId);
+
+            return [
+                'success' => true,
+                'review'  => $updatedReview,
+                'errors'  => [],
+            ];
+        } catch (Exception $e) {
+            // Rollback on error
+            $this->reviewRepository->rollback();
+            error_log('Review unflag error: ' . $e->getMessage());
+
+            return [
+                'success' => false,
+                'review'  => null,
+                'errors'  => ['database' => 'Failed to unflag review. Please try again.'],
+            ];
+        }
+    }
+
+    /**
+     * Get all reviews for moderation (with optional filter)
+     *
+     * @param string|null $filter 'flagged', 'visible', or null for all
+     * @param int $page
+     * @return array
+     */
+    public function getAllReviewsForModeration(?string $filter = null, int $page = 1): array
+    {
+        return $this->reviewRepository->findAllForModeration($filter, $page, 20);
+    }
+
+    /**
+     * Get reviews for moderation (flagged/hidden reviews)
+     *
+     * @param int $page
+     * @return array
+     */
+    public function getReviewsForModeration(int $page = 1): array
+    {
+        return $this->reviewRepository->findFlaggedReviews($page, 20);
+    }
+
+    /**
+     * Get count of reviews for moderation (with optional filter)
+     *
+     * @param string|null $filter 'flagged', 'visible', or null for all
+     * @return int
+     */
+    public function getTotalReviewCount(?string $filter = null): int
+    {
+        return $this->reviewRepository->countAllReviews($filter);
+    }
+
+    /**
+     * Get count of flagged reviews
+     *
+     * @return int
+     */
+    public function getFlaggedReviewCount(): int
+    {
+        return $this->reviewRepository->countFlaggedReviews();
+    }
+
+    /**
+     * Log audit action
+     *
+     * @param int $userId
+     * @param string $action
+     * @param string $resourceType
+     * @param int $resourceId
+     * @param array|null $oldValues
+     * @param array|null $newValues
+     * @return void
+     */
+    private function logAuditAction(int $userId, string $action, string $resourceType, int $resourceId, ?array $oldValues = null, ?array $newValues = null): void
+    {
+        try {
+            $sql = "INSERT INTO audit_logs (
+                user_id, action, resource_type, resource_id,
+                old_values, new_values, ip_address, user_agent, created_at
+            ) VALUES (
+                :user_id, :action, :resource_type, :resource_id,
+                :old_values, :new_values, :ip_address, :user_agent, NOW()
+            )";
+
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([
+                'user_id'       => $userId,
+                'action'        => $action,
+                'resource_type' => $resourceType,
+                'resource_id'   => $resourceId,
+                'old_values'    => $oldValues ? json_encode($oldValues) : null,
+                'new_values'    => $newValues ? json_encode($newValues) : null,
+                'ip_address'    => $_SERVER['REMOTE_ADDR'] ?? null,
+                'user_agent'    => $_SERVER['HTTP_USER_AGENT'] ?? null,
+            ]);
+        } catch (Exception $e) {
+            error_log('Audit log error: ' . $e->getMessage());
+        }
     }
 }

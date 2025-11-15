@@ -135,7 +135,7 @@ class ReviewRepository
     }
 
     /**
-     * Get reviews for a student
+     * Get reviews for a student (excluding hidden reviews)
      *
      * @param int $studentId
      * @param int $page
@@ -154,6 +154,7 @@ class ReviewRepository
                 LEFT JOIN orders o ON r.order_id = o.id
                 LEFT JOIN services s ON o.service_id = s.id
                 WHERE r.student_id = :student_id
+                AND r.is_hidden = 0
                 ORDER BY r.created_at DESC
                 LIMIT :limit OFFSET :offset";
 
@@ -167,14 +168,17 @@ class ReviewRepository
     }
 
     /**
-     * Get total count of reviews for a student
+     * Get total count of reviews for a student (excluding hidden reviews)
      *
      * @param int $studentId
      * @return int
      */
     public function countByStudentId(int $studentId): int
     {
-        $sql = "SELECT COUNT(*) as count FROM reviews WHERE student_id = :student_id";
+        $sql = "SELECT COUNT(*) as count
+                FROM reviews
+                WHERE student_id = :student_id
+                AND is_hidden = 0";
 
         $stmt = $this->db->prepare($sql);
         $stmt->execute(['student_id' => $studentId]);
@@ -185,14 +189,17 @@ class ReviewRepository
     }
 
     /**
-     * Calculate average rating for a student
+     * Calculate average rating for a student (excluding hidden reviews)
      *
      * @param int $studentId
      * @return float
      */
     public function calculateAverageRating(int $studentId): float
     {
-        $sql = "SELECT AVG(rating) as avg_rating FROM reviews WHERE student_id = :student_id";
+        $sql = "SELECT AVG(rating) as avg_rating
+                FROM reviews
+                WHERE student_id = :student_id
+                AND is_hidden = 0";
 
         $stmt = $this->db->prepare($sql);
         $stmt->execute(['student_id' => $studentId]);
@@ -226,6 +233,147 @@ class ReviewRepository
             'total_reviews'  => $totalReviews,
             'student_id'     => $studentId,
         ]);
+    }
+
+    /**
+     * Hide a review (set is_hidden flag)
+     *
+     * @param int $reviewId
+     * @param int $adminId
+     * @param string|null $moderationNotes
+     * @return bool
+     */
+    public function hideReview(int $reviewId, int $adminId, ?string $moderationNotes = null): bool
+    {
+        $sql = "UPDATE reviews
+                SET is_hidden = 1,
+                    moderation_notes = :moderation_notes,
+                    moderated_by = :moderated_by,
+                    moderated_at = NOW(),
+                    updated_at = NOW()
+                WHERE id = :review_id";
+
+        $stmt = $this->db->prepare($sql);
+
+        return $stmt->execute([
+            'review_id'        => $reviewId,
+            'moderated_by'     => $adminId,
+            'moderation_notes' => $moderationNotes,
+        ]);
+    }
+
+    /**
+     * Unhide a review (clear is_hidden flag)
+     *
+     * @param int $reviewId
+     * @param int $adminId
+     * @return bool
+     */
+    public function unhideReview(int $reviewId, int $adminId): bool
+    {
+        $sql = "UPDATE reviews
+                SET is_hidden = 0,
+                    moderation_notes = NULL,
+                    moderated_by = :moderated_by,
+                    moderated_at = NOW(),
+                    updated_at = NOW()
+                WHERE id = :review_id";
+
+        $stmt = $this->db->prepare($sql);
+
+        return $stmt->execute([
+            'review_id'    => $reviewId,
+            'moderated_by' => $adminId,
+        ]);
+    }
+
+    /**
+     * Find all reviews for moderation (with optional filter)
+     *
+     * @param string|null $filter 'flagged', 'visible', or null for all
+     * @param int $page
+     * @param int $perPage
+     * @return array
+     */
+    public function findAllForModeration(?string $filter = null, int $page = 1, int $perPage = 20): array
+    {
+        $offset = ($page - 1) * $perPage;
+
+        $whereClause = '';
+        if ($filter === 'flagged') {
+            $whereClause = 'WHERE r.is_hidden = 1';
+        } elseif ($filter === 'visible') {
+            $whereClause = 'WHERE r.is_hidden = 0';
+        }
+
+        $sql = "SELECT r.*,
+                       u_client.name as client_name, u_client.email as client_email,
+                       u_student.name as student_name, u_student.email as student_email,
+                       u_moderator.name as moderator_name,
+                       o.service_id, s.title as service_title
+                FROM reviews r
+                LEFT JOIN users u_client ON r.client_id = u_client.id
+                LEFT JOIN users u_student ON r.student_id = u_student.id
+                LEFT JOIN users u_moderator ON r.moderated_by = u_moderator.id
+                LEFT JOIN orders o ON r.order_id = o.id
+                LEFT JOIN services s ON o.service_id = s.id
+                $whereClause
+                ORDER BY r.created_at DESC
+                LIMIT :limit OFFSET :offset";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindValue('limit', $perPage, PDO::PARAM_INT);
+        $stmt->bindValue('offset', $offset, PDO::PARAM_INT);
+        $stmt->execute();
+
+        return $stmt->fetchAll();
+    }
+
+    /**
+     * Find flagged/hidden reviews for moderation
+     *
+     * @param int $page
+     * @param int $perPage
+     * @return array
+     */
+    public function findFlaggedReviews(int $page = 1, int $perPage = 20): array
+    {
+        return $this->findAllForModeration('flagged', $page, $perPage);
+    }
+
+    /**
+     * Get total count of reviews (with optional filter)
+     *
+     * @param string|null $filter 'flagged', 'visible', or null for all
+     * @return int
+     */
+    public function countAllReviews(?string $filter = null): int
+    {
+        $whereClause = '';
+        if ($filter === 'flagged') {
+            $whereClause = 'WHERE is_hidden = 1';
+        } elseif ($filter === 'visible') {
+            $whereClause = 'WHERE is_hidden = 0';
+        }
+
+        $sql = "SELECT COUNT(*) as count FROM reviews $whereClause";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute();
+
+        $result = $stmt->fetch();
+
+        return (int) $result['count'];
+    }
+
+    /**
+     * Get total count of flagged reviews
+     *
+     * @return int
+     */
+    public function countFlaggedReviews(): int
+    {
+        return $this->countAllReviews('flagged');
     }
 
     /**

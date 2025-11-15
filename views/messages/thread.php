@@ -67,7 +67,7 @@
                             <div class="max-w-[70%]">
                                 <?php if (! $isOwnMessage): ?>
                                     <div class="text-xs text-gray-500 mb-1">
-                                        <?php echo e($message['sender_name'] ?? $message['sender_email']) ?>
+                                        <?php echo e($message['sender_name'] ?? explode('@', $message['sender_email'] ?? '')[0]) ?>
                                     </div>
                                 <?php endif; ?>
 
@@ -83,7 +83,7 @@
                                                 ?>
                                                 <a href="<?php echo e($attachment['signed_url']) ?>"
                                                    target="_blank"
-                                                   class="flex items-center space-x-2                                                                                      <?php echo $isOwnMessage ? 'text-blue-100 hover:text-white' : 'text-blue-600 hover:text-blue-700' ?>">
+                                                   class="flex items-center space-x-2                                                                                                                                                                                                                                                                <?php echo $isOwnMessage ? 'text-blue-100 hover:text-white' : 'text-blue-600 hover:text-blue-700' ?>">
                                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                                               d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.586"/>
@@ -106,7 +106,7 @@
                                     <?php endif; ?>
                                 </div>
 
-                                <div class="text-xs text-gray-500 mt-1                                                                       <?php echo $isOwnMessage ? 'text-right' : 'text-left' ?>">
+                                <div class="text-xs text-gray-500 mt-1                                                                                                                                                                                                                   <?php echo $isOwnMessage ? 'text-right' : 'text-left' ?>">
                                     <?php echo date('M d, Y g:i A', strtotime($message['created_at'])) ?>
                                 </div>
                             </div>
@@ -179,7 +179,7 @@ function messageThread(orderId, currentUserId) {
     return {
         orderId: orderId,
         currentUserId: currentUserId,
-        lastMessageId:                       <?php echo ! empty($messages) ? (int) end($messages)['id'] : 0; ?>,
+        lastMessageId:                                                                   <?php echo ! empty($messages) ? (int) end($messages)['id'] : 0; ?>,
         pollingInterval: null,
 
         init() {
@@ -242,7 +242,7 @@ function messageThread(orderId, currentUserId) {
             const messageHtml = `
                 <div class="flex ${alignClass}" data-message-id="${message.id}">
                     <div class="max-w-[70%]">
-                        ${!isOwnMessage ? `<div class="text-xs text-gray-500 mb-1">${this.escapeHtml(message.sender_name || message.sender_email || '')}</div>` : ''}
+                        ${!isOwnMessage ? `<div class="text-xs text-gray-500 mb-1">${this.escapeHtml(message.sender_name || (message.sender_email ? message.sender_email.split('@')[0] : ''))}</div>` : ''}
                         <div class="${messageClass} rounded-lg px-4 py-3">
                             <p class="whitespace-pre-wrap break-words">${this.escapeHtml(message.content)}</p>
                             ${attachmentsHtml}

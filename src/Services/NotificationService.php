@@ -168,8 +168,8 @@ class NotificationService
             $student['id'],
             $student['email'],
             'order_placed',
-            'New Order Received',
-            "You have received a new order for {$service['title']}",
+            'New Order - Work Started',
+            "You have received a new order for {$service['title']} and work has started",
             'emails/order-placed',
             [
                 'student_name'  => $student['name'] ?? $student['email'],

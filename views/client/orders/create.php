@@ -36,7 +36,7 @@
 
                     <div class="mt-4">
                         <span class="text-sm text-gray-600">By:</span>
-                        <span class="text-sm font-medium text-gray-900"><?php echo e($service['student_name'] ?? $service['student_email']) ?></span>
+                        <span class="text-sm font-medium text-gray-900"><?php echo e($service['student_name'] ?? explode('@', $service['student_email'] ?? '')[0]) ?></span>
                     </div>
                 </div>
 

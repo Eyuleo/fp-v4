@@ -37,12 +37,20 @@ class AuthController
     {
         try {
             // Validate input
+            $name            = trim($_POST['name'] ?? '');
             $email           = trim($_POST['email'] ?? '');
             $password        = $_POST['password'] ?? '';
             $passwordConfirm = $_POST['password_confirm'] ?? '';
             $role            = $_POST['role'] ?? '';
 
             $errors = [];
+
+            // Name validation
+            if (empty($name)) {
+                $errors['name'] = 'Name is required';
+            } elseif (strlen($name) < 2) {
+                $errors['name'] = 'Name must be at least 2 characters';
+            }
 
             // Email validation
             if (empty($email)) {
@@ -78,7 +86,7 @@ class AuthController
             }
 
             // Register user
-            $user = $this->authService->register($email, $password, $role);
+            $user = $this->authService->register($email, $password, $role, $name);
 
             // Success message
             flash('success', 'Registration successful! Please check your email to verify your account.');

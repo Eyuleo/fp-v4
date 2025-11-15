@@ -28,7 +28,7 @@ class AuthService
     /**
      * Register a new user
      */
-    public function register(string $email, string $password, string $role): array
+    public function register(string $email, string $password, string $role, string $name): array
     {
         // Check if email already exists
         if ($this->userRepository->emailExists($email)) {
@@ -48,6 +48,7 @@ class AuthService
 
         // Create user
         $userId = $this->userRepository->create([
+            'name'               => $name,
             'email'              => $email,
             'password_hash'      => $passwordHash,
             'role'               => $role,

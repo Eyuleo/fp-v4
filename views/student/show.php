@@ -19,14 +19,14 @@
                             >
                         <?php else: ?>
                             <div class="w-20 h-20 bg-blue-600 rounded-full flex items-center justify-center text-white text-2xl font-bold">
-                                <?php echo strtoupper(substr($profile['email'] ?? 'S', 0, 1)) ?>
+                                <?php echo strtoupper(substr($profile['name'] ?? $profile['email'] ?? 'S', 0, 1)) ?>
                             </div>
                         <?php endif; ?>
                         <div>
                             <h1 class="text-3xl font-bold text-gray-900">
-                                <?php echo e(explode('@', $profile['email'] ?? 'Student')[0]) ?>
+                                <?php echo e($profile['name'] ?? explode('@', $profile['email'] ?? 'Student')[0]) ?>
                             </h1>
-                            <p class="text-gray-600">Student • Member since                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      <?php echo e(date('M Y', strtotime($profile['user_created_at'] ?? 'now'))) ?></p>
+                            <p class="text-gray-600">Student • Member since                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                <?php echo e(date('M Y', strtotime($profile['user_created_at'] ?? 'now'))) ?></p>
                         </div>
                     </div>
 
@@ -119,7 +119,7 @@
                                             <?php echo e($service['title']) ?>
                                         </h3>
                                         <span class="text-lg font-bold text-gray-900 ml-4">
-                                            ETB                                                                                                                                                                                                                                            <?php echo number_format($service['price'], 2) ?>
+                                            ETB                                                                                                                                                                                                                                                                                                                                          <?php echo number_format($service['price'], 2) ?>
                                         </span>
                                     </div>
                                     <p class="text-sm text-gray-600 mb-3 line-clamp-2">
@@ -219,6 +219,24 @@
                                         <p class="text-sm text-gray-500 mb-3">
                                             Service: <span class="font-medium"><?php echo e($review['service_title']) ?></span>
                                         </p>
+                                    <?php endif; ?>
+
+                                    <!-- Admin Flag Button -->
+                                    <?php if (auth() && Auth::user()['role'] === 'admin'): ?>
+                                        <div class="mb-3">
+                                            <form method="POST" action="/admin/reviews/<?php echo e($review['id']) ?>/flag"
+                                                  onsubmit="return confirm('Are you sure you want to flag and hide this review?')"
+                                                  class="inline">
+                                                <input type="hidden" name="csrf_token" value="<?php echo e($_SESSION['csrf_token']) ?>">
+                                                <button type="submit"
+                                                        class="text-sm text-red-600 hover:text-red-800 flex items-center">
+                                                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9"/>
+                                                    </svg>
+                                                    Flag Review
+                                                </button>
+                                            </form>
+                                        </div>
                                     <?php endif; ?>
 
                                     <!-- Student Reply -->

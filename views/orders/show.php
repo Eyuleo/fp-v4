@@ -58,6 +58,31 @@
                 </div>
             <?php endif; ?>
 
+            <?php
+                // Check if order is past deadline
+                $isPastDeadline         = strtotime($order['deadline']) < time();
+                $isInProgressOrRevision = in_array($order['status'], ['in_progress', 'revision_requested']);
+            ?>
+
+            <?php if ($isPastDeadline && $isInProgressOrRevision): ?>
+                <div class="mb-4 p-4 border-2 border-red-300 bg-red-50 rounded-lg">
+                    <div class="flex items-start">
+                        <svg class="w-6 h-6 text-red-600 mr-3 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                        </svg>
+                        <div class="flex-1">
+                            <div class="font-bold text-red-900 text-lg mb-1">⚠️ Order Past Deadline</div>
+                            <div class="text-sm text-red-800">
+                                This order is overdue. Delivery functionality has been disabled.
+                                <?php if ($order['student_id'] === Auth::user()['id']): ?>
+                                    Only an administrator can resolve this order. Please contact support if you need assistance.
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            <?php endif; ?>
+
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                     <h3 class="text-sm font-medium text-gray-500 mb-1">Service</h3>
@@ -71,17 +96,67 @@
 
                 <div>
                     <h3 class="text-sm font-medium text-gray-500 mb-1">Client</h3>
-                    <p class="text-gray-900"><?php echo e($order['client_name'] ?? $order['client_email']) ?></p>
+                    <p class="text-gray-900"><?php echo e($order['client_name'] ?? explode('@', $order['client_email'] ?? '')[0]) ?></p>
+                    <?php if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin'): ?>
+                        <p class="text-sm text-gray-500"><?php echo e($order['client_email']) ?></p>
+                    <?php endif; ?>
                 </div>
 
                 <div>
                     <h3 class="text-sm font-medium text-gray-500 mb-1">Student</h3>
-                    <p class="text-gray-900"><?php echo e($order['student_name'] ?? $order['student_email']) ?></p>
+                    <p class="text-gray-900"><?php echo e($order['student_name'] ?? explode('@', $order['student_email'] ?? '')[0]) ?></p>
+                    <?php if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin'): ?>
+                        <p class="text-sm text-gray-500"><?php echo e($order['student_email']) ?></p>
+                    <?php endif; ?>
                 </div>
 
                 <div>
                     <h3 class="text-sm font-medium text-gray-500 mb-1">Deadline</h3>
-                    <p class="text-gray-900"><?php echo date('M d, Y H:i', strtotime($order['deadline'])) ?></p>
+                    <p class="text-gray-900 font-semibold"><?php echo date('M d, Y H:i', strtotime($order['deadline'])) ?></p>
+                    <?php
+                        $deadlineTimestamp = strtotime($order['deadline']);
+                        $currentTimestamp  = time();
+                        $timeDiff          = $deadlineTimestamp - $currentTimestamp;
+
+                        if ($timeDiff > 0) {
+                            // Calculate time remaining
+                            $days    = floor($timeDiff / 86400);
+                            $hours   = floor(($timeDiff % 86400) / 3600);
+                            $minutes = floor(($timeDiff % 3600) / 60);
+
+                            $timeRemaining = '';
+                            if ($days > 0) {
+                                $timeRemaining = $days . ' day' . ($days > 1 ? 's' : '') . ', ' . $hours . ' hour' . ($hours > 1 ? 's' : '');
+                            } elseif ($hours > 0) {
+                                $timeRemaining = $hours . ' hour' . ($hours > 1 ? 's' : '') . ', ' . $minutes . ' minute' . ($minutes > 1 ? 's' : '');
+                            } else {
+                                $timeRemaining = $minutes . ' minute' . ($minutes > 1 ? 's' : '');
+                            }
+
+                            // Color code based on urgency
+                            $urgencyClass = 'text-green-600';
+                            if ($days < 1) {
+                                $urgencyClass = 'text-red-600 font-bold';
+                            } elseif ($days < 2) {
+                                $urgencyClass = 'text-orange-600 font-semibold';
+                            }
+
+                            echo '<p class="text-sm ' . $urgencyClass . ' mt-1">⏱️ ' . $timeRemaining . ' remaining</p>';
+                        } else {
+                            // Past deadline
+                            $daysOverdue  = abs(floor($timeDiff / 86400));
+                            $hoursOverdue = abs(floor(($timeDiff % 86400) / 3600));
+
+                            $overdueText = '';
+                            if ($daysOverdue > 0) {
+                                $overdueText = $daysOverdue . ' day' . ($daysOverdue > 1 ? 's' : '') . ' overdue';
+                            } else {
+                                $overdueText = $hoursOverdue . ' hour' . ($hoursOverdue > 1 ? 's' : '') . ' overdue';
+                            }
+
+                            echo '<p class="text-sm text-red-600 font-bold mt-1">🚨 ' . $overdueText . '</p>';
+                        }
+                    ?>
                 </div>
 
                 <div>
@@ -193,14 +268,22 @@
                             </button>
                         <?php endif; ?>
 
-                        <?php
-                            $canEditUntil = strtotime($review['can_edit_until']);
-                            $now          = time();
-                        ?>
-                        <?php if ($order['client_id'] === Auth::user()['id'] && $now <= $canEditUntil): ?>
-                            <a href="/reviews/<?php echo e($review['id']) ?>/edit" class="mt-3 inline-block text-sm text-blue-600 hover:text-blue-700">
-                                Edit review (<?php echo ceil(($canEditUntil - $now) / 3600) ?> hours left)
-                            </a>
+                        <!-- Admin Flag Button -->
+                        <?php if (Auth::user()['role'] === 'admin'): ?>
+                            <div class="mt-3">
+                                <form method="POST" action="/admin/reviews/<?php echo e($review['id']) ?>/flag"
+                                      onsubmit="return confirm('Are you sure you want to flag and hide this review?')"
+                                      class="inline">
+                                    <input type="hidden" name="csrf_token" value="<?php echo e($_SESSION['csrf_token']) ?>">
+                                    <button type="submit"
+                                            class="text-sm text-red-600 hover:text-red-800 flex items-center">
+                                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9"/>
+                                        </svg>
+                                        Flag Review
+                                    </button>
+                                </form>
+                            </div>
                         <?php endif; ?>
                     </div>
                 </div>
@@ -223,19 +306,17 @@
                 </div>
 
                 <div class="space-x-3">
-                    <?php if ($order['status'] === 'pending' && $order['student_id'] === Auth::user()['id']): ?>
-                        <form action="/orders/<?php echo e($order['id']) ?>/accept" method="POST" class="inline">
-                            <input type="hidden" name="csrf_token" value="<?php echo e($_SESSION['csrf_token']) ?>">
-                            <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700">
-                                Accept Order
-                            </button>
-                        </form>
-                    <?php endif; ?>
-
                     <?php if (($order['status'] === 'in_progress' || $order['status'] === 'revision_requested') && $order['student_id'] === Auth::user()['id']): ?>
-                        <button onclick="showDeliverForm()" class="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700">
-                            Deliver Order
-                        </button>
+                        <?php if ($isPastDeadline): ?>
+                            <button disabled class="bg-gray-400 text-white px-6 py-2 rounded-md cursor-not-allowed opacity-60" title="Cannot deliver past deadline">
+                                Deliver Order (Disabled)
+                            </button>
+                            <p class="text-sm text-red-600 mt-2">Delivery is disabled because this order is past its deadline. Please contact an administrator.</p>
+                        <?php else: ?>
+                            <button onclick="showDeliverForm()" class="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700">
+                                Deliver Order
+                            </button>
+                        <?php endif; ?>
                     <?php endif; ?>
 
                     <?php if ($order['status'] === 'delivered' && $order['client_id'] === Auth::user()['id']): ?>
@@ -259,7 +340,7 @@
                         </a>
                     <?php endif; ?>
 
-                    <?php if ($order['status'] === 'pending'): ?>
+                    <?php if (Auth::user()['role'] === 'admin'): ?>
                         <button onclick="showCancelModal()" class="bg-red-600 text-white px-6 py-2 rounded-md hover:bg-red-700">
                             Cancel Order
                         </button>
@@ -377,7 +458,7 @@
                         placeholder="Please be specific about what changes you need..."
                     ></textarea>
                     <p class="text-sm text-gray-500 mt-1">
-                        You have                                 <?php echo e(($order['max_revisions'] ?? 0) - ($order['revision_count'] ?? 0)); ?> revision(s) left.
+                        You have                                                                                                                                                                                                                                                                                                                                                                 <?php echo e(($order['max_revisions'] ?? 0) - ($order['revision_count'] ?? 0)); ?> revision(s) left.
                     </p>
                 </div>
 
@@ -480,6 +561,11 @@
     // Capture additional scripts
     $additionalScripts = ob_get_clean();
 
-    // Include dashboard layout
-    include __DIR__ . '/../layouts/dashboard.php';
+    // Include appropriate layout based on user role
+    $userRole = $_SESSION['user_role'] ?? 'guest';
+    if ($userRole === 'admin') {
+        include __DIR__ . '/../layouts/admin.php';
+    } else {
+        include __DIR__ . '/../layouts/dashboard.php';
+    }
 ?>

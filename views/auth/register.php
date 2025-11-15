@@ -11,6 +11,25 @@
 <form method="POST" action="/auth/register" class="space-y-6">
     <?php echo csrf_field() ?>
 
+    <!-- Name -->
+    <div>
+        <label for="name" class="block text-sm font-medium text-gray-700 mb-2">
+            Full Name
+        </label>
+        <input
+            type="text"
+            id="name"
+            name="name"
+            value="<?php echo e(old('name')) ?>"
+            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500                                                                                                                          <?php echo isset($_SESSION['errors']['name']) ? 'border-red-500' : '' ?>"
+            required
+            minlength="2"
+        >
+        <?php if (isset($_SESSION['errors']['name'])): ?>
+            <p class="mt-1 text-sm text-red-600"><?php echo e($_SESSION['errors']['name']) ?></p>
+        <?php endif; ?>
+    </div>
+
     <!-- Email -->
     <div>
         <label for="email" class="block text-sm font-medium text-gray-700 mb-2">
@@ -21,7 +40,7 @@
             id="email"
             name="email"
             value="<?php echo e(old('email')) ?>"
-            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500                                                                                                                                                                                                                                                                                                                                                                            <?php echo isset($_SESSION['errors']['email']) ? 'border-red-500' : '' ?>"
+            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     <?php echo isset($_SESSION['errors']['email']) ? 'border-red-500' : '' ?>"
             required
         >
         <?php if (isset($_SESSION['errors']['email'])): ?>
@@ -39,7 +58,7 @@
                 type="password"
                 id="password"
                 name="password"
-                class="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500                                                                                                                                                                                                                                                                                                                                                                                                          <?php echo isset($_SESSION['errors']['password']) ? 'border-red-500' : '' ?>"
+                class="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             <?php echo isset($_SESSION['errors']['password']) ? 'border-red-500' : '' ?>"
                 required
             >
             <button
@@ -75,7 +94,7 @@
                 type="password"
                 id="password_confirm"
                 name="password_confirm"
-                class="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500                                                                                                                                                                                                                                                                       <?php echo isset($_SESSION['errors']['password_confirm']) ? 'border-red-500' : '' ?>"
+                class="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500                                                                                                                                                                                                                                                                                                                                                                                                          <?php echo isset($_SESSION['errors']['password_confirm']) ? 'border-red-500' : '' ?>"
                 required
             >
             <button
@@ -105,7 +124,7 @@
             I want to
         </label>
         <div class="space-y-2">
-            <label class="flex items-center p-3 border border-gray-300 rounded-md cursor-pointer hover:bg-gray-50                                                                                                                                                                                                                                                                                                                                                    <?php echo old('role') === 'student' ? 'bg-blue-50 border-blue-500' : '' ?>">
+            <label class="flex items-center p-3 border border-gray-300 rounded-md cursor-pointer hover:bg-gray-50                                                                                                                                                                                                                                                                                                                                                                                                                                                                     <?php echo old('role') === 'student' ? 'bg-blue-50 border-blue-500' : '' ?>">
                 <input
                     type="radio"
                     name="role"
@@ -119,7 +138,7 @@
                     <div class="text-sm text-gray-600">I'm a student looking to provide services</div>
                 </div>
             </label>
-            <label class="flex items-center p-3 border border-gray-300 rounded-md cursor-pointer hover:bg-gray-50                                                                                                                                                                                                                                                                                                                                                    <?php echo old('role') === 'client' ? 'bg-blue-50 border-blue-500' : '' ?>">
+            <label class="flex items-center p-3 border border-gray-300 rounded-md cursor-pointer hover:bg-gray-50                                                                                                                                                                                                                                                                                                                                                                                                                                                                     <?php echo old('role') === 'client' ? 'bg-blue-50 border-blue-500' : '' ?>">
                 <input
                     type="radio"
                     name="role"

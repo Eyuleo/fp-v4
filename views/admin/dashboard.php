@@ -22,21 +22,21 @@
             <div>
                 <label for="range" class="block text-sm font-medium text-gray-700 mb-1">Time Period</label>
                 <select name="range" id="range" class="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" onchange="toggleCustomDates(this.value)">
-                    <option value="7" <?php echo $analytics['range'] === '7' ? 'selected' : ''?>>Last 7 days</option>
-                    <option value="30" <?php echo $analytics['range'] === '30' ? 'selected' : ''?>>Last 30 days</option>
-                    <option value="90" <?php echo $analytics['range'] === '90' ? 'selected' : ''?>>Last 90 days</option>
-                    <option value="custom" <?php echo $analytics['range'] === 'custom' ? 'selected' : ''?>>Custom range</option>
+                    <option value="7"                                      <?php echo $analytics['range'] === '7' ? 'selected' : '' ?>>Last 7 days</option>
+                    <option value="30"                                       <?php echo $analytics['range'] === '30' ? 'selected' : '' ?>>Last 30 days</option>
+                    <option value="90"                                       <?php echo $analytics['range'] === '90' ? 'selected' : '' ?>>Last 90 days</option>
+                    <option value="custom"                                           <?php echo $analytics['range'] === 'custom' ? 'selected' : '' ?>>Custom range</option>
                 </select>
             </div>
 
-            <div id="customDates" style="display: <?php echo $analytics['range'] === 'custom' ? 'flex' : 'none'?>;" class="gap-4">
+            <div id="customDates" style="display:                                                  <?php echo $analytics['range'] === 'custom' ? 'flex' : 'none' ?>;" class="gap-4">
                 <div>
                     <label for="date_from" class="block text-sm font-medium text-gray-700 mb-1">From</label>
-                    <input type="date" name="date_from" id="date_from" value="<?php echo e($analytics['date_from'])?>" class="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <input type="date" name="date_from" id="date_from" value="<?php echo e($analytics['date_from']) ?>" class="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
                 <div>
                     <label for="date_to" class="block text-sm font-medium text-gray-700 mb-1">To</label>
-                    <input type="date" name="date_to" id="date_to" value="<?php echo e($analytics['date_to'])?>" class="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <input type="date" name="date_to" id="date_to" value="<?php echo e($analytics['date_to']) ?>" class="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
             </div>
 
@@ -53,7 +53,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-sm font-medium text-gray-600">Gross Merchandise Value</p>
-                    <p class="text-2xl font-bold text-gray-900 mt-2">ETB <?php echo number_format($analytics['gmv'], 2)?></p>
+                    <p class="text-2xl font-bold text-gray-900 mt-2">ETB                                                                         <?php echo number_format($analytics['gmv'], 2) ?></p>
                 </div>
                 <div class="bg-green-100 rounded-full p-3">
                     <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -68,8 +68,8 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-sm font-medium text-gray-600">Total Orders</p>
-                    <p class="text-2xl font-bold text-gray-900 mt-2"><?php echo number_format($analytics['total_orders'])?></p>
-                    <p class="text-xs text-gray-500 mt-1"><?php echo number_format($analytics['completed_orders'])?> completed</p>
+                    <p class="text-2xl font-bold text-gray-900 mt-2"><?php echo number_format($analytics['total_orders']) ?></p>
+                    <p class="text-xs text-gray-500 mt-1"><?php echo number_format($analytics['completed_orders']) ?> completed</p>
                 </div>
                 <div class="bg-blue-100 rounded-full p-3">
                     <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -84,8 +84,8 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-sm font-medium text-gray-600">Completion Rate</p>
-                    <p class="text-2xl font-bold text-gray-900 mt-2"><?php echo number_format($analytics['completion_rate'], 1)?>%</p>
-                    <p class="text-xs text-gray-500 mt-1">On-time: <?php echo number_format($analytics['on_time_rate'], 1)?>%</p>
+                    <p class="text-2xl font-bold text-gray-900 mt-2"><?php echo number_format($analytics['completion_rate'], 1) ?>%</p>
+                    <p class="text-xs text-gray-500 mt-1">On-time:                                                                   <?php echo number_format($analytics['on_time_rate'], 1) ?>%</p>
                 </div>
                 <div class="bg-purple-100 rounded-full p-3">
                     <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -100,8 +100,8 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-sm font-medium text-gray-600">Dispute Rate</p>
-                    <p class="text-2xl font-bold text-gray-900 mt-2"><?php echo number_format($analytics['dispute_rate'], 1)?>%</p>
-                    <p class="text-xs text-gray-500 mt-1"><?php echo number_format($analytics['total_disputes'])?> disputes</p>
+                    <p class="text-2xl font-bold text-gray-900 mt-2"><?php echo number_format($analytics['dispute_rate'], 1) ?>%</p>
+                    <p class="text-xs text-gray-500 mt-1"><?php echo number_format($analytics['total_disputes']) ?> disputes</p>
                 </div>
                 <div class="bg-red-100 rounded-full p-3">
                     <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -141,16 +141,16 @@
                         <?php foreach ($analytics['recent_orders'] as $order): ?>
                             <tr class="hover:bg-gray-50">
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                    <a href="/orders/<?php echo $order['id']?>" class="text-blue-600 hover:text-blue-800">#<?php echo $order['id']?></a>
+                                    <a href="/orders/<?php echo $order['id'] ?>" class="text-blue-600 hover:text-blue-800">#<?php echo $order['id'] ?></a>
                                 </td>
                                 <td class="px-6 py-4 text-sm text-gray-900">
-                                    <?php echo e($order['service_title'])?>
+                                    <?php echo e($order['service_title']) ?>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                    <?php echo e($order['client_email'])?>
+                                    <?php echo e($order['client_name'] ?? explode('@', $order['client_email'] ?? '')[0]) ?>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                    <?php echo e($order['student_email'])?>
+                                    <?php echo e($order['student_name'] ?? explode('@', $order['student_email'] ?? '')[0]) ?>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <?php
@@ -164,15 +164,15 @@
                                         ];
                                         $colorClass = $statusColors[$order['status']] ?? 'bg-gray-100 text-gray-800';
                                     ?>
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full <?php echo $colorClass?>">
-                                        <?php echo ucfirst(str_replace('_', ' ', $order['status']))?>
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full<?php echo $colorClass ?>">
+                                        <?php echo ucfirst(str_replace('_', ' ', $order['status'])) ?>
                                     </span>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                    ETB <?php echo number_format($order['price'], 2)?>
+                                    ETB                                        <?php echo number_format($order['price'], 2) ?>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                    <?php echo date('M d, Y', strtotime($order['created_at']))?>
+                                    <?php echo date('M d, Y', strtotime($order['created_at'])) ?>
                                 </td>
                             </tr>
                         <?php endforeach; ?>

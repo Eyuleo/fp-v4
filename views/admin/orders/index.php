@@ -30,12 +30,12 @@
                 <label for="status" class="block text-sm font-medium text-gray-700 mb-2">Status</label>
                 <select name="status" id="status" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                     <option value="">All Statuses</option>
-                    <option value="pending"                                            <?php echo($status ?? '') === 'pending' ? 'selected' : '' ?>>Pending</option>
-                    <option value="in_progress"                                                <?php echo($status ?? '') === 'in_progress' ? 'selected' : '' ?>>In Progress</option>
-                    <option value="delivered"                                              <?php echo($status ?? '') === 'delivered' ? 'selected' : '' ?>>Delivered</option>
-                    <option value="revision_requested"                                                       <?php echo($status ?? '') === 'revision_requested' ? 'selected' : '' ?>>Revision Requested</option>
-                    <option value="completed"                                              <?php echo($status ?? '') === 'completed' ? 'selected' : '' ?>>Completed</option>
-                    <option value="cancelled"                                              <?php echo($status ?? '') === 'cancelled' ? 'selected' : '' ?>>Cancelled</option>
+                    <option value="pending"                                                                                       <?php echo($status ?? '') === 'pending' ? 'selected' : '' ?>>Pending</option>
+                    <option value="in_progress"                                                                                               <?php echo($status ?? '') === 'in_progress' ? 'selected' : '' ?>>In Progress</option>
+                    <option value="delivered"                                                                                           <?php echo($status ?? '') === 'delivered' ? 'selected' : '' ?>>Delivered</option>
+                    <option value="revision_requested"                                                                                                             <?php echo($status ?? '') === 'revision_requested' ? 'selected' : '' ?>>Revision Requested</option>
+                    <option value="completed"                                                                                           <?php echo($status ?? '') === 'completed' ? 'selected' : '' ?>>Completed</option>
+                    <option value="cancelled"                                                                                           <?php echo($status ?? '') === 'cancelled' ? 'selected' : '' ?>>Cancelled</option>
                 </select>
             </div>
 
@@ -93,10 +93,10 @@
                                     </div>
                                 </td>
                                 <td class="px-6 py-4 text-sm text-gray-900">
-                                    <?php echo e($order['client_name'] ?? $order['client_email']) ?>
+                                    <?php echo e($order['client_name'] ?? explode('@', $order['client_email'] ?? '')[0]) ?>
                                 </td>
                                 <td class="px-6 py-4 text-sm text-gray-900">
-                                    <?php echo e($order['student_name'] ?? $order['student_email']) ?>
+                                    <?php echo e($order['student_name'] ?? explode('@', $order['student_email'] ?? '')[0]) ?>
                                 </td>
                                 <td class="px-6 py-4 text-sm text-gray-900">
                                     $<?php echo number_format($order['price'], 2) ?>
@@ -136,7 +136,7 @@
                 <div class="bg-gray-50 px-6 py-4 border-t border-gray-200">
                     <div class="flex items-center justify-between">
                         <div class="text-sm text-gray-700">
-                            Showing page                                         <?php echo $page ?> of<?php echo $totalPages ?> (<?php echo $totalCount ?> total orders)
+                            Showing page                                                                                 <?php echo $page ?> of<?php echo $totalPages ?> (<?php echo $totalCount ?> total orders)
                         </div>
                         <div class="flex gap-2">
                             <?php if ($page > 1): ?>

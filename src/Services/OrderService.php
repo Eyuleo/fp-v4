@@ -121,7 +121,7 @@ class OrderService
             'client_id'         => $clientId,
             'student_id'        => $service['student_id'],
             'service_id'        => $serviceId,
-            'status'            => 'pending', // Will be updated after payment
+            'status'            => 'in_progress', // Order starts immediately after payment
             'requirements'      => trim($data['requirements']),
             'requirement_files' => [],
             'price'             => $service['price'],
@@ -314,6 +314,19 @@ class OrderService
                 'success' => false,
                 'errors'  => ['status' => 'Order cannot be delivered in its current status'],
             ];
+        }
+
+        // Check if order is past deadline
+        if (! empty($order['deadline'])) {
+            $deadline    = strtotime($order['deadline']);
+            $currentTime = time();
+
+            if ($currentTime > $deadline) {
+                return [
+                    'success' => false,
+                    'errors'  => ['deadline' => 'This order is past its deadline. Please contact an administrator to resolve this issue.'],
+                ];
+            }
         }
 
         // Validate delivery message
@@ -595,15 +608,23 @@ class OrderService
     }
 
     /**
-     * Cancel an order (client or student, only in pending status)
+     * Cancel an order (admin only)
      *
      * @param int $orderId
-     * @param int $userId
+     * @param array $user User array with 'id' and 'role' keys
      * @param string $reason
      * @return array ['success' => bool, 'errors' => array]
      */
-    public function cancelOrder(int $orderId, int $userId, string $reason): array
+    public function cancelOrder(int $orderId, array $user, string $reason): array
     {
+        // Verify user is admin
+        if (! isset($user['role']) || $user['role'] !== 'admin') {
+            return [
+                'success' => false,
+                'errors'  => ['authorization' => 'Only administrators can cancel orders'],
+            ];
+        }
+
         // Get order
         $order = $this->orderRepository->findById($orderId);
 
@@ -614,52 +635,44 @@ class OrderService
             ];
         }
 
-        // Verify user is authorized (client or student of the order)
-        if ($order['client_id'] != $userId && $order['student_id'] != $userId) {
-            return [
-                'success' => false,
-                'errors'  => ['authorization' => 'You are not authorized to cancel this order'],
-            ];
-        }
-
-        // Verify order is in pending status (only allow cancellation before work starts)
-        if ($order['status'] !== 'pending') {
-            return [
-                'success' => false,
-                'errors'  => ['status' => 'Order can only be cancelled while in pending status. Please open a dispute for orders in progress.'],
-            ];
-        }
-
         // Validate cancellation reason
         $reason = trim($reason);
         if (empty($reason)) {
-            $reason = 'Order cancelled by user';
+            $reason = 'Order cancelled by administrator';
         }
 
         // Begin transaction
         $this->orderRepository->beginTransaction();
 
         try {
-            // Update order status to cancelled
-            $this->orderRepository->update($orderId, [
-                'status'              => 'cancelled',
-                'cancelled_at'        => date('Y-m-d H:i:s'),
-                'cancellation_reason' => $reason,
-            ]);
-
-            // Process full refund
+            // Process full refund first
             $refundResult = $this->paymentService->refundPayment($order);
 
             if (! $refundResult['success']) {
                 // Rollback if refund fails
                 $this->orderRepository->rollback();
-                error_log("Refund failed for order #{$orderId}: " . implode(', ', $refundResult['errors']));
+
+                // Log complete error context
+                error_log(json_encode([
+                    'error'     => 'Refund failed during order cancellation',
+                    'order_id'  => $orderId,
+                    'admin_id'  => $user['id'],
+                    'errors'    => $refundResult['errors'],
+                    'timestamp' => date('Y-m-d H:i:s'),
+                ]));
 
                 return [
                     'success' => false,
                     'errors'  => ['refund' => 'Failed to process refund. Please contact support.'],
                 ];
             }
+
+            // Update order status to cancelled only after successful refund
+            $this->orderRepository->update($orderId, [
+                'status'              => 'cancelled',
+                'cancelled_at'        => date('Y-m-d H:i:s'),
+                'cancellation_reason' => $reason,
+            ]);
 
             // Send notifications to both parties about order cancellation
             try {

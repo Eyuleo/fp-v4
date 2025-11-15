@@ -32,15 +32,15 @@ class ServiceRepository
 
         $stmt = $this->db->prepare($sql);
         $stmt->execute([
-            "student_id" => $data["student_id"],
-            "category_id" => $data["category_id"],
-            "title" => $data["title"],
-            "description" => $data["description"],
-            "tags" => json_encode($data["tags"] ?? []),
-            "price" => $data["price"],
+            "student_id"    => $data["student_id"],
+            "category_id"   => $data["category_id"],
+            "title"         => $data["title"],
+            "description"   => $data["description"],
+            "tags"          => json_encode($data["tags"] ?? []),
+            "price"         => $data["price"],
             "delivery_days" => $data["delivery_days"],
-            "sample_files" => json_encode($data["sample_files"] ?? []),
-            "status" => $data["status"] ?? "inactive",
+            "sample_files"  => json_encode($data["sample_files"] ?? []),
+            "status"        => $data["status"] ?? "inactive",
         ]);
 
         return (int) $this->db->lastInsertId();
@@ -63,7 +63,7 @@ class ServiceRepository
 
         $service = $stmt->fetch();
 
-        if (!$service) {
+        if (! $service) {
             return null;
         }
 
@@ -76,7 +76,7 @@ class ServiceRepository
             : [];
 
         // Ensure sample_files is always an array
-        if (!is_array($service["sample_files"])) {
+        if (! is_array($service["sample_files"])) {
             $service["sample_files"] = [];
         }
 
@@ -96,42 +96,42 @@ class ServiceRepository
         $params = ["id" => $id];
 
         if (isset($data["category_id"])) {
-            $fields[] = "category_id = :category_id";
+            $fields[]              = "category_id = :category_id";
             $params["category_id"] = $data["category_id"];
         }
 
         if (isset($data["title"])) {
-            $fields[] = "title = :title";
+            $fields[]        = "title = :title";
             $params["title"] = $data["title"];
         }
 
         if (isset($data["description"])) {
-            $fields[] = "description = :description";
+            $fields[]              = "description = :description";
             $params["description"] = $data["description"];
         }
 
         if (isset($data["tags"])) {
-            $fields[] = "tags = :tags";
+            $fields[]       = "tags = :tags";
             $params["tags"] = json_encode($data["tags"]);
         }
 
         if (isset($data["price"])) {
-            $fields[] = "price = :price";
+            $fields[]        = "price = :price";
             $params["price"] = $data["price"];
         }
 
         if (isset($data["delivery_days"])) {
-            $fields[] = "delivery_days = :delivery_days";
+            $fields[]                = "delivery_days = :delivery_days";
             $params["delivery_days"] = $data["delivery_days"];
         }
 
         if (isset($data["sample_files"])) {
-            $fields[] = "sample_files = :sample_files";
+            $fields[]               = "sample_files = :sample_files";
             $params["sample_files"] = json_encode($data["sample_files"]);
         }
 
         if (isset($data["status"])) {
-            $fields[] = "status = :status";
+            $fields[]         = "status = :status";
             $params["status"] = $data["status"];
         }
 
@@ -142,7 +142,7 @@ class ServiceRepository
         $fields[] = "updated_at = NOW()";
 
         $sql =
-            "UPDATE services SET " . implode(", ", $fields) . " WHERE id = :id";
+        "UPDATE services SET " . implode(", ", $fields) . " WHERE id = :id";
         $stmt = $this->db->prepare($sql);
 
         return $stmt->execute($params);
@@ -156,7 +156,7 @@ class ServiceRepository
      */
     public function delete(int $id): bool
     {
-        $sql = "DELETE FROM services WHERE id = :id";
+        $sql  = "DELETE FROM services WHERE id = :id";
         $stmt = $this->db->prepare($sql);
 
         return $stmt->execute(["id" => $id]);
@@ -191,7 +191,7 @@ class ServiceRepository
                 : [];
 
             // Ensure sample_files is always an array
-            if (!is_array($service["sample_files"])) {
+            if (! is_array($service["sample_files"])) {
                 $service["sample_files"] = [];
             }
         }
@@ -226,7 +226,7 @@ class ServiceRepository
      */
     public function getAllCategories(): array
     {
-        $sql = "SELECT * FROM categories ORDER BY name ASC";
+        $sql  = "SELECT * FROM categories ORDER BY name ASC";
         $stmt = $this->db->query($sql);
 
         return $stmt->fetchAll();
@@ -249,9 +249,9 @@ class ServiceRepository
         int $limit,
         int $offset,
     ): array {
-        $params = [];
-        $where = ["s.status = 'active'"];
-        $hasQuery = !empty($query);
+        $params   = [];
+        $where    = ["s.status = 'active'"];
+        $hasQuery = ! empty($query);
 
         // Fulltext search on title and description
         if ($hasQuery) {
@@ -261,30 +261,30 @@ class ServiceRepository
         }
 
         // Category filter
-        if (!empty($filters["category_id"])) {
-            $where[] = "s.category_id = :category_id";
+        if (! empty($filters["category_id"])) {
+            $where[]               = "s.category_id = :category_id";
             $params["category_id"] = $filters["category_id"];
         }
 
         // Price range filter
         if (isset($filters["min_price"]) && $filters["min_price"] !== null) {
-            $where[] = "s.price >= :min_price";
+            $where[]             = "s.price >= :min_price";
             $params["min_price"] = $filters["min_price"];
         }
         if (isset($filters["max_price"]) && $filters["max_price"] !== null) {
-            $where[] = "s.price <= :max_price";
+            $where[]             = "s.price <= :max_price";
             $params["max_price"] = $filters["max_price"];
         }
 
         // Delivery time filter
-        if (!empty($filters["max_delivery"])) {
-            $where[] = "s.delivery_days <= :max_delivery";
+        if (! empty($filters["max_delivery"])) {
+            $where[]                = "s.delivery_days <= :max_delivery";
             $params["max_delivery"] = $filters["max_delivery"];
         }
 
         // Rating filter
-        if (!empty($filters["min_rating"])) {
-            $where[] = "sp.average_rating >= :min_rating";
+        if (! empty($filters["min_rating"])) {
+            $where[]              = "sp.average_rating >= :min_rating";
             $params["min_rating"] = $filters["min_rating"];
         }
 
@@ -337,7 +337,7 @@ class ServiceRepository
                 : [];
 
             // Ensure sample_files is always an array
-            if (!is_array($service["sample_files"])) {
+            if (! is_array($service["sample_files"])) {
                 $service["sample_files"] = [];
             }
         }
@@ -355,41 +355,41 @@ class ServiceRepository
     public function countSearch(string $query, array $filters): int
     {
         $params = [];
-        $where = ["s.status = 'active'"];
+        $where  = ["s.status = 'active'"];
 
         // Fulltext search on title and description
-        if (!empty($query)) {
+        if (! empty($query)) {
             $where[] =
                 "MATCH(s.title, s.description) AGAINST (:query IN NATURAL LANGUAGE MODE)";
             $params["query"] = $query;
         }
 
         // Category filter
-        if (!empty($filters["category_id"])) {
-            $where[] = "s.category_id = :category_id";
+        if (! empty($filters["category_id"])) {
+            $where[]               = "s.category_id = :category_id";
             $params["category_id"] = $filters["category_id"];
         }
 
         // Price range filter
         if (isset($filters["min_price"]) && $filters["min_price"] !== null) {
-            $where[] = "s.price >= :min_price";
+            $where[]             = "s.price >= :min_price";
             $params["min_price"] = $filters["min_price"];
         }
 
         if (isset($filters["max_price"]) && $filters["max_price"] !== null) {
-            $where[] = "s.price <= :max_price";
+            $where[]             = "s.price <= :max_price";
             $params["max_price"] = $filters["max_price"];
         }
 
         // Delivery time filter
-        if (!empty($filters["max_delivery"])) {
-            $where[] = "s.delivery_days <= :max_delivery";
+        if (! empty($filters["max_delivery"])) {
+            $where[]                = "s.delivery_days <= :max_delivery";
             $params["max_delivery"] = $filters["max_delivery"];
         }
 
         // Rating filter
-        if (!empty($filters["min_rating"])) {
-            $where[] = "sp.average_rating >= :min_rating";
+        if (! empty($filters["min_rating"])) {
+            $where[]              = "sp.average_rating >= :min_rating";
             $params["min_rating"] = $filters["min_rating"];
         }
 
@@ -459,7 +459,7 @@ class ServiceRepository
 
         $service = $stmt->fetch();
 
-        if (!$service) {
+        if (! $service) {
             return null;
         }
 
@@ -475,7 +475,7 @@ class ServiceRepository
             : [];
 
         // Ensure sample_files is always an array
-        if (!is_array($service["sample_files"])) {
+        if (! is_array($service["sample_files"])) {
             $service["sample_files"] = [];
         }
 
@@ -501,6 +501,7 @@ class ServiceRepository
                 LEFT JOIN orders o ON r.order_id = o.id
                 LEFT JOIN services s ON o.service_id = s.id
                 WHERE r.student_id = :student_id
+                AND r.is_hidden = 0
                 ORDER BY r.created_at DESC
                 LIMIT :limit OFFSET :offset";
 

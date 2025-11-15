@@ -58,15 +58,22 @@ $router->get(
         // Get database connection
         $db = require __DIR__ . "/../config/database.php";
         require_once __DIR__ . "/../src/Repositories/UserRepository.php";
+        require_once __DIR__ . "/../src/Repositories/OrderRepository.php";
 
-        $userRepository = new UserRepository($db);
+        $userRepository  = new UserRepository($db);
+        $orderRepository = new OrderRepository($db);
+
         $user = $userRepository->findById(user_id());
+
+        // Fetch recent orders (limit to 5)
+        $recentOrders = $orderRepository->findByClientId(user_id(), null, 5);
 
         view(
             "client/dashboard",
             [
-                "title" => "Client Dashboard - Student Skills Marketplace",
-                "user" => $user,
+                "title"        => "Client Dashboard - Student Skills Marketplace",
+                "user"         => $user,
+                "recentOrders" => $recentOrders,
             ],
             "dashboard",
         );
@@ -150,7 +157,7 @@ $router->post(
         echo json_encode([
             "success" => true,
             "message" => "Form submitted successfully",
-            "data" => $_POST,
+            "data"    => $_POST,
         ]);
         header("Content-Type: application/json");
     },
@@ -184,10 +191,10 @@ $router->get("/orders/payment-success", "OrderController@paymentSuccess", [
 // View order (accessible by client, student, or admin)
 $router->get("/orders/{id}", "OrderController@show", [new AuthMiddleware()]);
 
-// Accept order (student only)
+// Accept order (deprecated - orders now automatically start in progress)
+// Kept for backward compatibility but returns 410 Gone
 $router->post("/orders/{id}/accept", "OrderController@accept", [
     new AuthMiddleware(),
-    new RoleMiddleware("student"),
     new CsrfMiddleware(),
 ]);
 
@@ -212,10 +219,10 @@ $router->post("/orders/{id}/complete", "OrderController@complete", [
     new CsrfMiddleware(),
 ]);
 
-// Cancel order (client or student)
+// Cancel order (admin only)
 $router->post("/orders/{id}/cancel", "OrderController@cancel", [
     new AuthMiddleware(),
-    new RoleMiddleware(["client", "student"]),
+    new RoleMiddleware("admin"),
     new CsrfMiddleware(),
 ]);
 
@@ -451,6 +458,24 @@ $router->post("/reviews/{id}/update", "ReviewController@update", [
 $router->post("/reviews/{id}/reply", "ReviewController@reply", [
     new AuthMiddleware(),
     new RoleMiddleware("student"),
+    new CsrfMiddleware(),
+]);
+
+// Admin review moderation routes
+$router->get("/admin/reviews/moderation", "AdminController@reviewModeration", [
+    new AuthMiddleware(),
+    new RoleMiddleware("admin"),
+]);
+
+$router->post("/admin/reviews/{id}/flag", "AdminController@flagReview", [
+    new AuthMiddleware(),
+    new RoleMiddleware("admin"),
+    new CsrfMiddleware(),
+]);
+
+$router->post("/admin/reviews/{id}/unflag", "AdminController@unflagReview", [
+    new AuthMiddleware(),
+    new RoleMiddleware("admin"),
     new CsrfMiddleware(),
 ]);
 

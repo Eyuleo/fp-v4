@@ -33,7 +33,7 @@
                 <div class="flex items-center gap-4 text-sm text-gray-600">
                     <span>Service ID: #<?php echo e($service['id']) ?></span>
                     <span>•</span>
-                    <span>Created:                                                                                                                                                                                                                                               <?php echo date('M j, Y', strtotime($service['created_at'])) ?></span>
+                    <span>Created:                                                                                                                                                                                                                                                                                                                   <?php echo date('M j, Y', strtotime($service['created_at'])) ?></span>
                     <span>•</span>
                     <?php
                         $statusColors = [
@@ -178,7 +178,7 @@
                                             </a>
                                         </td>
                                         <td class="px-4 py-3 text-sm text-gray-900">
-                                            <?php echo e($order['client_name'] ?? $order['client_email']) ?>
+                                            <?php echo e($order['client_name'] ?? explode('@', $order['client_email'] ?? '')[0]) ?>
                                         </td>
                                         <td class="px-4 py-3 text-sm">
                                             <?php
@@ -244,19 +244,14 @@
                 <div class="space-y-3">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Name</label>
-                        <p class="text-gray-900"><?php echo e($student['name'] ?? $student['email']) ?></p>
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                        <p class="text-gray-900"><?php echo e($student['email']) ?></p>
+                        <p class="text-gray-900"><?php echo e($student['name'] ?? explode('@', $student['email'])[0]) ?></p>
                     </div>
 
                     <?php if ($studentProfile): ?>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Rating</label>
                             <p class="text-gray-900">
-                                ⭐                                                                                                                                                                                                                                                      <?php echo number_format($studentProfile['average_rating'], 1) ?>
+                                ⭐                                                                                                                                                                                                                                                                                                                            <?php echo number_format($studentProfile['average_rating'], 1) ?>
                                 (<?php echo $studentProfile['total_reviews'] ?> reviews)
                             </p>
                         </div>

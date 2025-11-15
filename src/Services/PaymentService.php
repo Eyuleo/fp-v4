@@ -426,68 +426,149 @@ class PaymentService
      */
     public function refundPayment(array $order, ?float $amount = null): array
     {
-        try {
-            // Get payment record
-            $payment = $this->repository->findByOrderId($order['id']);
+        // Get payment record
+        $payment = $this->repository->findByOrderId($order['id']);
 
-            if (! $payment) {
-                return [
-                    'success' => false,
-                    'errors'  => ['payment' => 'Payment not found'],
-                ];
-            }
+        if (! $payment) {
+            // Log payment not found error with context
+            error_log(json_encode([
+                'error'     => 'Payment not found',
+                'order_id'  => $order['id'],
+                'timestamp' => date('Y-m-d H:i:s'),
+            ]));
 
-            if ($payment['status'] !== 'succeeded' && $payment['status'] !== 'partially_refunded') {
-                return [
-                    'success' => false,
-                    'errors'  => ['payment' => 'Payment cannot be refunded in current status'],
-                ];
-            }
+            return [
+                'success' => false,
+                'errors'  => ['payment' => 'Payment not found'],
+            ];
+        }
 
-            // Determine refund amount
-            $refundAmount = $amount ?? $payment['amount'];
+        if ($payment['status'] !== 'succeeded' && $payment['status'] !== 'partially_refunded') {
+            // Log invalid status error with context
+            error_log(json_encode([
+                'error'      => 'Payment cannot be refunded in current status',
+                'order_id'   => $order['id'],
+                'payment_id' => $payment['id'],
+                'status'     => $payment['status'],
+                'timestamp'  => date('Y-m-d H:i:s'),
+            ]));
 
-            // Check idempotency - use order_id + operation type as key
-            $metadata       = json_decode($payment['metadata'], true) ?? [];
-            $idempotencyKey = 'refund_' . $order['id'] . '_' . number_format($refundAmount, 2);
+            return [
+                'success' => false,
+                'errors'  => ['payment' => 'Payment cannot be refunded in current status'],
+            ];
+        }
 
-            if (isset($metadata['refund_operations'][$idempotencyKey])) {
-                // Already processed this refund
-                return [
-                    'success' => true,
-                    'errors'  => [],
-                ];
-            }
+        // Determine refund amount
+        $refundAmount = $amount ?? $payment['amount'];
 
-            // Retry logic for Stripe API calls
-            $maxRetries = 2;
-            $retryDelay = 5; // seconds
-            $lastError  = null;
+        // Check idempotency - use order_id + operation type as key
+        $metadata       = json_decode($payment['metadata'], true) ?? [];
+        $idempotencyKey = 'refund_' . $order['id'] . '_' . number_format($refundAmount, 2);
 
-            for ($attempt = 0; $attempt <= $maxRetries; $attempt++) {
-                try {
-                    // Create refund with idempotency key
-                    $refund = \Stripe\Refund::create([
-                        'payment_intent' => $payment['stripe_payment_intent_id'],
-                        'amount'         => (int) ($refundAmount * 100), // Convert to cents
-                    ], [
-                        'idempotency_key' => $idempotencyKey,
-                    ]);
+        if (isset($metadata['refund_operations'][$idempotencyKey])) {
+            // Already processed this refund
+            return [
+                'success' => true,
+                'errors'  => [],
+            ];
+        }
 
-                    // Success - break retry loop
-                    break;
-                } catch (\Stripe\Exception\ApiErrorException $e) {
-                    $lastError = $e;
+        // Log refund initiation for audit trail
+        error_log(json_encode([
+            'event'                    => 'refund_initiated',
+            'order_id'                 => $order['id'],
+            'payment_id'               => $payment['id'],
+            'stripe_payment_intent_id' => $payment['stripe_payment_intent_id'],
+            'amount'                   => $refundAmount,
+            'user_id'                  => $order['client_id'],
+            'timestamp'                => date('Y-m-d H:i:s'),
+        ]));
 
-                    if ($attempt < $maxRetries) {
-                        error_log("Stripe refund attempt " . ($attempt + 1) . " failed: " . $e->getMessage() . ". Retrying in {$retryDelay}s...");
-                        sleep($retryDelay);
-                    } else {
-                        throw $e;
-                    }
+        // Retry logic for Stripe API calls
+        $maxRetries = 2;
+        $retryDelay = 5; // seconds
+        $refund     = null;
+
+        for ($attempt = 0; $attempt <= $maxRetries; $attempt++) {
+            try {
+                // Create refund with idempotency key
+                $refund = \Stripe\Refund::create([
+                    'payment_intent' => $payment['stripe_payment_intent_id'],
+                    'amount'         => (int) ($refundAmount * 100), // Convert to cents
+                ], [
+                    'idempotency_key' => $idempotencyKey,
+                ]);
+
+                // Success - break retry loop
+                break;
+            } catch (\Stripe\Exception\ApiErrorException $e) {
+                // Log comprehensive error details
+                error_log(json_encode([
+                    'error'                    => 'Stripe refund failed',
+                    'attempt'                  => $attempt + 1,
+                    'max_attempts'             => $maxRetries + 1,
+                    'order_id'                 => $order['id'],
+                    'payment_id'               => $payment['id'],
+                    'stripe_payment_intent_id' => $payment['stripe_payment_intent_id'],
+                    'amount'                   => $refundAmount,
+                    'stripe_error_type'        => get_class($e),
+                    'stripe_error_message'     => $e->getMessage(),
+                    'stripe_error_code'        => $e->getStripeCode(),
+                    'timestamp'                => date('Y-m-d H:i:s'),
+                ]));
+
+                if ($attempt < $maxRetries) {
+                    // Log retry attempt
+                    error_log(json_encode([
+                        'event'      => 'refund_retry',
+                        'order_id'   => $order['id'],
+                        'payment_id' => $payment['id'],
+                        'attempt'    => $attempt + 2,
+                        'delay'      => $retryDelay,
+                        'timestamp'  => date('Y-m-d H:i:s'),
+                    ]));
+                    sleep($retryDelay);
+                } else {
+                    // All retries exhausted, log final failure
+                    error_log(json_encode([
+                        'error'                    => 'Refund failed after all retries',
+                        'order_id'                 => $order['id'],
+                        'payment_id'               => $payment['id'],
+                        'stripe_payment_intent_id' => $payment['stripe_payment_intent_id'],
+                        'amount'                   => $refundAmount,
+                        'total_attempts'           => $maxRetries + 1,
+                        'stripe_error_message'     => $e->getMessage(),
+                        'timestamp'                => date('Y-m-d H:i:s'),
+                    ]));
+
+                    return [
+                        'success' => false,
+                        'errors'  => ['payment' => 'Refund failed. Please contact support.'],
+                    ];
                 }
             }
+        }
 
+        // Verify refund was created successfully before updating database
+        if (! $refund || ! isset($refund->id)) {
+            error_log(json_encode([
+                'error'      => 'Refund object invalid after Stripe call',
+                'order_id'   => $order['id'],
+                'payment_id' => $payment['id'],
+                'timestamp'  => date('Y-m-d H:i:s'),
+            ]));
+
+            return [
+                'success' => false,
+                'errors'  => ['payment' => 'Refund failed. Please contact support.'],
+            ];
+        }
+
+        // Begin transaction for database updates
+        $this->db->beginTransaction();
+
+        try {
             // Update payment record
             $newStatus         = ($refundAmount >= $payment['amount']) ? 'refunded' : 'partially_refunded';
             $totalRefundAmount = $payment['refund_amount'] + $refundAmount;
@@ -527,19 +608,40 @@ class PaymentService
                 'user_agent'    => $_SERVER['HTTP_USER_AGENT'] ?? null,
             ]);
 
+            // Commit transaction
+            $this->db->commit();
+
+            // Log successful refund completion
+            error_log(json_encode([
+                'event'                    => 'refund_completed',
+                'order_id'                 => $order['id'],
+                'payment_id'               => $payment['id'],
+                'stripe_payment_intent_id' => $payment['stripe_payment_intent_id'],
+                'amount'                   => $refundAmount,
+                'refund_id'                => $refund->id,
+                'user_id'                  => $order['client_id'],
+                'timestamp'                => date('Y-m-d H:i:s'),
+            ]));
+
             return [
                 'success' => true,
                 'errors'  => [],
             ];
-        } catch (\Stripe\Exception\ApiErrorException $e) {
-            error_log('Stripe refund error: ' . $e->getMessage());
-
-            return [
-                'success' => false,
-                'errors'  => ['payment' => 'Refund failed. Please contact support.'],
-            ];
         } catch (Exception $e) {
-            error_log('Payment refund error: ' . $e->getMessage());
+            // Rollback transaction on database error
+            $this->db->rollBack();
+
+            // Log transaction rollback
+            error_log(json_encode([
+                'error'                    => 'Database transaction failed, rolled back',
+                'order_id'                 => $order['id'],
+                'payment_id'               => $payment['id'],
+                'stripe_payment_intent_id' => $payment['stripe_payment_intent_id'],
+                'amount'                   => $refundAmount,
+                'refund_id'                => $refund->id,
+                'exception_message'        => $e->getMessage(),
+                'timestamp'                => date('Y-m-d H:i:s'),
+            ]));
 
             return [
                 'success' => false,

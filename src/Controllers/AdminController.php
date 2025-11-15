@@ -1696,4 +1696,136 @@ class AdminController
 
         return rmdir($dir);
     }
+
+    /**
+     * Show review moderation interface
+     *
+     * GET /admin/reviews/moderation
+     */
+    public function reviewModeration(): void
+    {
+        // Check authentication and admin role
+        if (! Auth::check() || Auth::user()['role'] !== 'admin') {
+            http_response_code(403);
+            include __DIR__ . '/../../views/errors/403.php';
+            exit;
+        }
+
+        // Get page number and filter
+        $page   = isset($_GET['page']) ? max(1, (int) $_GET['page']) : 1;
+        $filter = $_GET['filter'] ?? null; // 'flagged', 'visible', or null for all
+
+        // Initialize review service
+        require_once __DIR__ . '/../Services/ReviewService.php';
+        require_once __DIR__ . '/../Repositories/ReviewRepository.php';
+        require_once __DIR__ . '/../Repositories/OrderRepository.php';
+
+        $reviewRepository = new ReviewRepository($this->db);
+        $orderRepository  = new OrderRepository($this->db);
+        $reviewService    = new ReviewService($reviewRepository, $orderRepository);
+
+        // Get reviews based on filter
+        $reviews      = $reviewService->getAllReviewsForModeration($filter, $page);
+        $totalReviews = $reviewService->getTotalReviewCount($filter);
+        $totalPages   = ceil($totalReviews / 20);
+
+        // Get counts for stats
+        $totalAllReviews     = $reviewService->getTotalReviewCount(null);
+        $totalFlaggedReviews = $reviewService->getFlaggedReviewCount();
+        $totalVisibleReviews = $reviewService->getTotalReviewCount('visible');
+
+        // Render view with admin layout
+        include __DIR__ . '/../../views/admin/reviews/moderation.php';
+    }
+
+    /**
+     * Flag a review (hide from public)
+     *
+     * POST /admin/reviews/{id}/flag
+     */
+    public function flagReview(int $id): void
+    {
+        // Check authentication and admin role
+        if (! Auth::check() || Auth::user()['role'] !== 'admin') {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'error' => 'Unauthorized']);
+            exit;
+        }
+
+        // Validate CSRF token
+        if (! isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'error' => 'Invalid request']);
+            exit;
+        }
+
+        // Get moderation notes
+        $moderationNotes = $_POST['moderation_notes'] ?? null;
+
+        // Initialize review service
+        require_once __DIR__ . '/../Services/ReviewService.php';
+        require_once __DIR__ . '/../Repositories/ReviewRepository.php';
+        require_once __DIR__ . '/../Repositories/OrderRepository.php';
+
+        $reviewRepository = new ReviewRepository($this->db);
+        $orderRepository  = new OrderRepository($this->db);
+        $reviewService    = new ReviewService($reviewRepository, $orderRepository);
+
+        // Flag the review
+        $result = $reviewService->flagReview($id, Auth::user()['id'], $moderationNotes);
+
+        if (! $result['success']) {
+            $_SESSION['error'] = implode(', ', array_values($result['errors']));
+        } else {
+            $_SESSION['success'] = 'Review has been flagged and hidden from public display';
+        }
+
+        // Redirect back
+        header('Location: /admin/reviews/moderation');
+        exit;
+    }
+
+    /**
+     * Unflag a review (restore to public)
+     *
+     * POST /admin/reviews/{id}/unflag
+     */
+    public function unflagReview(int $id): void
+    {
+        // Check authentication and admin role
+        if (! Auth::check() || Auth::user()['role'] !== 'admin') {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'error' => 'Unauthorized']);
+            exit;
+        }
+
+        // Validate CSRF token
+        if (! isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'error' => 'Invalid request']);
+            exit;
+        }
+
+        // Initialize review service
+        require_once __DIR__ . '/../Services/ReviewService.php';
+        require_once __DIR__ . '/../Repositories/ReviewRepository.php';
+        require_once __DIR__ . '/../Repositories/OrderRepository.php';
+
+        $reviewRepository = new ReviewRepository($this->db);
+        $orderRepository  = new OrderRepository($this->db);
+        $reviewService    = new ReviewService($reviewRepository, $orderRepository);
+
+        // Unflag the review
+        $result = $reviewService->unflagReview($id, Auth::user()['id']);
+
+        if (! $result['success']) {
+            $_SESSION['error'] = implode(', ', array_values($result['errors']));
+        } else {
+            $_SESSION['success'] = 'Review has been restored to public display';
+        }
+
+        // Redirect back
+        header('Location: /admin/reviews/moderation');
+        exit;
+    }
 }

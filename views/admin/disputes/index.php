@@ -25,8 +25,8 @@
                 onchange="this.form.submit()"
             >
                 <option value="">All Statuses</option>
-                <option value="open"                                                                         <?php echo($status ?? '') === 'open' ? 'selected' : '' ?>>Open</option>
-                <option value="resolved"                                                                                 <?php echo($status ?? '') === 'resolved' ? 'selected' : '' ?>>Resolved</option>
+                <option value="open"                                                                                                                                                 <?php echo($status ?? '') === 'open' ? 'selected' : '' ?>>Open</option>
+                <option value="resolved"                                                                                                                                                                 <?php echo($status ?? '') === 'resolved' ? 'selected' : '' ?>>Resolved</option>
             </select>
         </div>
 
@@ -152,17 +152,17 @@
                                 <div class="text-sm text-gray-900">
                                     <div class="mb-1">
                                         <span class="text-gray-600">Client:</span>
-                                        <?php echo e($dispute['client_name'] ?: $dispute['client_email']) ?>
+                                        <?php echo e($dispute['client_name'] ?: explode('@', $dispute['client_email'] ?? '')[0]) ?>
                                     </div>
                                     <div>
                                         <span class="text-gray-600">Student:</span>
-                                        <?php echo e($dispute['student_name'] ?: $dispute['student_email']) ?>
+                                        <?php echo e($dispute['student_name'] ?: explode('@', $dispute['student_email'] ?? '')[0]) ?>
                                     </div>
                                 </div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="text-sm text-gray-900">
-                                    <?php echo e($dispute['opened_by_name'] ?: $dispute['opened_by_email']) ?>
+                                    <?php echo e($dispute['opened_by_name'] ?: explode('@', $dispute['opened_by_email'] ?? '')[0]) ?>
                                 </div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
@@ -236,7 +236,7 @@
                                 <?php for ($i = max(1, $page - 2); $i <= min($totalPages, $page + 2); $i++): ?>
                                     <a
                                         href="?page=<?php echo $i ?><?php echo $status ? '&status=' . urlencode($status) : '' ?>"
-                                        class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium                                                                                                                                                                                                                                                                           <?php echo $i === $page ? 'bg-blue-50 text-blue-600' : 'bg-white text-gray-700 hover:bg-gray-50' ?>"
+                                        class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     <?php echo $i === $page ? 'bg-blue-50 text-blue-600' : 'bg-white text-gray-700 hover:bg-gray-50' ?>"
                                     >
                                         <?php echo $i ?>
                                     </a>

@@ -43,22 +43,9 @@ class OrderPolicy implements Policy
      */
     public function canAccept(array $user, array $order): bool
     {
-        // Only students can accept orders
-        if ($user['role'] !== 'student') {
-            return false;
-        }
-
-        // Must be the student who owns the service
-        if ($order['student_id'] != $user['id']) {
-            return false;
-        }
-
-        // Order must be in pending status
-        if ($order['status'] !== 'pending') {
-            return false;
-        }
-
-        return true;
+        // Order acceptance has been removed from the workflow
+        // Orders now start directly in 'in_progress' status
+        return false;
     }
 
     /**
@@ -82,6 +69,11 @@ class OrderPolicy implements Policy
 
         // Order must be in in_progress or revision_requested status
         if (! in_array($order['status'], ['in_progress', 'revision_requested'])) {
+            return false;
+        }
+
+        // Cannot deliver if order is past deadline
+        if (isset($order['deadline']) && strtotime($order['deadline']) < time()) {
             return false;
         }
 
@@ -157,26 +149,8 @@ class OrderPolicy implements Policy
      */
     public function canCancel(array $user, array $order): bool
     {
-        // Admin can cancel any order
-        if ($user['role'] === 'admin') {
-            return true;
-        }
-
-        // Order must be in pending status for regular users
-        if ($order['status'] !== 'pending') {
-            return false;
-        }
-
-        // Client can cancel their own pending orders
-        if ($user['role'] === 'client' && $order['client_id'] == $user['id']) {
-            return true;
-        }
-
-        // Student can cancel pending orders for their services
-        if ($user['role'] === 'student' && $order['student_id'] == $user['id']) {
-            return true;
-        }
-
-        return false;
+        // Only admins can cancel orders
+        // Client and student cancellation has been removed from the workflow
+        return $user['role'] === 'admin';
     }
 }

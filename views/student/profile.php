@@ -36,7 +36,7 @@
                             >
                         <?php else: ?>
                             <div id="profile-picture-preview" class="h-24 w-24 rounded-full bg-blue-600 flex items-center justify-center text-white text-3xl font-bold border-2 border-gray-300">
-                                <?php echo strtoupper(substr($user['email'] ?? 'S', 0, 1)) ?>
+                                <?php echo strtoupper(substr($user['name'] ?? $user['email'] ?? 'S', 0, 1)) ?>
                             </div>
                         <?php endif; ?>
                     </div>
@@ -72,7 +72,7 @@
                     id="bio"
                     name="bio"
                     rows="6"
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500                                                                                                                                                                                                                                                                                                                                                                                                    <?php echo isset($_SESSION['errors']['bio']) ? 'border-red-500' : '' ?>"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     <?php echo isset($_SESSION['errors']['bio']) ? 'border-red-500' : '' ?>"
                     placeholder="Tell clients about yourself, your experience, and what makes you unique..."
                 ><?php echo e(old('bio', $profile['bio'] ?? '')) ?></textarea>
                 <?php if (isset($_SESSION['errors']['bio'])): ?>
@@ -90,7 +90,7 @@
                     type="text"
                     id="skills"
                     name="skills"
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500                                                                                                                                                                                                                                                                                                                                                                                                    <?php echo isset($_SESSION['errors']['skills']) ? 'border-red-500' : '' ?>"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     <?php echo isset($_SESSION['errors']['skills']) ? 'border-red-500' : '' ?>"
                     placeholder="e.g., Web Development, Graphic Design, Content Writing"
                     value="<?php echo e(old('skills', is_array($profile['skills'] ?? null) ? implode(', ', $profile['skills']) : '')) ?>"
                 >
@@ -125,7 +125,7 @@
                     name="portfolio_files[]"
                     multiple
                     accept=".jpg,.jpeg,.png,.gif,.pdf,.doc,.docx,.zip"
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500                                                                                                                                                                                                                                                                                                                                                                                                    <?php echo isset($_SESSION['errors']['portfolio_files']) ? 'border-red-500' : '' ?>"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     <?php echo isset($_SESSION['errors']['portfolio_files']) ? 'border-red-500' : '' ?>"
                 >
                 <?php if (isset($_SESSION['errors']['portfolio_files'])): ?>
                     <p class="text-red-500 text-sm mt-1"><?php echo e($_SESSION['errors']['portfolio_files']) ?></p>

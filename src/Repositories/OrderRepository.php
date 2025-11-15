@@ -156,13 +156,16 @@ class OrderRepository
      *
      * @param int $clientId
      * @param string|null $status Filter by status
+     * @param int|null $limit Limit number of results
      * @return array
      */
-    public function findByClientId(int $clientId, ?string $status = null): array
+    public function findByClientId(int $clientId, ?string $status = null, ?int $limit = null): array
     {
         $sql = "SELECT o.*,
-                       s.title as service_title,
-                       u_student.email as student_email, u_student.name as student_name
+                       COALESCE(s.title, 'Service Unavailable') as service_title,
+                       s.delivery_days,
+                       COALESCE(u_student.email, 'N/A') as student_email,
+                       COALESCE(u_student.name, u_student.email, 'Unknown Student') as student_name
                 FROM orders o
                 LEFT JOIN services s ON o.service_id = s.id
                 LEFT JOIN users u_student ON o.student_id = u_student.id
@@ -177,10 +180,25 @@ class OrderRepository
 
         $sql .= " ORDER BY o.created_at DESC";
 
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute($params);
+        if ($limit !== null) {
+            $sql .= " LIMIT :limit";
+        }
 
-        $orders = $stmt->fetchAll();
+        $stmt = $this->db->prepare($sql);
+
+        // Bind limit parameter separately with correct type
+        if ($limit !== null) {
+            $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        }
+
+        // Bind other parameters
+        foreach ($params as $key => $value) {
+            $stmt->bindValue(':' . $key, $value);
+        }
+
+        $stmt->execute();
+
+        $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         // Decode JSON fields for each order (handle NULL values)
         foreach ($orders as &$order) {

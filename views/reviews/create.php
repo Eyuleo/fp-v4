@@ -95,19 +95,19 @@
                     Rating <span class="text-red-500">*</span>
                 </label>
                 <div class="star-rating">
-                    <input type="radio" id="star5" name="rating" value="5"                                                                                                                                                     <?php echo old('rating') == '5' ? 'checked' : '' ?> required>
+                    <input type="radio" id="star5" name="rating" value="5"                                                                                                                                                                                                                                                                                                         <?php echo old('rating') == '5' ? 'checked' : '' ?> required>
                     <label for="star5" title="5 stars">★</label>
 
-                    <input type="radio" id="star4" name="rating" value="4"                                                                                                                                                     <?php echo old('rating') == '4' ? 'checked' : '' ?>>
+                    <input type="radio" id="star4" name="rating" value="4"                                                                                                                                                                                                                                                                                                         <?php echo old('rating') == '4' ? 'checked' : '' ?>>
                     <label for="star4" title="4 stars">★</label>
 
-                    <input type="radio" id="star3" name="rating" value="3"                                                                                                                                                     <?php echo old('rating') == '3' ? 'checked' : '' ?>>
+                    <input type="radio" id="star3" name="rating" value="3"                                                                                                                                                                                                                                                                                                         <?php echo old('rating') == '3' ? 'checked' : '' ?>>
                     <label for="star3" title="3 stars">★</label>
 
-                    <input type="radio" id="star2" name="rating" value="2"                                                                                                                                                     <?php echo old('rating') == '2' ? 'checked' : '' ?>>
+                    <input type="radio" id="star2" name="rating" value="2"                                                                                                                                                                                                                                                                                                         <?php echo old('rating') == '2' ? 'checked' : '' ?>>
                     <label for="star2" title="2 stars">★</label>
 
-                    <input type="radio" id="star1" name="rating" value="1"                                                                                                                                                     <?php echo old('rating') == '1' ? 'checked' : '' ?>>
+                    <input type="radio" id="star1" name="rating" value="1"                                                                                                                                                                                                                                                                                                         <?php echo old('rating') == '1' ? 'checked' : '' ?>>
                     <label for="star1" title="1 star">★</label>
                 </div>
                 <p class="mt-2 text-sm text-gray-500">Click on the stars to rate (1-5 stars)</p>
@@ -126,7 +126,7 @@
                     placeholder="Share your experience with this service and the student's work..."
                 ><?php echo e(old('comment')) ?></textarea>
                 <p class="mt-2 text-sm text-gray-500">
-                    Your review will help other clients make informed decisions. You can edit your review within 24 hours of submission.
+                    Your review will help other clients make informed decisions.
                 </p>
             </div>
 
@@ -155,9 +155,9 @@
                 <p class="font-medium mb-1">Review Guidelines</p>
                 <ul class="list-disc list-inside space-y-1">
                     <li>Be honest and constructive in your feedback</li>
-                    <li>You can edit your review within 24 hours</li>
                     <li>The student can reply to your review</li>
                     <li>Your review will be visible on the student's profile</li>
+                    <li>Reviews are permanent once submitted</li>
                 </ul>
             </div>
         </div>

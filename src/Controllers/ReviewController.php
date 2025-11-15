@@ -148,102 +148,42 @@ class ReviewController
     }
 
     /**
-     * Show review edit form
+     * Show review edit form (DEPRECATED - no longer available)
      *
      * GET /reviews/{id}/edit
      */
     public function edit(int $id): void
     {
-        // Check authentication
-        if (! Auth::check()) {
-            $_SESSION['error'] = 'Please login to edit reviews';
-            header('Location: /login');
-            exit;
-        }
+        // Review editing is no longer available
+        $_SESSION['error'] = 'Review editing is no longer available. Please contact support if you need to modify a review.';
 
-        // Check user is a client
-        $user = Auth::user();
-        if ($user['role'] !== 'client') {
-            http_response_code(403);
-            include __DIR__ . '/../../views/errors/403.php';
-            exit;
-        }
-
-        // Get review
+        // Get review to redirect to order page
         $review = $this->reviewService->getReviewById($id);
-
-        if (! $review) {
-            http_response_code(404);
-            include __DIR__ . '/../../views/errors/404.php';
-            exit;
-        }
-
-        // Check review belongs to client
-        if ($review['client_id'] !== $user['id']) {
-            http_response_code(403);
-            include __DIR__ . '/../../views/errors/403.php';
-            exit;
-        }
-
-        // Check edit window hasn't expired
-        $now          = time();
-        $canEditUntil = strtotime($review['can_edit_until']);
-
-        if ($now > $canEditUntil) {
-            $_SESSION['error'] = 'The 24-hour edit window has expired';
+        if ($review) {
             header('Location: /orders/' . $review['order_id']);
-            exit;
+        } else {
+            header('Location: /orders');
         }
-
-        // Render review edit form
-        include __DIR__ . '/../../views/reviews/edit.php';
+        exit;
     }
 
     /**
-     * Update review
+     * Update review (DEPRECATED - no longer available)
      *
      * POST /reviews/{id}/update
      */
     public function update(int $id): void
     {
-        // Check authentication
-        if (! Auth::check()) {
-            $_SESSION['error'] = 'Please login to edit reviews';
-            header('Location: /login');
-            exit;
+        // Review editing is no longer available
+        $_SESSION['error'] = 'Review editing is no longer available. Please contact support if you need to modify a review.';
+
+        // Get review to redirect to order page
+        $review = $this->reviewService->getReviewById($id);
+        if ($review) {
+            header('Location: /orders/' . $review['order_id']);
+        } else {
+            header('Location: /orders');
         }
-
-        // Check user is a client
-        $user = Auth::user();
-        if ($user['role'] !== 'client') {
-            http_response_code(403);
-            include __DIR__ . '/../../views/errors/403.php';
-            exit;
-        }
-
-        // Validate CSRF token
-        if (! isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
-            http_response_code(403);
-            $_SESSION['error'] = 'Invalid request';
-            header('Location: /reviews/' . $id . '/edit');
-            exit;
-        }
-
-        // Get form data
-        $rating  = (int) ($_POST['rating'] ?? 0);
-        $comment = $_POST['comment'] ?? null;
-
-        // Update review
-        $result = $this->reviewService->updateReview($id, $user['id'], $rating, $comment);
-
-        if (! $result['success']) {
-            $_SESSION['error'] = implode(', ', array_values($result['errors']));
-            header('Location: /reviews/' . $id . '/edit');
-            exit;
-        }
-
-        $_SESSION['success'] = 'Review updated successfully!';
-        header('Location: /orders/' . $result['review']['order_id']);
         exit;
     }
 

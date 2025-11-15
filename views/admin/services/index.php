@@ -30,9 +30,9 @@
                 <label for="status" class="block text-sm font-medium text-gray-700 mb-2">Status</label>
                 <select name="status" id="status" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                     <option value="">All Statuses</option>
-                    <option value="active"                                                                                                                                                                         <?php echo($status ?? '') === 'active' ? 'selected' : '' ?>>Active</option>
-                    <option value="inactive"                                                                                                                                                                                 <?php echo($status ?? '') === 'inactive' ? 'selected' : '' ?>>Inactive</option>
-                    <option value="paused"                                                                                                                                                                         <?php echo($status ?? '') === 'paused' ? 'selected' : '' ?>>Paused</option>
+                    <option value="active"                                                                                                                                                                                                                   <?php echo($status ?? '') === 'active' ? 'selected' : '' ?>>Active</option>
+                    <option value="inactive"                                                                                                                                                                                                                             <?php echo($status ?? '') === 'inactive' ? 'selected' : '' ?>>Inactive</option>
+                    <option value="paused"                                                                                                                                                                                                                   <?php echo($status ?? '') === 'paused' ? 'selected' : '' ?>>Paused</option>
                 </select>
             </div>
 
@@ -92,11 +92,11 @@
                                 </td>
                                 <td class="px-6 py-4">
                                     <div class="text-sm text-gray-900">
-                                        <?php echo e($service['student_name'] ?? $service['student_email']) ?>
+                                        <?php echo e($service['student_name'] ?? explode('@', $service['student_email'] ?? '')[0]) ?>
                                     </div>
                                     <?php if ($service['average_rating']): ?>
                                         <div class="text-sm text-gray-500">
-                                            ⭐                                                                                                                                                                                             <?php echo number_format($service['average_rating'], 1) ?>
+                                            ⭐                                                                                                                                                                                                                                            <?php echo number_format($service['average_rating'], 1) ?>
                                         </div>
                                     <?php endif; ?>
                                 </td>
@@ -141,7 +141,7 @@
                 <div class="bg-gray-50 px-6 py-4 border-t border-gray-200">
                     <div class="flex items-center justify-between">
                         <div class="text-sm text-gray-700">
-                            Showing page                                                                                                                                                                 <?php echo $page ?> of<?php echo $totalPages ?> (<?php echo $totalCount ?> total services)
+                            Showing page                                                                                                                                                                                                         <?php echo $page ?> of<?php echo $totalPages ?> (<?php echo $totalCount ?> total services)
                         </div>
                         <div class="flex gap-2">
                             <?php if ($page > 1): ?>

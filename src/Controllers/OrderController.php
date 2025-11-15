@@ -391,57 +391,16 @@ class OrderController
     /**
      * Accept an order (student only)
      *
+     * @deprecated This method is deprecated as orders now automatically start in progress.
+     *             Orders no longer require student acceptance.
+     *
      * POST /orders/{id}/accept
      */
     public function accept(int $id): void
     {
-        // Check authentication
-        if (! Auth::check()) {
-            $_SESSION['error'] = 'Please login to accept orders';
-            header('Location: /login');
-            exit;
-        }
-
-        $user = Auth::user();
-
-        // Validate CSRF token
-        if (! isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
-            http_response_code(403);
-            $_SESSION['error'] = 'Invalid request';
-            header('Location: /orders/' . $id);
-            exit;
-        }
-
-        // Get order
-        $order = $this->orderService->getOrderById($id);
-
-        if (! $order) {
-            http_response_code(404);
-            include __DIR__ . '/../../views/errors/404.php';
-            exit;
-        }
-
-        // Check authorization using OrderPolicy
-        require_once __DIR__ . '/../Policies/OrderPolicy.php';
-        $policy = new OrderPolicy();
-
-        if (! $policy->canAccept($user, $order)) {
-            http_response_code(403);
-            $_SESSION['error'] = 'You are not authorized to accept this order';
-            header('Location: /orders/' . $id);
-            exit;
-        }
-
-        // Accept the order
-        $result = $this->orderService->acceptOrder($id, $user['id']);
-
-        if (! $result['success']) {
-            $_SESSION['error'] = implode(', ', array_values($result['errors']));
-            header('Location: /orders/' . $id);
-            exit;
-        }
-
-        $_SESSION['success'] = 'Order accepted successfully! You can now start working on it.';
+                                 // This functionality has been removed - orders now automatically start in progress
+        http_response_code(410); // Gone
+        $_SESSION['error'] = 'Order acceptance is no longer required. Orders automatically start in progress.';
         header('Location: /orders/' . $id);
         exit;
     }
@@ -648,7 +607,7 @@ class OrderController
     }
 
     /**
-     * Cancel an order (client or student, only in pending status)
+     * Cancel an order (admin only)
      *
      * POST /orders/{id}/cancel
      */
@@ -662,6 +621,14 @@ class OrderController
         }
 
         $user = Auth::user();
+
+        // Check admin role - only admins can cancel orders
+        if ($user['role'] !== 'admin') {
+            http_response_code(403);
+            $_SESSION['error'] = 'Only administrators can cancel orders';
+            header('Location: /orders/' . $id);
+            exit;
+        }
 
         // Validate CSRF token
         if (! isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
@@ -694,8 +661,8 @@ class OrderController
         // Get cancellation reason
         $cancellationReason = $_POST['cancellation_reason'] ?? '';
 
-        // Cancel the order
-        $result = $this->orderService->cancelOrder($id, $user['id'], $cancellationReason);
+        // Cancel the order (pass full user array for role checking)
+        $result = $this->orderService->cancelOrder($id, $user, $cancellationReason);
 
         if (! $result['success']) {
             $_SESSION['error'] = implode(', ', array_values($result['errors']));
