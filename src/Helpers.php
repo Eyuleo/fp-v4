@@ -108,12 +108,12 @@ function config(string $key, $default = null)
  * @param string|null $default Default value to return for null/invalid input (default: '')
  * @return string Formatted number or default value
  *
- * @example safe_safe_number_format(1234.56, 2) // "1,234.56"
- * @example safe_safe_number_format(null, 2) // ""
- * @example safe_safe_number_format(null, 2, '.', ',', '0.00') // "0.00"
- * @example safe_safe_number_format('invalid', 2, '.', ',', 'N/A') // "N/A"
+ * @example safe_number_format(1234.56, 2) // "1,234.56"
+ * @example safe_number_format(null, 2) // ""
+ * @example safe_number_format(null, 2, '.', ',', '0.00') // "0.00"
+ * @example safe_number_format('invalid', 2, '.', ',', 'N/A') // "N/A"
  */
-function safe_safe_number_format($value, int $decimals = 2, string $dec_point = '.', string $thousands_sep = ',', ?string $default = ''): string
+function safe_number_format($value, int $decimals = 2, string $dec_point = '.', string $thousands_sep = ',', ?string $default = ''): string
 {
     // Handle null or empty string
     if ($value === null || $value === '') {
@@ -126,7 +126,7 @@ function safe_safe_number_format($value, int $decimals = 2, string $dec_point = 
     }
 
     // Cast to float and format
-    return safe_number_format((float)$value, $decimals, $dec_point, $thousands_sep);
+    return number_format((float)$value, $decimals, $dec_point, $thousands_sep);
 }
 
 /**
@@ -134,7 +134,7 @@ function safe_safe_number_format($value, int $decimals = 2, string $dec_point = 
  */
 function currency(float $amount, string $currency = 'USD'): string
 {
-    return '$' . safe_safe_number_format($amount, 2);
+    return '$' . safe_number_format($amount, 2);
 }
 
 /**
