@@ -96,7 +96,7 @@
                                     </div>
                                     <?php if ($service['average_rating']): ?>
                                         <div class="text-sm text-gray-500">
-                                            ⭐                                                                                                                                                                                                                                            <?php echo number_format($service['average_rating'], 1) ?>
+                                            ⭐                                                                                                                                                                                                                                            <?php echo safe_number_format($service['average_rating'], 1) ?>
                                         </div>
                                     <?php endif; ?>
                                 </td>
@@ -104,7 +104,7 @@
                                     <?php echo e($service['category_name']) ?>
                                 </td>
                                 <td class="px-6 py-4 text-sm text-gray-900">
-                                    $<?php echo number_format($service['price'], 2) ?>
+                                    $<?php echo safe_number_format($service['price'], 2) ?>
                                 </td>
                                 <td class="px-6 py-4">
                                     <?php

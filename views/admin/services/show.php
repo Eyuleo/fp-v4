@@ -108,7 +108,7 @@
                     <div class="grid grid-cols-2 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Price</label>
-                            <p class="text-2xl font-bold text-gray-900">$<?php echo number_format($service['price'], 2) ?></p>
+                            <p class="text-2xl font-bold text-gray-900">$<?php echo safe_number_format($service['price'], 2) ?></p>
                         </div>
 
                         <div>
@@ -197,7 +197,7 @@
                                             </span>
                                         </td>
                                         <td class="px-4 py-3 text-sm text-gray-900">
-                                            $<?php echo number_format($order['price'], 2) ?>
+                                            $<?php echo safe_number_format($order['price'], 2) ?>
                                         </td>
                                         <td class="px-4 py-3 text-sm text-gray-500">
                                             <?php echo date('M j, Y', strtotime($order['created_at'])) ?>
@@ -251,7 +251,7 @@
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Rating</label>
                             <p class="text-gray-900">
-                                ⭐                                                                                                                                                                                                                                                                                                                            <?php echo number_format($studentProfile['average_rating'], 1) ?>
+                                ⭐                                                                                                                                                                                                                                                                                                                            <?php echo safe_number_format($studentProfile['average_rating'], 1) ?>
                                 (<?php echo $studentProfile['total_reviews'] ?> reviews)
                             </p>
                         </div>

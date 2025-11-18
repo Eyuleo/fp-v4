@@ -58,7 +58,7 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                 </svg>
             </div>
-            <p class="text-3xl font-bold text-gray-900">$<?php echo number_format($balance['available_balance'], 2) ?></p>
+            <p class="text-3xl font-bold text-gray-900">$<?php echo safe_number_format($balance['available_balance'], 2) ?></p>
             <p class="text-sm text-gray-500 mt-1">Ready to withdraw</p>
         </div>
 
@@ -70,7 +70,7 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                 </svg>
             </div>
-            <p class="text-3xl font-bold text-gray-900">$<?php echo number_format($balance['pending_balance'], 2) ?></p>
+            <p class="text-3xl font-bold text-gray-900">$<?php echo safe_number_format($balance['pending_balance'], 2) ?></p>
             <p class="text-sm text-gray-500 mt-1">From active orders</p>
         </div>
 
@@ -82,7 +82,7 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                 </svg>
             </div>
-            <p class="text-3xl font-bold text-gray-900">$<?php echo number_format($balance['total_withdrawn'], 2) ?></p>
+            <p class="text-3xl font-bold text-gray-900">$<?php echo safe_number_format($balance['total_withdrawn'], 2) ?></p>
             <p class="text-sm text-gray-500 mt-1">All time</p>
         </div>
     </div>
@@ -118,7 +118,7 @@
                     <p class="text-red-500 text-sm mt-1"><?php echo e($_SESSION['errors']['amount']) ?></p>
                 <?php endif; ?>
                 <p class="text-gray-500 text-sm mt-1">
-                    Minimum: $10.00 • Available: $<?php echo number_format($balance['available_balance'], 2) ?>
+                    Minimum: $10.00 • Available: $<?php echo safe_number_format($balance['available_balance'], 2) ?>
                 </p>
             </div>
 
@@ -195,7 +195,7 @@
                                     <?php echo date('M d, Y', strtotime($withdrawal['requested_at'])) ?>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                    $<?php echo number_format($withdrawal['amount'], 2) ?>
+                                    $<?php echo safe_number_format($withdrawal['amount'], 2) ?>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <?php

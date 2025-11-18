@@ -136,7 +136,7 @@
                                             </svg>
                                             <div>
                                                 <div class="text-sm font-medium text-gray-900"><?php echo e($file['original_name']) ?></div>
-                                                <div class="text-xs text-gray-500"><?php echo number_format(($file['size'] ?? 0) / 1024, 1) ?> KB</div>
+                                                <div class="text-xs text-gray-500"><?php echo safe_number_format(($file['size'] ?? 0) / 1024, 1) ?> KB</div>
                                             </div>
                                         </div>
                                         <a href="<?php echo e($file['signed_url']) ?>" download class="text-blue-600 hover:text-blue-700 text-sm">
@@ -159,7 +159,7 @@
 
                 <div class="mb-4">
                     <div class="text-3xl font-bold text-gray-900">
-                        $<?php echo number_format($service['price'], 2) ?>
+                        $<?php echo safe_number_format($service['price'], 2) ?>
                     </div>
                 </div>
 

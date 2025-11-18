@@ -68,17 +68,17 @@
 
         <div class="bg-white rounded-lg shadow-md p-6">
             <div class="text-sm text-gray-600 mb-1">Total Volume</div>
-            <div class="text-2xl font-bold text-gray-900">$<?php echo number_format($totalAmount, 2) ?></div>
+            <div class="text-2xl font-bold text-gray-900">$<?php echo safe_number_format($totalAmount, 2) ?></div>
         </div>
 
         <div class="bg-white rounded-lg shadow-md p-6">
             <div class="text-sm text-gray-600 mb-1">Total Commission</div>
-            <div class="text-2xl font-bold text-green-600">$<?php echo number_format($totalCommission, 2) ?></div>
+            <div class="text-2xl font-bold text-green-600">$<?php echo safe_number_format($totalCommission, 2) ?></div>
         </div>
 
         <div class="bg-white rounded-lg shadow-md p-6">
             <div class="text-sm text-gray-600 mb-1">Total Refunded</div>
-            <div class="text-2xl font-bold text-red-600">$<?php echo number_format($totalRefunded, 2) ?></div>
+            <div class="text-2xl font-bold text-red-600">$<?php echo safe_number_format($totalRefunded, 2) ?></div>
         </div>
 
         <div class="bg-white rounded-lg shadow-md p-6">
@@ -155,17 +155,17 @@
                                     <?php echo e($payment['student_name'] ?? explode('@', $payment['student_email'] ?? '')[0]) ?>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                    <div class="font-semibold">$<?php echo number_format($payment['amount'], 2) ?></div>
+                                    <div class="font-semibold">$<?php echo safe_number_format($payment['amount'], 2) ?></div>
                                     <?php if ($payment['refund_amount'] > 0): ?>
                                         <div class="text-xs text-red-600">
-                                            Refunded: $<?php echo number_format($payment['refund_amount'], 2) ?>
+                                            Refunded: $<?php echo safe_number_format($payment['refund_amount'], 2) ?>
                                         </div>
                                     <?php endif; ?>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                    $<?php echo number_format($payment['commission_amount'], 2) ?>
+                                    $<?php echo safe_number_format($payment['commission_amount'], 2) ?>
                                     <div class="text-xs text-gray-500">
-                                        Student: $<?php echo number_format($payment['student_amount'], 2) ?>
+                                        Student: $<?php echo safe_number_format($payment['student_amount'], 2) ?>
                                     </div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">

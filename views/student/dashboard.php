@@ -46,25 +46,53 @@
         <p class="text-gray-600">Welcome to your student dashboard! This is where you'll manage your services and orders.</p>
 
         <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-            <a href="/student/profile/edit" class="block p-4 border border-gray-200 rounded-lg hover:border-blue-500 hover:shadow-md transition">
-                <h3 class="text-lg font-semibold text-gray-900 mb-2">Edit Profile</h3>
-                <p class="text-gray-600 text-sm">Update your bio, skills, and portfolio to attract more clients</p>
+            <a href="/student/profile/edit" class="block p-6 border border-gray-200 rounded-lg hover:border-blue-500 hover:shadow-md transition bg-white">
+                <div class="flex items-start space-x-4">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-user-edit text-3xl text-blue-600"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-900 mb-2">Edit Profile</h3>
+                        <p class="text-gray-600 text-sm">Update your bio, skills, and portfolio to attract more clients</p>
+                    </div>
+                </div>
             </a>
 
-            <div class="block p-4 border border-gray-200 rounded-lg bg-gray-50">
-                <h3 class="text-lg font-semibold text-gray-900 mb-2">My Services</h3>
-                <p class="text-gray-600 text-sm">Coming soon - Create and manage your service listings</p>
-            </div>
+            <a href="/student/services" class="block p-6 border border-gray-200 rounded-lg hover:border-green-500 hover:shadow-md transition bg-white">
+                <div class="flex items-start space-x-4">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-briefcase text-3xl text-green-600"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-900 mb-2">My Services</h3>
+                        <p class="text-gray-600 text-sm">Create and manage your service listings to showcase your skills</p>
+                    </div>
+                </div>
+            </a>
 
-            <div class="block p-4 border border-gray-200 rounded-lg bg-gray-50">
-                <h3 class="text-lg font-semibold text-gray-900 mb-2">My Orders</h3>
-                <p class="text-gray-600 text-sm">Coming soon - View and manage your active orders</p>
-            </div>
+            <a href="/student/orders" class="block p-6 border border-gray-200 rounded-lg hover:border-purple-500 hover:shadow-md transition bg-white">
+                <div class="flex items-start space-x-4">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-clipboard-list text-3xl text-purple-600"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-900 mb-2">My Orders</h3>
+                        <p class="text-gray-600 text-sm">View and manage your active orders and deliverables</p>
+                    </div>
+                </div>
+            </a>
 
-            <div class="block p-4 border border-gray-200 rounded-lg bg-gray-50">
-                <h3 class="text-lg font-semibold text-gray-900 mb-2">Messages</h3>
-                <p class="text-gray-600 text-sm">Coming soon - Communicate with your clients</p>
-            </div>
+            <a href="/messages" class="block p-6 border border-gray-200 rounded-lg hover:border-orange-500 hover:shadow-md transition bg-white">
+                <div class="flex items-start space-x-4">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-comments text-3xl text-orange-600"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-900 mb-2">Messages</h3>
+                        <p class="text-gray-600 text-sm">Communicate with your clients and stay connected</p>
+                    </div>
+                </div>
+            </a>
         </div>
     </div>
 </div>

@@ -50,7 +50,7 @@
                         <div class="flex items-center">
                             <span class="text-yellow-400">★</span>
                             <span class="text-sm text-gray-600 ml-1">
-                                <?php echo number_format($service['average_rating'] ?? 0, 1) ?>
+                                <?php echo safe_number_format($service['average_rating'] ?? 0, 1) ?>
                                 (<?php echo e($service['total_reviews'] ?? 0) ?> reviews)
                             </span>
                             <span class="mx-2 text-gray-400">•</span>
@@ -235,7 +235,7 @@
                 <!-- Price -->
                 <div class="mb-6">
                     <p class="text-sm text-gray-600 mb-1">Starting at</p>
-                    <p class="text-3xl font-bold text-gray-900">$<?php echo number_format($service['price'], 2) ?></p>
+                    <p class="text-3xl font-bold text-gray-900">$<?php echo safe_number_format($service['price'], 2) ?></p>
                 </div>
 
                 <!-- Service Details -->

@@ -136,7 +136,7 @@
                                             <div class="flex items-center">
                                                 <span class="text-yellow-400">★</span>
                                                 <span class="text-sm text-gray-600 ml-1">
-                                                    <?php echo number_format($service['average_rating'] ?? 0, 1) ?>
+                                                    <?php echo safe_number_format($service['average_rating'] ?? 0, 1) ?>
                                                     (<?php echo e($service['total_reviews'] ?? 0) ?> reviews)
                                                 </span>
                                             </div>
@@ -181,7 +181,7 @@
                                         </div>
                                         <div class="text-right">
                                             <p class="text-sm text-gray-600">Starting at</p>
-                                            <p class="text-xl font-bold text-gray-900">$<?php echo number_format($service['price'], 2) ?></p>
+                                            <p class="text-xl font-bold text-gray-900">$<?php echo safe_number_format($service['price'], 2) ?></p>
                                         </div>
                                     </div>
                                 </div>

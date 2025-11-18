@@ -43,7 +43,7 @@ class WithdrawalService
         }
 
         if ($amount > $profile['available_balance']) {
-            throw new Exception('Insufficient balance. Available: $' . number_format($profile['available_balance'], 2));
+            throw new Exception('Insufficient balance. Available: $' . safe_number_format($profile['available_balance'], 2));
         }
 
         // Minimum withdrawal amount

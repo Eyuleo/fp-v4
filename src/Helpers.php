@@ -99,11 +99,42 @@ function config(string $key, $default = null)
 }
 
 /**
+ * Safe number formatting that handles null/invalid values
+ *
+ * @param mixed $value The value to format (can be null, numeric string, float, or int)
+ * @param int $decimals Number of decimal places (default: 2)
+ * @param string $dec_point Decimal point separator (default: '.')
+ * @param string $thousands_sep Thousands separator (default: ',')
+ * @param string|null $default Default value to return for null/invalid input (default: '')
+ * @return string Formatted number or default value
+ *
+ * @example safe_safe_number_format(1234.56, 2) // "1,234.56"
+ * @example safe_safe_number_format(null, 2) // ""
+ * @example safe_safe_number_format(null, 2, '.', ',', '0.00') // "0.00"
+ * @example safe_safe_number_format('invalid', 2, '.', ',', 'N/A') // "N/A"
+ */
+function safe_safe_number_format($value, int $decimals = 2, string $dec_point = '.', string $thousands_sep = ',', ?string $default = ''): string
+{
+    // Handle null or empty string
+    if ($value === null || $value === '') {
+        return $default ?? '';
+    }
+
+    // Check if value is numeric (handles strings like "123.45" and numbers)
+    if (! is_numeric($value)) {
+        return $default ?? '';
+    }
+
+    // Cast to float and format
+    return safe_number_format((float)$value, $decimals, $dec_point, $thousands_sep);
+}
+
+/**
  * Format currency
  */
 function currency(float $amount, string $currency = 'USD'): string
 {
-    return '$' . number_format($amount, 2);
+    return '$' . safe_safe_number_format($amount, 2);
 }
 
 /**

@@ -143,7 +143,7 @@
                                     ?>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                    $<?php echo number_format($order['price'], 2); ?>
+                                    $<?php echo safe_number_format($order['price'], 2); ?>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                     <a href="/orders/<?php echo htmlspecialchars($order['id']); ?>" class="text-blue-600 hover:text-blue-900">

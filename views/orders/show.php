@@ -83,7 +83,7 @@
             </div>
             <div>
                 <h3 class="text-sm font-medium text-gray-500 mb-1">Price</h3>
-                <p class="text-lg font-semibold text-gray-900">$<?php echo number_format($order['price'], 2) ?></p>
+                <p class="text-lg font-semibold text-gray-900">$<?php echo safe_number_format($order['price'], 2) ?></p>
             </div>
             <div>
                 <h3 class="text-sm font-medium text-gray-500 mb-1">Client</h3>
@@ -161,7 +161,7 @@
                         <a href="<?php echo e($signedUrl) ?>" target="_blank"
                            class="flex items-center space-x-2 text-sm text-blue-600 hover:text-blue-800 hover:bg-blue-50 p-2 rounded">
                             <span class="font-medium"><?php echo e($file['original_name']) ?></span>
-                            <span class="text-gray-400">(<?php echo number_format(($file['size'] ?? 0) / 1024, 2) ?> KB)</span>
+                            <span class="text-gray-400">(<?php echo safe_number_format(($file['size'] ?? 0) / 1024, 2) ?> KB)</span>
                         </a>
                     <?php endforeach; ?>
                 </div>
@@ -188,7 +188,7 @@
                             <a href="<?php echo e($signedUrl) ?>" target="_blank"
                                class="flex items-center space-x-2 text-sm text-blue-600 hover:text-blue-800 hover:bg-blue-50 p-2 rounded">
                                 <span class="font-medium"><?php echo e($file['original_name']) ?></span>
-                                <span class="text-gray-400">(<?php echo number_format(($file['size'] ?? 0) / 1024, 2) ?> KB)</span>
+                                <span class="text-gray-400">(<?php echo safe_number_format(($file['size'] ?? 0) / 1024, 2) ?> KB)</span>
                             </a>
                         <?php endforeach; ?>
                     </div>
@@ -219,7 +219,7 @@
 			                    </svg>
 			                <?php endfor; ?>
                 <span class="ml-2 text-sm text-gray-600">
-                    <?php echo number_format((float) ($review['rating'] ?? 0), 1) ?>/5
+                    <?php echo safe_number_format((float) ($review['rating'] ?? 0), 1) ?>/5
                 </span>
             </div>
 

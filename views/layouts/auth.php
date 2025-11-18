@@ -5,6 +5,47 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo $title ?? 'Student Skills Marketplace'?></title>
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" 
+          integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" 
+          crossorigin="anonymous" referrerpolicy="no-referrer" />
+    
+    <style>
+        /* Button loading states */
+        .btn.is-loading {
+            position: relative;
+            pointer-events: none;
+            opacity: 0.7;
+        }
+        
+        .btn.is-loading .btn-text {
+            visibility: hidden;
+        }
+        
+        .btn.is-loading .btn-spinner {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .btn-spinner {
+            display: none;
+        }
+        
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        .fa-spin-custom {
+            animation: spin 1s linear infinite;
+        }
+    </style>
 </head>
 <body class="bg-gray-50">
     <div class="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
@@ -33,5 +74,8 @@
             </div>
         </div>
     </div>
+    
+    <!-- Form button enhancement -->
+    <script src="/js/ui/buttons.js"></script>
 </body>
 </html>

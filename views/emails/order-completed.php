@@ -40,7 +40,7 @@
                 </div>
                 <?php if (isset($earnings)): ?>
                 <div class="detail-row">
-                    <span class="detail-label">Your Earnings:</span> $<?php echo e(number_format($earnings, 2)) ?>
+                    <span class="detail-label">Your Earnings:</span> $<?php echo e(safe_number_format($earnings, 2)) ?>
                 </div>
                 <?php endif; ?>
             </div>
