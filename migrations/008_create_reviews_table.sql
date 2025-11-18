@@ -7,7 +7,6 @@ CREATE TABLE reviews (
     comment TEXT NULL,
     student_reply TEXT NULL,
     student_replied_at TIMESTAMP NULL,
-    can_edit_until TIMESTAMP NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (order_id) REFERENCES orders(id),
