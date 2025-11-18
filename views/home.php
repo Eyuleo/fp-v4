@@ -3,7 +3,7 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
         <div class="text-center">
             <h1 class="text-4xl md:text-5xl lg:text-6xl font-bold mb-6">
-                Connect with Talented Ethiopian Students
+                Connect with Talented Students
             </h1>
             <p class="text-xl md:text-2xl mb-8 text-blue-100 max-w-3xl mx-auto">
                 A trusted marketplace where university students showcase their skills and clients find quality services
@@ -36,7 +36,7 @@
 
         <div class="grid md:grid-cols-3 gap-8">
             <!-- For Clients -->
-            <div class="text-center p-6">
+            <div class="text-center p-6 rounded-lg ring-2 ring-blue-200 hover:ring-blue-600 hover:shadow-lg transition-all duration-300">
                 <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
                     <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
@@ -49,7 +49,7 @@
             </div>
 
             <!-- Secure Payments -->
-            <div class="text-center p-6">
+            <div class="text-center p-6 rounded-lg ring-2 ring-green-200 hover:ring-green-600 hover:shadow-lg transition-all duration-300">
                 <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
                     <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
@@ -62,7 +62,7 @@
             </div>
 
             <!-- For Students -->
-            <div class="text-center p-6">
+            <div class="text-center p-6 rounded-lg ring-2 ring-purple-200 hover:ring-purple-600 hover:shadow-lg transition-all duration-300">
                 <div class="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
                     <svg class="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
