@@ -12,7 +12,7 @@
         .order-details { background-color: white; padding: 15px; border-radius: 5px; margin: 15px 0; }
         .detail-row { padding: 8px 0; border-bottom: 1px solid #e5e7eb; }
         .detail-label { font-weight: bold; color: #6b7280; }
-        .rating { color: #f59e0b; font-size: 20px; }
+        .rating { color: #fbbf24; font-size: 20px; }
     </style>
 </head>
 <body>
@@ -34,9 +34,9 @@
                 </div>
                 <div class="detail-row">
                     <span class="detail-label">Rating:</span>
-                    <span class="rating">
-                        <?php for ($i = 0; $i < $rating; $i++): ?>★<?php endfor; ?>
-                        <?php for ($i = $rating; $i < 5; $i++): ?>☆<?php endfor; ?>
+                    <span class="rating" style="color: #fbbf24; font-size: 20px;">
+                        <?php for ($i = 0; $i < $rating; $i++): ?>&#9733;<?php endfor; ?>
+                        <?php for ($i = $rating; $i < 5; $i++): ?>&#9734;<?php endfor; ?>
                     </span>
                     (<?php echo e($rating) ?>/5)
                 </div>

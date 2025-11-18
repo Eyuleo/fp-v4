@@ -69,6 +69,20 @@ class SearchService
     }
 
     /**
+     * Get reviews for a specific service
+     *
+     * @param int $serviceId
+     * @param int $page
+     * @param int $perPage
+     * @return array
+     */
+    public function getServiceReviews(int $serviceId, int $page = 1, int $perPage = 10): array
+    {
+        $offset = ($page - 1) * $perPage;
+        return $this->repository->getServiceReviews($serviceId, $perPage, $offset);
+    }
+
+    /**
      * Get all categories
      *
      * @return array

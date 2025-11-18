@@ -168,12 +168,18 @@
             <?php endif; ?>
 
             <!-- Reviews -->
-            <?php if (! empty($reviews)): ?>
-                <div class="bg-white rounded-lg shadow-sm p-6">
-                    <h2 class="text-xl font-semibold text-gray-900 mb-4">Reviews</h2>
-                    <div class="space-y-6">
-                        <?php foreach ($reviews as $review): ?>
-                            <div class="border-b border-gray-200 pb-6 last:border-0 last:pb-0">
+            <div class="bg-white rounded-lg shadow-sm p-6">
+                <h2 class="text-xl font-semibold text-gray-900 mb-4">Reviews</h2>
+                <?php if (empty($reviews)): ?>
+                    <p class="text-gray-600">No reviews yet. Be the first to order and review this service!</p>
+                <?php else: ?>
+                    <div class="space-y-6" x-data="{ showAll: false }">
+                        <?php foreach ($reviews as $index => $review): ?>
+                            <div class="border-b border-gray-200 pb-6 last:border-0 last:pb-0"
+                                 <?php if ($index > 0): ?>
+                                     x-show="showAll"
+                                     x-transition
+                                 <?php endif; ?>>
                                 <div class="flex items-start space-x-3 mb-2">
                                     <?php
                                         $reviewerName = $review['client_name'] ?? null;
@@ -201,7 +207,7 @@
                                     <div class="flex-1">
                                         <div class="flex items-center mb-1">
                                             <?php for ($i = 1; $i <= 5; $i++): ?>
-                                                <svg class="w-5 h-5<?php echo $i <= $review['rating'] ? 'text-yellow-400' : 'text-gray-300' ?>" fill="currentColor" viewBox="0 0 20 20">
+                                                <svg class="w-5 h-5 <?php echo $i <= $review['rating'] ? 'text-yellow-400' : 'text-gray-300' ?>" fill="currentColor" viewBox="0 0 20 20">
                                                     <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.7 1.8-1.59 1.118L10 13.347l-2.49 1.618c-.89.683-1.89-.197-1.59-1.118l1.07-3.292a1 1 0 00-.364-1.118L3.827 8.72c-.783-.57-.38-1.81.588-1.81h3.462a1 1 0 00.95-.69l1.07-3.292z"/>
                                                 </svg>
                                             <?php endfor; ?>
@@ -224,9 +230,21 @@
                                 <?php endif; ?>
                             </div>
                         <?php endforeach; ?>
+                        
+                        <?php if (count($reviews) > 1): ?>
+                            <div class="pt-4">
+                                <button @click="showAll = !showAll"
+                                        class="text-blue-600 hover:text-blue-700 font-medium text-sm flex items-center">
+                                    <span x-text="showAll ? 'Show Less' : 'View More Reviews (<?php echo count($reviews) - 1 ?> more)'"></span>
+                                    <svg class="w-4 h-4 ml-1 transition-transform" :class="{ 'rotate-180': showAll }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        <?php endif; ?>
                     </div>
-                </div>
-            <?php endif; ?>
+                <?php endif; ?>
+            </div>
         </div>
 
         <!-- Sidebar -->
@@ -278,13 +296,6 @@
                         <a href="/auth/register" class="text-blue-600 hover:text-blue-700">Sign up</a>
                     </p>
                 <?php endif; ?>
-
-                <!-- Contact Student -->
-                <div class="mt-4">
-                    <button class="w-full border border-gray-300 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-50 font-medium transition-colors">
-                        Contact Student
-                    </button>
-                </div>
             </div>
         </div>
     </div>

@@ -211,13 +211,13 @@
                     for ($i = 1; $i <= 5; $i++):
                         $filled = $i <= $rating;
                     ?>
-			                    <svg class="w-5 h-5<?php echo $filled ? 'text-yellow-400' : 'text-gray-300' ?> mr-1"
-			                         fill="<?php echo $filled ? 'currentColor' : 'none' ?>"
-			                         stroke="currentColor" viewBox="0 0 24 24">
-			                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-			                              d="M11.48 3.499a.562.562 0 011.04 0l2.062 4.178a.563.563 0 00.424.308l4.616.671a.563.563 0 01.312.96l-3.339 3.255a.563.563 0 00-.162.498l.788 4.592a.563.563 0 01-.817.593l-4.123-2.168a.563.563 0 00-.524 0l-4.123 2.168a.563.563 0 01-.817-.593l.788-4.592a.563.563 0 00-.162-.498L3.37 9.616a.563.563 0 01.312-.96l4.616-.671a.563.563 0 00.424-.308l2.062-4.178z" />
-			                    </svg>
-			                <?php endfor; ?>
+                    <svg class="w-5 h-5 <?php echo $filled ? 'text-yellow-400' : 'text-gray-300' ?> mr-1"
+                         fill="<?php echo $filled ? 'currentColor' : 'none' ?>"
+                         stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                              d="M11.48 3.499a.562.562 0 011.04 0l2.062 4.178a.563.563 0 00.424.308l4.616.671a.563.563 0 01.312.96l-3.339 3.255a.563.563 0 00-.162.498l.788 4.592a.563.563 0 01-.817.593l-4.123-2.168a.563.563 0 00-.524 0l-4.123 2.168a.563.563 0 01-.817-.593l.788-4.592a.563.563 0 00-.162-.498L3.37 9.616a.563.563 0 01.312-.96l4.616-.671a.563.563 0 00.424-.308l2.062-4.178z" />
+                    </svg>
+                <?php endfor; ?>
                 <span class="ml-2 text-sm text-gray-600">
                     <?php echo safe_number_format((float) ($review['rating'] ?? 0), 1) ?>/5
                 </span>

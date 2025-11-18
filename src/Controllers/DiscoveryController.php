@@ -81,13 +81,13 @@ class DiscoveryController
             return;
         }
 
-        // Get reviews for this service's student
-        $reviews = $this->searchService->getStudentReviews($service['student_id'], 1, 5);
+        // Get all reviews for this specific service
+        $allReviews = $this->searchService->getServiceReviews($serviceId, 1, 100);
 
         // Render view
         view('client.services.show', [
             'service' => $service,
-            'reviews' => $reviews,
+            'reviews' => $allReviews,
         ], 'base');
     }
 }

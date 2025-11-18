@@ -520,6 +520,38 @@ class ServiceRepository
     }
 
     /**
+     * Get reviews for a specific service
+     *
+     * @param int $serviceId
+     * @param int $limit
+     * @param int $offset
+     * @return array
+     */
+    public function getServiceReviews(
+        int $serviceId,
+        int $limit,
+        int $offset,
+    ): array {
+        $sql = "SELECT r.*, u.name as client_name, u.email as client_email, o.id as order_id
+                FROM reviews r
+                LEFT JOIN users u ON r.client_id = u.id
+                LEFT JOIN orders o ON r.order_id = o.id
+                WHERE o.service_id = :service_id
+                AND r.is_hidden = 0
+                ORDER BY r.created_at DESC
+                LIMIT :limit OFFSET :offset";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindValue(":service_id", $serviceId, PDO::PARAM_INT);
+        $stmt->bindValue(":limit", $limit, PDO::PARAM_INT);
+        $stmt->bindValue(":offset", $offset, PDO::PARAM_INT);
+
+        $stmt->execute();
+
+        return $stmt->fetchAll();
+    }
+
+    /**
      * Begin database transaction
      */
     public function beginTransaction(): void
