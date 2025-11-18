@@ -160,7 +160,7 @@
                                     <?php echo e($file['original_name'])?>
                                 </div>
                                 <div class="text-xs text-gray-500 mt-1">
-                                    <?php echo number_format($file['size'] / 1024, 1)?> KB
+                                    <?php echo safe_number_format($file['size'] / 1024, 1)?> KB
                                 </div>
                             </div>
                         <?php endforeach; ?>

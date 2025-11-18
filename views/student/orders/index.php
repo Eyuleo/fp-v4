@@ -79,7 +79,7 @@
 
                             <div class="text-right ml-4">
                                 <div class="text-2xl font-bold text-gray-900 mb-2">
-                                    $<?php echo number_format($order['price'], 2) ?>
+                                    $<?php echo safe_number_format($order['price'], 2) ?>
                                 </div>
                                 <a href="/orders/<?php echo e($order['id']) ?>" class="text-blue-600 hover:text-blue-800 text-sm font-medium">
                                     View Details →

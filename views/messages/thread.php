@@ -92,7 +92,7 @@
                                                         <?php echo e($attachment['original_name'] ?? basename($attachment['path'])) ?>
                                                     </span>
                                                     <span class="text-xs text-gray-400">
-                                                        <?php echo isset($attachment['size']) ? number_format($attachment['size'] / 1024, 1) . ' KB' : '' ?>
+                                                        <?php echo isset($attachment['size']) ? safe_number_format($attachment['size'] / 1024, 1) . ' KB' : '' ?>
                                                     </span>
                                                 </a>
                                             <?php endforeach; ?>

@@ -101,7 +101,7 @@
             <div class="bg-white rounded-lg shadow-sm p-6">
                 <div class="text-sm font-medium text-gray-500 mb-1">Average Rating</div>
                 <div class="text-3xl font-bold text-yellow-600">
-                    <?php echo $studentProfile ? number_format($studentProfile['average_rating'], 2) : 'N/A' ?>
+                    <?php echo $studentProfile ? safe_number_format($studentProfile['average_rating'], 2) : 'N/A' ?>
                 </div>
             </div>
         <?php else: ?>
@@ -163,7 +163,7 @@
                         <?php foreach ($services as $service): ?>
                             <tr>
                                 <td class="px-6 py-4 text-sm text-gray-900"><?php echo e($service['title']) ?></td>
-                                <td class="px-6 py-4 text-sm text-gray-900">$<?php echo e(number_format($service['price'], 2)) ?></td>
+                                <td class="px-6 py-4 text-sm text-gray-900">$<?php echo e(safe_number_format($service['price'], 2)) ?></td>
                                 <td class="px-6 py-4">
                                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
                                         <?php if ($service['status'] === 'active'): ?>
@@ -223,7 +223,7 @@
                                         <?php echo e(ucfirst(str_replace('_', ' ', $order['status']))) ?>
                                     </span>
                                 </td>
-                                <td class="px-6 py-4 text-sm text-gray-900">$<?php echo e(number_format($order['price'], 2)) ?></td>
+                                <td class="px-6 py-4 text-sm text-gray-900">$<?php echo e(safe_number_format($order['price'], 2)) ?></td>
                                 <td class="px-6 py-4 text-sm text-gray-500"><?php echo e(date('M d, Y', strtotime($order['created_at']))) ?></td>
                             </tr>
                         <?php endforeach; ?>

@@ -270,16 +270,16 @@
     - Include form-loading.js script in main layout
     - _Requirements: 15.3, 15.4_
 
-- [ ] 16. Fix Number Format Null Handling
+- [x] 16. Fix Number Format Null Handling
 
-  - [ ] 16.1 Create safe number format helper function
+  - [x] 16.1 Create safe number format helper function
 
     - Add `safe_number_format()` function to `src/Helpers.php`
     - Handle null values with default of 0
     - Maintain same signature as number_format
     - _Requirements: 16.1, 16.3_
 
-  - [ ] 16.2 Replace number_format calls throughout codebase
+  - [x] 16.2 Replace number_format calls throughout codebase
 
     - Search for all `number_format(` occurrences
     - Replace with `safe_number_format(` or add null coalescing

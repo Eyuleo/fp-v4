@@ -37,7 +37,7 @@
                                 <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
                             </svg>
                             <span class="ml-1 text-lg font-semibold text-gray-900">
-                                <?php echo number_format($profile['average_rating'] ?? 0, 1) ?>
+                                <?php echo safe_number_format($profile['average_rating'] ?? 0, 1) ?>
                             </span>
                             <span class="ml-1 text-gray-600">
                                 (<?php echo e($profile['total_reviews'] ?? 0) ?> reviews)
@@ -98,7 +98,7 @@
                                         <?php echo e($file['original_name'] ?? 'File') ?>
                                     </p>
                                     <p class="text-xs text-gray-500">
-                                        <?php echo e(number_format(($file['size'] ?? 0) / 1024, 2)) ?> KB
+                                        <?php echo e(safe_number_format(($file['size'] ?? 0) / 1024, 2)) ?> KB
                                     </p>
                                 </div>
                             <?php endforeach; ?>
@@ -119,7 +119,7 @@
                                             <?php echo e($service['title']) ?>
                                         </h3>
                                         <span class="text-lg font-bold text-gray-900 ml-4">
-                                            ETB                                                                                                                                                                                                                                                                                                                                          <?php echo number_format($service['price'], 2) ?>
+                                            ETB                                                                                                                                                                                                                                                                                                                                          <?php echo safe_number_format($service['price'], 2) ?>
                                         </span>
                                     </div>
                                     <p class="text-sm text-gray-600 mb-3 line-clamp-2">

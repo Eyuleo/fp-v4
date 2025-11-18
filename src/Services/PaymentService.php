@@ -526,7 +526,7 @@ class PaymentService
 
         // Check idempotency - use order_id + operation type as key
         $metadata       = json_decode($payment['metadata'], true) ?? [];
-        $idempotencyKey = 'refund_' . $order['id'] . '_' . number_format($refundAmount, 2);
+        $idempotencyKey = 'refund_' . $order['id'] . '_' . safe_number_format($refundAmount, 2);
 
         if (isset($metadata['refund_operations'][$idempotencyKey])) {
             // Already processed this refund

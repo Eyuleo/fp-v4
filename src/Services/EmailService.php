@@ -32,7 +32,7 @@ class EmailService
         $message .= "Order Details:\n";
         $message .= "- Order ID: #{$order['id']}\n";
         $message .= "- Service: {$order['service_title']}\n";
-        $message .= "- Price: $" . number_format($order['price'], 2) . "\n";
+        $message .= "- Price: $" . safe_number_format($order['price'], 2) . "\n";
         $message .= "- Deadline: " . date('M d, Y', strtotime($order['deadline'])) . "\n\n";
         $message .= "Please log in to your dashboard to review and accept this order.\n\n";
         $message .= "View Order: " . getenv('APP_URL') . "/orders/{$order['id']}\n\n";
@@ -110,7 +110,7 @@ class EmailService
         $message .= "Order Details:\n";
         $message .= "- Order ID: #{$order['id']}\n";
         $message .= "- Service: {$order['service_title']}\n";
-        $message .= "- Earnings: $" . number_format($earnings, 2) . "\n\n";
+        $message .= "- Earnings: $" . safe_number_format($earnings, 2) . "\n\n";
         $message .= "The funds have been added to your available balance.\n\n";
         $message .= "View Order: " . getenv('APP_URL') . "/orders/{$order['id']}\n\n";
         $message .= "Best regards,\n";

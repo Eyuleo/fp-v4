@@ -99,11 +99,20 @@ function config(string $key, $default = null)
 }
 
 /**
+ * Safe number format that handles null values
+ * Prevents PHP 8.1+ deprecation warnings when null is passed to number_format
+ */
+function safe_number_format($number, int $decimals = 2, string $decimal_separator = '.', string $thousands_separator = ','): string
+{
+    return number_format($number ?? 0, $decimals, $decimal_separator, $thousands_separator);
+}
+
+/**
  * Format currency
  */
-function currency(float $amount, string $currency = 'USD'): string
+function currency(?float $amount, string $currency = 'USD'): string
 {
-    return '$' . number_format($amount, 2);
+    return '$' . safe_number_format($amount, 2);
 }
 
 /**

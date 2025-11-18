@@ -35,7 +35,7 @@
                     <span class="detail-label">Order ID:</span> #<?php echo e($order_id) ?>
                 </div>
                 <div class="detail-row">
-                    <span class="detail-label">Price:</span> $<?php echo e(number_format($price, 2)) ?>
+                    <span class="detail-label">Price:</span> $<?php echo e(safe_number_format($price, 2)) ?>
                 </div>
                 <div class="detail-row">
                     <span class="detail-label">Deadline:</span>                                                                <?php echo e($deadline) ?>

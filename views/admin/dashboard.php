@@ -53,7 +53,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-sm font-medium text-gray-600">Gross Merchandise Value</p>
-                    <p class="text-2xl font-bold text-gray-900 mt-2">ETB                                                                                                                                                                                                                                                                                                 <?php echo number_format($analytics['gmv'], 2) ?></p>
+                    <p class="text-2xl font-bold text-gray-900 mt-2">ETB                                                                                                                                                                                                                                                                                                 <?php echo safe_number_format($analytics['gmv'], 2) ?></p>
                 </div>
                 <div class="bg-green-100 rounded-full p-3">
                     <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -68,8 +68,8 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-sm font-medium text-gray-600">Total Orders</p>
-                    <p class="text-2xl font-bold text-gray-900 mt-2"><?php echo number_format($analytics['total_orders']) ?></p>
-                    <p class="text-xs text-gray-500 mt-1"><?php echo number_format($analytics['completed_orders']) ?> completed</p>
+                    <p class="text-2xl font-bold text-gray-900 mt-2"><?php echo safe_number_format($analytics['total_orders'], 0) ?></p>
+                    <p class="text-xs text-gray-500 mt-1"><?php echo safe_number_format($analytics['completed_orders'], 0) ?> completed</p>
                 </div>
                 <div class="bg-blue-100 rounded-full p-3">
                     <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -84,8 +84,8 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-sm font-medium text-gray-600">Completion Rate</p>
-                    <p class="text-2xl font-bold text-gray-900 mt-2"><?php echo number_format($analytics['completion_rate'], 1) ?>%</p>
-                    <p class="text-xs text-gray-500 mt-1">On-time:                                                                                                                                                                                                                                                                         <?php echo number_format($analytics['on_time_rate'], 1) ?>%</p>
+                    <p class="text-2xl font-bold text-gray-900 mt-2"><?php echo safe_number_format($analytics['completion_rate'], 1) ?>%</p>
+                    <p class="text-xs text-gray-500 mt-1">On-time:                                                                                                                                                                                                                                                                         <?php echo safe_number_format($analytics['on_time_rate'], 1) ?>%</p>
                 </div>
                 <div class="bg-purple-100 rounded-full p-3">
                     <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -153,7 +153,7 @@
                                     </span>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                    ETB                                                                                                                                                             <?php echo number_format($order['price'], 2) ?>
+                                    ETB                                                                                                                                                             <?php echo safe_number_format($order['price'], 2) ?>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                     <?php echo date('M d, Y', strtotime($order['created_at'])) ?>

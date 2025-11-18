@@ -37,7 +37,7 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/>
                 </svg>
                 <div>
-                    <p class="text-2xl font-bold text-gray-900"><?php echo number_format($totalAllReviews) ?></p>
+                    <p class="text-2xl font-bold text-gray-900"><?php echo safe_number_format($totalAllReviews, 0) ?></p>
                     <p class="text-gray-600">Total Reviews</p>
                 </div>
             </div>
@@ -51,7 +51,7 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                 </svg>
                 <div>
-                    <p class="text-2xl font-bold text-gray-900"><?php echo number_format($totalVisibleReviews) ?></p>
+                    <p class="text-2xl font-bold text-gray-900"><?php echo safe_number_format($totalVisibleReviews, 0) ?></p>
                     <p class="text-gray-600">Visible Reviews</p>
                 </div>
             </div>
@@ -64,7 +64,7 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9"/>
                 </svg>
                 <div>
-                    <p class="text-2xl font-bold text-gray-900"><?php echo number_format($totalFlaggedReviews) ?></p>
+                    <p class="text-2xl font-bold text-gray-900"><?php echo safe_number_format($totalFlaggedReviews, 0) ?></p>
                     <p class="text-gray-600">Flagged Reviews</p>
                 </div>
             </div>
@@ -77,15 +77,15 @@
             <nav class="flex -mb-px">
                 <a href="?filter="
                    class="px-6 py-4 text-sm font-medium border-b-2                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   <?php echo $filter === null ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' ?>">
-                    All Reviews (<?php echo number_format($totalAllReviews) ?>)
+                    All Reviews (<?php echo safe_number_format($totalAllReviews, 0) ?>)
                 </a>
                 <a href="?filter=visible"
                    class="px-6 py-4 text-sm font-medium border-b-2                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   <?php echo $filter === 'visible' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' ?>">
-                    Visible (<?php echo number_format($totalVisibleReviews) ?>)
+                    Visible (<?php echo safe_number_format($totalVisibleReviews, 0) ?>)
                 </a>
                 <a href="?filter=flagged"
                    class="px-6 py-4 text-sm font-medium border-b-2                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   <?php echo $filter === 'flagged' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' ?>">
-                    Flagged (<?php echo number_format($totalFlaggedReviews) ?>)
+                    Flagged (<?php echo safe_number_format($totalFlaggedReviews, 0) ?>)
                 </a>
             </nav>
         </div>
@@ -94,7 +94,7 @@
     <!-- Results Summary -->
     <div class="mb-4">
         <p class="text-sm text-gray-600">
-            Showing                                                                                                                                                                            <?php echo count($reviews) ?> of<?php echo number_format($totalReviews) ?> reviews
+            Showing                                                                                                                                                                            <?php echo count($reviews) ?> of<?php echo safe_number_format($totalReviews, 0) ?> reviews
         </p>
     </div>
 

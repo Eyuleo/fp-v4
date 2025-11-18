@@ -137,7 +137,7 @@
                                         <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/>
                                     </svg>
                                     <span class="ml-1 text-sm font-semibold text-gray-700">
-                                        <?php echo number_format($service['average_rating'], 1) ?>
+                                        <?php echo safe_number_format($service['average_rating'], 1) ?>
                                     </span>
                                     <span class="ml-1 text-sm text-gray-500">
                                         (<?php echo e($service['total_reviews']) ?>)
@@ -162,7 +162,7 @@
                                 <?php echo e($service['delivery_days']) ?> day<?php echo $service['delivery_days'] != 1 ? 's' : '' ?>
                             </div>
                             <div class="text-lg font-bold text-gray-900">
-                                ETB                                    <?php echo number_format($service['price'], 2) ?>
+                                ETB                                    <?php echo safe_number_format($service['price'], 2) ?>
                             </div>
                         </div>
                     </div>

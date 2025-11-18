@@ -149,7 +149,7 @@
                                     <div>
                                         <p class="text-sm font-medium text-gray-900"><?php echo e($file['original_name'] ?? 'Unknown') ?></p>
                                         <p class="text-xs text-gray-500">
-                                            <?php echo e(number_format(($file['size'] ?? 0) / 1024, 2)) ?> KB
+                                            <?php echo e(safe_number_format(($file['size'] ?? 0) / 1024, 2)) ?> KB
                                             <?php if (isset($file['uploaded_at'])): ?>
                                                 • Uploaded<?php echo e(date('M d, Y', strtotime($file['uploaded_at']))) ?>
                                             <?php endif; ?>

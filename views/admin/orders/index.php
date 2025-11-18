@@ -99,7 +99,7 @@
                                     <?php echo e($order['student_name'] ?? explode('@', $order['student_email'] ?? '')[0]) ?>
                                 </td>
                                 <td class="px-6 py-4 text-sm text-gray-900">
-                                    $<?php echo number_format($order['price'], 2) ?>
+                                    $<?php echo safe_number_format($order['price'], 2) ?>
                                 </td>
                                 <td class="px-6 py-4">
                                     <?php

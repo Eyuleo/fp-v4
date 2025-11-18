@@ -84,7 +84,7 @@
                         <div class="flex items-center justify-between mb-4 pt-4 border-t border-gray-200">
                             <div>
                                 <div class="text-2xl font-bold text-gray-900">
-                                    $<?php echo number_format($service['price'], 2) ?>
+                                    $<?php echo safe_number_format($service['price'], 2) ?>
                                 </div>
                             </div>
                             <div class="text-right">
