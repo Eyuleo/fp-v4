@@ -24,6 +24,7 @@ class OrderService
     private FileService $fileService;
     private NotificationService $notificationService;
     private MessageRepository $messageRepository;
+    private PDO $db;
 
     public function __construct(OrderRepository $orderRepository, ServiceRepository $serviceRepository, PaymentService $paymentService = null)
     {
@@ -34,6 +35,7 @@ class OrderService
         $this->fileService       = new FileService();
 
         $db                        = $orderRepository->getDb();
+        $this->db                  = $db;
         $this->userRepository      = new UserRepository($db);
         $this->messageRepository   = new MessageRepository($db);
         $mailService               = new MailService();
@@ -46,6 +48,12 @@ class OrderService
         } else {
             $this->paymentService = $paymentService;
         }
+    }
+
+    private function getDefaultReviewWindowHours(): int
+    {
+        $hours = getenv('ORDER_REVIEW_WINDOW_HOURS');
+        return ($hours && (int) $hours > 0) ? (int) $hours : 24;
     }
 
     public function createOrder(int $clientId, int $serviceId, array $data): array
@@ -192,6 +200,32 @@ class OrderService
         }
     }
 
+    /**
+     * Ensure review window fields exist for a delivered order; backfill if missing.
+     */
+    public function ensureReviewWindow(array $order): array
+    {
+        if (($order['status'] ?? '') !== 'delivered') {
+            return $order;
+        }
+        if (! empty($order['review_deadline'])) {
+            return $order;
+        }
+
+        $deliveredAt       = $order['delivered_at'] ?? $order['updated_at'] ?? $order['created_at'] ?? date('Y-m-d H:i:s');
+        $reviewWindowHours = $order['review_window_hours'] ?? $this->getDefaultReviewWindowHours();
+        $reviewDeadlineTs  = strtotime($deliveredAt) + ($reviewWindowHours * 3600);
+        $reviewDeadline    = date('Y-m-d H:i:s', $reviewDeadlineTs);
+
+        $this->orderRepository->update((int) $order['id'], [
+            'delivered_at'        => $deliveredAt,
+            'review_window_hours' => $reviewWindowHours,
+            'review_deadline'     => $reviewDeadline,
+        ]);
+
+        return $this->orderRepository->findById((int) $order['id']);
+    }
+
     public function deliverOrder(int $orderId, int $studentId, array $data): array
     {
         $order = $this->orderRepository->findById($orderId);
@@ -220,6 +254,20 @@ class OrderService
             return ['success' => false, 'errors' => $this->validator->getErrors()];
         }
 
+        // Compute review window fields
+        $reviewWindowHours = $this->getDefaultReviewWindowHours();
+        $deliveredAtTs     = time();
+        $deadlineTs        = strtotime($order['deadline']);
+        $minWindowHours    = (int) (getenv('ORDER_MIN_REVIEW_WINDOW_HOURS') ?: 12);
+
+        $baseReviewDeadlineTs = $deliveredAtTs + ($reviewWindowHours * 3600);
+        if (($deadlineTs - $deliveredAtTs) < ($minWindowHours * 3600)) {
+            $baseReviewDeadlineTs = max($baseReviewDeadlineTs, $deliveredAtTs + ($minWindowHours * 3600));
+        }
+
+        $deliveredAt    = date('Y-m-d H:i:s', $deliveredAtTs);
+        $reviewDeadline = date('Y-m-d H:i:s', $baseReviewDeadlineTs);
+
         $this->orderRepository->beginTransaction();
         try {
             $uploadedFiles = $this->handleDeliveryFileUploads($orderId, $data['files']);
@@ -228,9 +276,12 @@ class OrderService
             }
 
             $this->orderRepository->update($orderId, [
-                'status'           => 'delivered',
-                'delivery_message' => $deliveryMessage,
-                'delivery_files'   => $uploadedFiles,
+                'status'              => 'delivered',
+                'delivery_message'    => $deliveryMessage,
+                'delivery_files'      => $uploadedFiles,
+                'delivered_at'        => $deliveredAt,
+                'review_window_hours' => $reviewWindowHours,
+                'review_deadline'     => $reviewDeadline,
             ]);
 
             try {
@@ -412,11 +463,11 @@ class OrderService
     }
 
     /**
-     * PATCH: Admin force completion of overdue delivered order.
+     * PATCH: Admin force completion of delivered order based on review window expiry.
      * Conditions:
      * - Admin role
      * - Order status = delivered
-     * - Current time > deadline
+     * - Current time > review_deadline
      */
     public function adminForceComplete(int $orderId, array $adminUser, string $reason = ''): array
     {
@@ -433,9 +484,8 @@ class OrderService
             return ['success' => false, 'errors' => ['status' => 'Order must be in delivered status to force completion']];
         }
 
-        $deadlineTs = strtotime($order['deadline']);
-        if (time() <= $deadlineTs) {
-            return ['success' => false, 'errors' => ['deadline' => 'Order is not overdue; cannot force completion yet']];
+        if (empty($order['review_deadline']) || time() <= strtotime($order['review_deadline'])) {
+            return ['success' => false, 'errors' => ['review_window' => 'Review window has not expired; cannot force completion']];
         }
 
         $this->orderRepository->beginTransaction();
@@ -471,6 +521,85 @@ class OrderService
             $this->orderRepository->rollback();
             error_log('Admin force completion error: ' . $e->getMessage());
             return ['success' => false, 'errors' => ['database' => 'Failed to force complete order. Please try again.']];
+        }
+    }
+
+    /**
+     * Auto-complete all delivered orders whose review window has expired.
+     * Note: This method uses a direct query via $this->db to avoid repository changes.
+     */
+    public function autoCompleteExpired(): array
+    {
+        $stmt = $this->db->prepare("
+            SELECT id FROM orders
+            WHERE status = 'delivered'
+              AND review_deadline IS NOT NULL
+              AND review_deadline < NOW()
+        ");
+        $stmt->execute();
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $results = [];
+        foreach ($rows as $row) {
+            $results[$row['id']] = $this->completeOrderSystem((int) $row['id']);
+        }
+        return $results;
+    }
+
+    /**
+     * Internal helper for system-triggered completion (auto).
+     */
+    private function completeOrderSystem(int $orderId): array
+    {
+        $order = $this->orderRepository->findById($orderId);
+        if (! $order || $order['status'] !== 'delivered') {
+            return ['success' => false, 'errors' => ['status' => 'Order not in delivered status']];
+        }
+        if (empty($order['review_deadline']) || time() < strtotime($order['review_deadline'])) {
+            return ['success' => false, 'errors' => ['review_deadline' => 'Review window not expired']];
+        }
+
+        $this->orderRepository->beginTransaction();
+        try {
+            $orderAmount      = (float) $order['price'];
+            $commissionRate   = (float) $order['commission_rate'];
+            $commissionAmount = $orderAmount * ($commissionRate / 100);
+            $studentEarnings  = $orderAmount - $commissionAmount;
+
+            $this->orderRepository->update($orderId, [
+                'status'            => 'completed',
+                'completed_at'      => date('Y-m-d H:i:s'),
+                'auto_completed_at' => date('Y-m-d H:i:s'),
+            ]);
+
+            $this->orderRepository->addToStudentBalance($order['student_id'], $studentEarnings);
+            $this->orderRepository->incrementStudentOrderCount($order['student_id']);
+
+            try {
+                $client  = $this->userRepository->findById($order['client_id']);
+                $student = $this->userRepository->findById($order['student_id']);
+                $service = $this->serviceRepository->findById($order['service_id']);
+                if ($client && $student && $service) {
+                    $updatedOrder = $this->orderRepository->findById($orderId);
+                    $this->notificationService->notifyOrderCompleted(
+                        $updatedOrder,
+                        $client,
+                        $student,
+                        $service,
+                        $studentEarnings,
+                        true
+                    );
+                }
+            } catch (Exception $e) {
+                error_log('Failed to send auto-completed notification: ' . $e->getMessage());
+            }
+
+            $this->orderRepository->commit();
+            return ['success' => true, 'errors' => []];
+        } catch (Exception $e) {
+            $this->orderRepository->rollback();
+            error_log('Auto completion error: ' . $e->getMessage());
+            return ['success' => false, 'errors' => ['database' => 'Failed to auto-complete order']];
         }
     }
 

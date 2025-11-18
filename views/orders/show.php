@@ -199,12 +199,58 @@
         </div>
     <?php endif; ?>
 
-    <?php if ($order['status'] === 'completed' && ! empty($review)): ?>
+<?php if ($order['status'] === 'completed'): ?>
+    <?php if (! empty($review)): ?>
         <div class="bg-white rounded-lg shadow-md p-6 mb-6">
             <h2 class="text-xl font-bold text-gray-900 mb-4">Review</h2>
-            <!-- Existing review rendering omitted for brevity -->
+
+            <!-- Rating -->
+            <div class="flex items-center mb-3">
+                <?php
+                    $rating = (int) ($review['rating'] ?? 0);
+                    for ($i = 1; $i <= 5; $i++):
+                        $filled = $i <= $rating;
+                    ?>
+			                    <svg class="w-5 h-5<?php echo $filled ? 'text-yellow-400' : 'text-gray-300' ?> mr-1"
+			                         fill="<?php echo $filled ? 'currentColor' : 'none' ?>"
+			                         stroke="currentColor" viewBox="0 0 24 24">
+			                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+			                              d="M11.48 3.499a.562.562 0 011.04 0l2.062 4.178a.563.563 0 00.424.308l4.616.671a.563.563 0 01.312.96l-3.339 3.255a.563.563 0 00-.162.498l.788 4.592a.563.563 0 01-.817.593l-4.123-2.168a.563.563 0 00-.524 0l-4.123 2.168a.563.563 0 01-.817-.593l.788-4.592a.563.563 0 00-.162-.498L3.37 9.616a.563.563 0 01.312-.96l4.616-.671a.563.563 0 00.424-.308l2.062-4.178z" />
+			                    </svg>
+			                <?php endfor; ?>
+                <span class="ml-2 text-sm text-gray-600">
+                    <?php echo number_format((float) ($review['rating'] ?? 0), 1) ?>/5
+                </span>
+            </div>
+
+            <!-- Comment -->
+            <?php if (! empty($review['comment'])): ?>
+                <p class="text-gray-800 whitespace-pre-wrap"><?php echo e($review['comment']) ?></p>
+            <?php else: ?>
+                <p class="text-sm text-gray-500">No comment provided.</p>
+            <?php endif; ?>
+
+            <!-- Meta -->
+            <div class="mt-3 text-xs text-gray-500">
+                Reviewed by                            <?php echo e($review['client_name'] ?? 'Client') ?>
+                on:<?php echo ! empty($review['created_at']) ? date('M d, Y H:i', strtotime($review['created_at'])) : '' ?>
+            </div>
+
+            <!-- Student Reply -->
+            <?php if (! empty($review['student_reply'])): ?>
+                <div class="mt-5 border rounded bg-gray-50 p-4">
+                    <div class="text-sm font-medium text-gray-700 mb-1">Student reply</div>
+                    <p class="text-gray-800 whitespace-pre-wrap"><?php echo e($review['student_reply']) ?></p>
+                    <?php if (! empty($review['student_replied_at'])): ?>
+                        <div class="mt-2 text-xs text-gray-500">
+                            Replied on                                                                                                                   <?php echo date('M d, Y H:i', strtotime($review['student_replied_at'])) ?>
+                        </div>
+                    <?php endif; ?>
+                </div>
+            <?php endif; ?>
         </div>
     <?php endif; ?>
+<?php endif; ?>
 
     <div class="bg-white rounded-lg shadow-md p-6">
         <div class="flex items-center justify-between">
@@ -240,6 +286,16 @@
                             Request Revision (<?php echo e(($order['max_revisions'] ?? 0) - ($order['revision_count'] ?? 0)) ?> left)
                         </button>
                     <?php endif; ?>
+                <?php endif; ?>
+
+                <?php
+                    // NEW: Leave a Review button for client when order is completed and no review exists yet
+                ?>
+                <?php if ($order['status'] === 'completed' && $order['client_id'] === Auth::user()['id'] && empty($review)): ?>
+                    <a href="/reviews/create?order_id=<?php echo e($order['id']) ?>"
+                       class="bg-indigo-600 text-white px-6 py-2 rounded-md hover:bg-indigo-700">
+                        Leave a Review
+                    </a>
                 <?php endif; ?>
 
                 <?php if (Auth::user()['role'] === 'admin'): ?>
@@ -339,5 +395,5 @@ function hideForceCompleteModal(){ document.getElementById('forceCompleteModal')
         include __DIR__ . '/../layouts/admin.php';
     } else {
         include __DIR__ . '/../layouts/dashboard.php';
-}
+    }
 ?>

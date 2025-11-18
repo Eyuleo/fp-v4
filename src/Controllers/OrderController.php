@@ -269,6 +269,11 @@ class OrderController
             exit;
         }
 
+        // Backfill review window if needed for delivered orders
+        if ($order['status'] === 'delivered') {
+            $order = $this->orderService->ensureReviewWindow($order);
+        }
+
         if (isset($_GET['payment'])) {
             if ($_GET['payment'] === 'success') {
                 $_SESSION['success'] = 'Payment successful! Your order has been placed.';
@@ -516,7 +521,7 @@ class OrderController
         exit;
     }
 
-    // PATCH: Admin force complete endpoint
+    // PATCH: Admin force complete endpoint (now uses review window in service)
     public function forceComplete(int $id): void
     {
         if (! Auth::check()) {
@@ -557,5 +562,24 @@ class OrderController
         $_SESSION['success'] = 'Order force-completed. Funds credited to student.';
         header('Location: /orders/' . $id);
         exit;
+    }
+
+    /**
+     * Optional: public endpoint to trigger auto-completion (use a secret token)
+     * Route example: GET /cron/orders/auto-complete?token=...
+     */
+    public function autoComplete(): void
+    {
+        $token    = $_GET['token'] ?? '';
+        $expected = getenv('CRON_SECRET_TOKEN');
+        if (! $expected || $token !== $expected) {
+            http_response_code(403);
+            echo 'Unauthorized';
+            return;
+        }
+
+        $results = $this->orderService->autoCompleteExpired();
+        header('Content-Type: application/json');
+        echo json_encode(['processed' => $results]);
     }
 }

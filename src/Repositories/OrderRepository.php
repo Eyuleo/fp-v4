@@ -249,6 +249,55 @@ class OrderRepository
         return $orders;
     }
 
+    public function getDefaultReviewWindowHours(): int
+    {
+        // Could be an env var; fallback to 24
+        $hours = getenv('ORDER_REVIEW_WINDOW_HOURS');
+        return ($hours && (int) $hours > 0) ? (int) $hours : 24;
+    }
+
+/**
+ * Find delivered orders whose review window expired (not yet completed).
+ */
+    public function findExpiredReviewWindowOrders(): array
+    {
+        $stmt = $this->db->prepare("
+        SELECT * FROM orders
+        WHERE status = 'delivered'
+          AND review_deadline IS NOT NULL
+          AND review_deadline < NOW()
+    ");
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+/**
+ * Backfill review window for an already delivered order missing fields.
+ */
+    public function backfillReviewWindow(array $order): ?array
+    {
+        if ($order['status'] !== 'delivered') {
+            return $order;
+        }
+        if (! empty($order['review_deadline'])) {
+            return $order; // Already set
+        }
+        $deliveredAt = $order['delivered_at'] ?? $order['updated_at'] ?? $order['created_at'];
+        if (! $deliveredAt) {
+            $deliveredAt = date('Y-m-d H:i:s');
+        }
+        $hours          = $this->getDefaultReviewWindowHours();
+        $reviewDeadline = date('Y-m-d H:i:s', strtotime($deliveredAt) + ($hours * 3600));
+
+        $this->update((int) $order['id'], [
+            'delivered_at'        => $deliveredAt,
+            'review_window_hours' => $hours,
+            'review_deadline'     => $reviewDeadline,
+        ]);
+
+        return $this->findById((int) $order['id']);
+    }
+
     /**
      * Get platform commission rate setting
      *
