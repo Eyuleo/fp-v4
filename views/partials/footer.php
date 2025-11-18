@@ -69,7 +69,7 @@
             </div>
 
             <!-- Support -->
-            <div>
+            <!-- <div>
                 <h3 class="text-white font-semibold mb-4">Support</h3>
                 <ul class="space-y-2">
                     <li>
@@ -88,17 +88,15 @@
                         <a href="#" class="hover:text-white transition">Privacy Policy</a>
                     </li>
                 </ul>
-            </div>
+            </div> -->
         </div>
 
         <!-- Bottom Bar -->
-        <div class="border-t border-gray-800 mt-8 pt-8 flex flex-col md:flex-row justify-between items-center">
+        <div class="border-t border-gray-800 mt-8 pt-8 flex flex-col md:flex-row justify-center items-center">
             <p class="text-gray-400 text-sm">
                 ©                   <?php echo date('Y') ?> Student Skills Marketplace. All rights reserved.
             </p>
-            <p class="text-gray-400 text-sm mt-4 md:mt-0">
-                Made with ❤️ for Ethiopian students
-            </p>
+            
         </div>
     </div>
 </footer>

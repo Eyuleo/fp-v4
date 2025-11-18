@@ -330,6 +330,13 @@ class OrderService
                 'completed_at' => date('Y-m-d H:i:s'),
             ]);
 
+            // Update payment status to succeeded
+            $paymentRepository = new PaymentRepository($this->db);
+            $payment = $paymentRepository->findByOrderId($orderId);
+            if ($payment && $payment['status'] !== 'succeeded') {
+                $paymentRepository->update($payment['id'], ['status' => 'succeeded']);
+            }
+
             $this->orderRepository->addToStudentBalance($order['student_id'], $studentEarnings);
             $this->orderRepository->incrementStudentOrderCount($order['student_id']);
 
@@ -500,6 +507,13 @@ class OrderService
                 'completed_at' => date('Y-m-d H:i:s'),
             ]);
 
+            // Update payment status to succeeded
+            $paymentRepository = new PaymentRepository($this->db);
+            $payment = $paymentRepository->findByOrderId($orderId);
+            if ($payment && $payment['status'] !== 'succeeded') {
+                $paymentRepository->update($payment['id'], ['status' => 'succeeded']);
+            }
+
             $this->orderRepository->addToStudentBalance($order['student_id'], $studentEarnings);
             $this->orderRepository->incrementStudentOrderCount($order['student_id']);
 
@@ -571,6 +585,13 @@ class OrderService
                 'completed_at'      => date('Y-m-d H:i:s'),
                 'auto_completed_at' => date('Y-m-d H:i:s'),
             ]);
+
+            // Update payment status to succeeded
+            $paymentRepository = new PaymentRepository($this->db);
+            $payment = $paymentRepository->findByOrderId($orderId);
+            if ($payment && $payment['status'] !== 'succeeded') {
+                $paymentRepository->update($payment['id'], ['status' => 'succeeded']);
+            }
 
             $this->orderRepository->addToStudentBalance($order['student_id'], $studentEarnings);
             $this->orderRepository->incrementStudentOrderCount($order['student_id']);

@@ -162,7 +162,7 @@
                                 <?php echo e($service['delivery_days']) ?> day<?php echo $service['delivery_days'] != 1 ? 's' : '' ?>
                             </div>
                             <div class="text-lg font-bold text-gray-900">
-                                ETB                                    <?php echo safe_number_format($service['price'], 2) ?>
+                                $<?php echo safe_number_format($service['price'], 2) ?>
                             </div>
                         </div>
                     </div>

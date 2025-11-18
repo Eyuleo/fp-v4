@@ -50,40 +50,28 @@
 
     <!-- Summary Stats -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-        <?php
-            $totalAmount     = 0;
-            $totalCommission = 0;
-            $totalRefunded   = 0;
-            $succeededCount  = 0;
-
-            foreach ($payments as $payment) {
-                if ($payment['status'] === 'succeeded') {
-                    $totalAmount += $payment['amount'];
-                    $totalCommission += $payment['commission_amount'];
-                    $succeededCount++;
-                }
-                $totalRefunded += $payment['refund_amount'];
-            }
-        ?>
-
         <div class="bg-white rounded-lg shadow-md p-6">
             <div class="text-sm text-gray-600 mb-1">Total Volume</div>
-            <div class="text-2xl font-bold text-gray-900">$<?php echo safe_number_format($totalAmount, 2) ?></div>
+            <div class="text-2xl font-bold text-gray-900">$<?php echo safe_number_format($stats['total_amount'] ?? 0, 2) ?></div>
+            <div class="text-xs text-gray-500 mt-1">Successful payments only</div>
         </div>
 
         <div class="bg-white rounded-lg shadow-md p-6">
             <div class="text-sm text-gray-600 mb-1">Total Commission</div>
-            <div class="text-2xl font-bold text-green-600">$<?php echo safe_number_format($totalCommission, 2) ?></div>
+            <div class="text-2xl font-bold text-green-600">$<?php echo safe_number_format($stats['total_commission'] ?? 0, 2) ?></div>
+            <div class="text-xs text-gray-500 mt-1">Platform earnings</div>
         </div>
 
         <div class="bg-white rounded-lg shadow-md p-6">
             <div class="text-sm text-gray-600 mb-1">Total Refunded</div>
-            <div class="text-2xl font-bold text-red-600">$<?php echo safe_number_format($totalRefunded, 2) ?></div>
+            <div class="text-2xl font-bold text-red-600">$<?php echo safe_number_format($stats['total_refunded'] ?? 0, 2) ?></div>
+            <div class="text-xs text-gray-500 mt-1">All refunds</div>
         </div>
 
         <div class="bg-white rounded-lg shadow-md p-6">
             <div class="text-sm text-gray-600 mb-1">Successful Payments</div>
-            <div class="text-2xl font-bold text-gray-900"><?php echo $succeededCount ?></div>
+            <div class="text-2xl font-bold text-gray-900"><?php echo number_format($stats['succeeded_count'] ?? 0) ?></div>
+            <div class="text-xs text-gray-500 mt-1">Completed transactions</div>
         </div>
     </div>
 

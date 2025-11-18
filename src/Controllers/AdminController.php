@@ -248,6 +248,41 @@ class AdminController
         $stmt->execute();
         $payments = $stmt->fetchAll();
 
+        // Calculate overall statistics (not just current page)
+        $statsSql = "SELECT
+                        SUM(CASE WHEN p.status = 'succeeded' THEN p.amount ELSE 0 END) as total_amount,
+                        SUM(CASE WHEN p.status = 'succeeded' THEN p.commission_amount ELSE 0 END) as total_commission,
+                        SUM(p.refund_amount) as total_refunded,
+                        COUNT(CASE WHEN p.status = 'succeeded' THEN 1 END) as succeeded_count
+                    FROM payments p
+                    INNER JOIN orders o ON p.order_id = o.id
+                    INNER JOIN services s ON o.service_id = s.id
+                    INNER JOIN users client ON o.client_id = client.id
+                    INNER JOIN users student ON o.student_id = student.id
+                    WHERE 1=1";
+
+        $statsParams = [];
+
+        // Apply same filters to stats query
+        if ($status && in_array($status, ['pending', 'succeeded', 'refunded', 'partially_refunded', 'failed'])) {
+            $statsSql .= " AND p.status = :status";
+            $statsParams['status'] = $status;
+        }
+
+        if ($dateFrom) {
+            $statsSql .= " AND DATE(p.created_at) >= :date_from";
+            $statsParams['date_from'] = $dateFrom;
+        }
+
+        if ($dateTo) {
+            $statsSql .= " AND DATE(p.created_at) <= :date_to";
+            $statsParams['date_to'] = $dateTo;
+        }
+
+        $statsStmt = $this->db->prepare($statsSql);
+        $statsStmt->execute($statsParams);
+        $stats = $statsStmt->fetch();
+
         // Render view
         include __DIR__ . '/../../views/admin/payments/index.php';
     }
