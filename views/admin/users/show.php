@@ -64,14 +64,14 @@
             <?php if ($user['role'] !== 'admin'): ?>
                 <div class="flex space-x-3">
                     <?php if ($user['status'] === 'suspended'): ?>
-                        <form method="POST" action="/admin/users/<?php echo e($user['id']) ?>/reactivate" onsubmit="return confirm('Are you sure you want to reactivate this user?');">
+                        <form method="POST" action="/admin/users/<?php echo e($user['id']) ?>/reactivate" onsubmit="return confirm('Are you sure you want to reactivate this user?');" data-loading>
                             <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token'] ?? '' ?>">
                             <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500">
                                 Reactivate User
                             </button>
                         </form>
                     <?php else: ?>
-                        <form method="POST" action="/admin/users/<?php echo e($user['id']) ?>/suspend" onsubmit="return confirm('Are you sure you want to suspend this user? They will be logged out immediately.');">
+                        <form method="POST" action="/admin/users/<?php echo e($user['id']) ?>/suspend" onsubmit="return confirm('Are you sure you want to suspend this user? They will be logged out immediately.');" data-loading>
                             <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token'] ?? '' ?>">
                             <button type="submit" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500">
                                 Suspend User

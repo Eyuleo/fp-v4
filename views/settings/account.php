@@ -15,7 +15,7 @@
         <div class="bg-white rounded-lg shadow-md p-6">
             <h2 class="text-xl font-bold text-gray-900 mb-4">Account Information</h2>
 
-            <form action="/settings/account/update" method="POST" class="space-y-4">
+            <form action="/settings/account/update" method="POST" class="space-y-4" data-loading>
                 <?php echo csrf_field() ?>
 
                 <!-- Name -->
@@ -83,7 +83,7 @@
         <div class="bg-white rounded-lg shadow-md p-6">
             <h2 class="text-xl font-bold text-gray-900 mb-4">Change Password</h2>
 
-            <form action="/settings/password/update" method="POST" class="space-y-4">
+            <form action="/settings/password/update" method="POST" class="space-y-4" data-loading>
                 <?php echo csrf_field() ?>
 
                 <!-- Current Password -->

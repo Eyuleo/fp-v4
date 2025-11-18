@@ -22,14 +22,14 @@
             <div>
                 <label for="range" class="block text-sm font-medium text-gray-700 mb-1">Time Period</label>
                 <select name="range" id="range" class="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" onchange="toggleCustomDates(this.value)">
-                    <option value="7"                                                                                                                <?php echo $analytics['range'] === '7' ? 'selected' : '' ?>>Last 7 days</option>
-                    <option value="30"                                                                                                                   <?php echo $analytics['range'] === '30' ? 'selected' : '' ?>>Last 30 days</option>
-                    <option value="90"                                                                                                                   <?php echo $analytics['range'] === '90' ? 'selected' : '' ?>>Last 90 days</option>
-                    <option value="custom"                                                                                                                               <?php echo $analytics['range'] === 'custom' ? 'selected' : '' ?>>Custom range</option>
+                    <option value="7"                                                                                                                                                     <?php echo $analytics['range'] === '7' ? 'selected' : '' ?>>Last 7 days</option>
+                    <option value="30"                                                                                                                                                         <?php echo $analytics['range'] === '30' ? 'selected' : '' ?>>Last 30 days</option>
+                    <option value="90"                                                                                                                                                         <?php echo $analytics['range'] === '90' ? 'selected' : '' ?>>Last 90 days</option>
+                    <option value="custom"                                                                                                                                                                         <?php echo $analytics['range'] === 'custom' ? 'selected' : '' ?>>Custom range</option>
                 </select>
             </div>
 
-            <div id="customDates" style="display:                                                                                                                                                    <?php echo $analytics['range'] === 'custom' ? 'flex' : 'none' ?>;" class="gap-4">
+            <div id="customDates" style="display:                                                                                                                                                                                                     <?php echo $analytics['range'] === 'custom' ? 'flex' : 'none' ?>;" class="gap-4">
                 <div>
                     <label for="date_from" class="block text-sm font-medium text-gray-700 mb-1">From</label>
                     <input type="date" name="date_from" id="date_from" value="<?php echo e($analytics['date_from']) ?>" class="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -53,7 +53,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-sm font-medium text-gray-600">Gross Merchandise Value</p>
-                    <p class="text-2xl font-bold text-gray-900 mt-2">ETB                                                                                                                                                                                                                         <?php echo number_format($analytics['gmv'], 2) ?></p>
+                    <p class="text-2xl font-bold text-gray-900 mt-2">ETB                                                                                                                                                                                                                                                                                                 <?php echo number_format($analytics['gmv'], 2) ?></p>
                 </div>
                 <div class="bg-green-100 rounded-full p-3">
                     <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -85,7 +85,7 @@
                 <div>
                     <p class="text-sm font-medium text-gray-600">Completion Rate</p>
                     <p class="text-2xl font-bold text-gray-900 mt-2"><?php echo number_format($analytics['completion_rate'], 1) ?>%</p>
-                    <p class="text-xs text-gray-500 mt-1">On-time:                                                                                                                                                                                                       <?php echo number_format($analytics['on_time_rate'], 1) ?>%</p>
+                    <p class="text-xs text-gray-500 mt-1">On-time:                                                                                                                                                                                                                                                                         <?php echo number_format($analytics['on_time_rate'], 1) ?>%</p>
                 </div>
                 <div class="bg-purple-100 rounded-full p-3">
                     <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -153,7 +153,7 @@
                                     </span>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                    ETB                                                                                                                      <?php echo number_format($order['price'], 2) ?>
+                                    ETB                                                                                                                                                             <?php echo number_format($order['price'], 2) ?>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                     <?php echo date('M d, Y', strtotime($order['created_at'])) ?>

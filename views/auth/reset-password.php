@@ -12,7 +12,7 @@
     </div>
 <?php endif; ?>
 
-<form method="POST" action="/auth/reset-password" class="space-y-6">
+<form method="POST" action="/auth/reset-password" class="space-y-6" data-loading>
     <?php echo csrf_field() ?>
     <input type="hidden" name="token" value="<?php echo e($token) ?>">
 

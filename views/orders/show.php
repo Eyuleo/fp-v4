@@ -275,7 +275,7 @@
                 <?php endif; ?>
 
                 <?php if ($order['status'] === 'delivered' && $order['client_id'] === Auth::user()['id']): ?>
-                    <form action="/orders/<?php echo e($order['id']) ?>/complete" method="POST" class="inline">
+                    <form action="/orders/<?php echo e($order['id']) ?>/complete" method="POST" class="inline" data-loading>
                         <input type="hidden" name="csrf_token" value="<?php echo e($_SESSION['csrf_token']) ?>">
                         <button type="submit" class="bg-green-600 text-white px-6 py-2 rounded-md hover:bg-green-700">
                             Accept & Complete
@@ -323,7 +323,7 @@
 <div id="cancelModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
     <div class="bg-white rounded-lg max-w-md w-full mx-4 p-6">
         <h3 class="text-xl font-bold text-gray-900 mb-4">Cancel Order</h3>
-        <form action="/orders/<?php echo e($order['id']) ?>/cancel" method="POST">
+        <form action="/orders/<?php echo e($order['id']) ?>/cancel" method="POST" data-loading>
             <input type="hidden" name="csrf_token" value="<?php echo e($_SESSION['csrf_token']) ?>">
             <div class="mb-4">
                 <label class="block text-sm font-medium text-gray-700 mb-2">
@@ -348,7 +348,7 @@
         <p class="text-sm text-gray-600 mb-4">
             This order is overdue and still in delivered status. Completing will credit the student and mark the order as completed.
         </p>
-        <form action="/admin/orders/<?php echo e($order['id']) ?>/force-complete" method="POST">
+        <form action="/admin/orders/<?php echo e($order['id']) ?>/force-complete" method="POST" data-loading>
             <input type="hidden" name="csrf_token" value="<?php echo e($_SESSION['csrf_token']) ?>">
             <div class="mb-4">
                 <label class="block text-sm font-medium text-gray-700 mb-2">Internal note (optional)</label>

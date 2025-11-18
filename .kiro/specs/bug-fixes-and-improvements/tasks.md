@@ -238,3 +238,97 @@
     - Fix file path resolution in service detail view
     - Test file display and download
     - _Requirements: 14.1, 14.2, 14.3, 14.4_
+
+- [x] 15. Implement Form Button Loading States
+
+  - [x] 15.1 Create modular form loading JavaScript
+
+    - Create `public/js/form-loading.js` with auto-apply functionality
+
+    - Add event listeners for form submissions
+    - Implement button disable and loading state logic
+    - Handle form completion and error states
+    - _Requirements: 15.1, 15.2, 15.4, 15.5_
+
+  - [x] 15.2 Add CSS styling for loading states
+
+    - Add `.btn-loading` class with spinner animation
+    - Style disabled button states
+    - Add Font Awesome spinner icon styles
+    - Ensure consistent styling across all buttons
+    - _Requirements: 15.1, 15.4_
+
+  - [x] 15.3 Apply loading states to all forms
+
+    - Add `data-loading` attribute to all form elements
+    - Update service creation and editing forms
+    - Update order creation and delivery forms
+    - Update review submission forms
+    - Update authentication forms (login, register, password reset)
+    - Update profile and settings forms
+    - Update admin forms (categories, users, services)
+    - Include form-loading.js script in main layout
+    - _Requirements: 15.3, 15.4_
+
+- [ ] 16. Fix Number Format Null Handling
+
+  - [ ] 16.1 Create safe number format helper function
+
+    - Add `safe_number_format()` function to `src/Helpers.php`
+    - Handle null values with default of 0
+    - Maintain same signature as number_format
+    - _Requirements: 16.1, 16.3_
+
+  - [ ] 16.2 Replace number_format calls throughout codebase
+
+    - Search for all `number_format(` occurrences
+    - Replace with `safe_number_format(` or add null coalescing
+    - Update view files (dashboards, orders, services, withdrawals, payments)
+    - Update controller files where number formatting occurs
+    - Update service classes (PaymentService, OrderService, etc.)
+    - Test all pages that display formatted numbers
+    - _Requirements: 16.2, 16.3, 16.4_
+
+- [ ] 17. Modernize Dashboard Quick Actions
+
+  - [ ] 17.1 Update student dashboard quick actions
+
+    - Remove "coming soon" notices
+    - Add Font Awesome icons for each action
+    - Implement View My Services action
+    - Implement Create New Service action
+    - Implement View Orders action
+    - Implement View Earnings action
+    - Implement Messages action
+    - _Requirements: 17.1, 17.2, 17.4_
+
+  - [ ] 17.2 Update client dashboard quick actions
+
+    - Remove "coming soon" notices
+    - Add Font Awesome icons for each action
+    - Implement Browse Services action
+    - Implement My Orders action
+    - Implement Messages action
+    - Implement My Profile action
+    - _Requirements: 17.1, 17.2, 17.5_
+
+  - [ ] 17.3 Update admin dashboard quick actions
+
+    - Remove "coming soon" notices
+    - Add Font Awesome icons for each action
+    - Implement Manage Users action
+    - Implement Manage Services action
+    - Implement View Orders action
+    - Implement View Payments action
+    - Implement Review Moderation action
+    - _Requirements: 17.1, 17.2, 17.6_
+
+  - [ ] 17.4 Add modern CSS styling for quick actions
+
+    - Create card-based layout with hover effects
+    - Style icon circles with gradient backgrounds
+    - Add smooth transitions and animations
+    - Implement responsive grid layout
+    - Apply modern color scheme
+    - Ensure Font Awesome is loaded in main layout
+    - _Requirements: 17.2, 17.3_

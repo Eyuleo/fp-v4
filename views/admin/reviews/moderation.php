@@ -209,7 +209,7 @@
 
                                         <?php if ($review['is_hidden']): ?>
                                             <!-- Unflag Button -->
-                                            <form method="POST" action="/admin/reviews/<?php echo e($review['id']) ?>/unflag"
+                                            <form method="POST" action="/admin/reviews/<?php echo e($review['id']) ?>/unflag" data-loading
                                                   onsubmit="return confirm('Are you sure you want to restore this review to public display?')"
                                                   class="inline">
                                                 <input type="hidden" name="csrf_token" value="<?php echo e($_SESSION['csrf_token']) ?>">

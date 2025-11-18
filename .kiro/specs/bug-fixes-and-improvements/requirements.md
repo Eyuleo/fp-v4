@@ -179,3 +179,39 @@ additional note: the issue is that after successfully submitting data to stripe 
 2. THE Platform SHALL use the FileService to retrieve sample work file paths correctly
 3. WHEN a User clicks on a sample work file, THE Platform SHALL display or download the file without errors
 4. THE Platform SHALL maintain sample work display functionality after FileService implementation changes
+
+### Requirement 15: Form Button Loading States
+
+**User Story:** As a User, I want visual feedback when submitting forms, so that I know my action is being processed and avoid duplicate submissions
+
+#### Acceptance Criteria
+
+1. WHEN a User clicks a form submit button, THE Platform SHALL display a loading indicator on the button
+2. WHEN a form is being submitted, THE Platform SHALL disable the submit button to prevent duplicate submissions
+3. THE Platform SHALL apply loading and disabled states to all form buttons across the application
+4. THE Platform SHALL use a modular approach that can be easily applied to any form button
+5. WHEN form submission completes or fails, THE Platform SHALL restore the button to its original state
+
+### Requirement 16: Number Format Null Handling
+
+**User Story:** As a User, I want the Platform to handle null numeric values gracefully, so that I don't encounter deprecation warnings or errors
+
+#### Acceptance Criteria
+
+1. WHEN the Platform calls number_format with a null value, THE Platform SHALL handle the null value before formatting
+2. THE Platform SHALL apply null handling to all instances of number_format throughout the codebase
+3. THE Platform SHALL display appropriate default values (such as 0 or empty string) when numeric values are null
+4. THE Platform SHALL eliminate all "passing null to parameter of type float is deprecated" warnings
+
+### Requirement 17: Dashboard Quick Actions Modernization
+
+**User Story:** As a User, I want modern and functional quick action buttons on my dashboard, so that I can efficiently navigate to key features
+
+#### Acceptance Criteria
+
+1. WHEN a User views their dashboard, THE Platform SHALL display quick action buttons without "coming soon" notices
+2. THE Platform SHALL display Font Awesome icons on all quick action buttons
+3. THE Platform SHALL apply modern styling to quick action buttons with consistent design
+4. THE Platform SHALL implement quick actions for Student dashboards including view services, create service, view orders, and view earnings
+5. THE Platform SHALL implement quick actions for Client dashboards including browse services, view orders, and view messages
+6. THE Platform SHALL implement quick actions for Admin dashboards including manage users, manage services, and view reports

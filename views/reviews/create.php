@@ -85,7 +85,7 @@
             </div>
         <?php endif; ?>
 
-        <form action="/reviews/store" method="POST">
+        <form action="/reviews/store" method="POST" data-loading>
             <input type="hidden" name="csrf_token" value="<?php echo e($_SESSION['csrf_token']) ?>">
             <input type="hidden" name="order_id" value="<?php echo e($order['id']) ?>">
 

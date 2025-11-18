@@ -112,7 +112,7 @@
             </div>
         <?php endif; ?>
 
-        <form action="/reviews/<?php echo e($review['id']) ?>/update" method="POST">
+        <form action="/reviews/<?php echo e($review['id']) ?>/update" method="POST" data-loading>
             <input type="hidden" name="csrf_token" value="<?php echo e($_SESSION['csrf_token']) ?>">
 
             <!-- Rating -->

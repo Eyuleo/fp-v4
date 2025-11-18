@@ -57,7 +57,7 @@
                 </div>
             <?php endif; ?>
 
-            <form action="/orders/store" method="POST" enctype="multipart/form-data" id="order-form">
+            <form action="/orders/store" method="POST" enctype="multipart/form-data" id="order-form" data-loading>
                 <input type="hidden" name="csrf_token" value="<?php echo e($_SESSION['csrf_token']) ?>">
                 <input type="hidden" name="service_id" value="<?php echo e($service['id']) ?>">
 

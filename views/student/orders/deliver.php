@@ -74,7 +74,7 @@
                     </div>
                 <?php endif; ?>
 
-                <form action="/orders/<?php echo $order['id'] ?>/deliver" method="POST" enctype="multipart/form-data">
+                <form action="/orders/<?php echo $order['id'] ?>/deliver" method="POST" enctype="multipart/form-data" data-loading>
                     <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token'] ?>">
 
                     <!-- Delivery Message -->

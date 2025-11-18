@@ -17,7 +17,7 @@
             </div>
         <?php endif; ?>
 
-        <form action="/student/profile/update" method="POST" enctype="multipart/form-data" class="space-y-6">
+        <form action="/student/profile/update" method="POST" enctype="multipart/form-data" class="space-y-6" data-loading>
             <?php echo csrf_field() ?>
 
             <!-- Profile Picture Section -->

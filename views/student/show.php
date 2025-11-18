@@ -224,7 +224,7 @@
                                     <!-- Admin Flag Button -->
                                     <?php if (auth() && Auth::user()['role'] === 'admin'): ?>
                                         <div class="mb-3">
-                                            <form method="POST" action="/admin/reviews/<?php echo e($review['id']) ?>/flag"
+                                            <form method="POST" action="/admin/reviews/<?php echo e($review['id']) ?>/flag" data-loading
                                                   onsubmit="return confirm('Are you sure you want to flag and hide this review?')"
                                                   class="inline">
                                                 <input type="hidden" name="csrf_token" value="<?php echo e($_SESSION['csrf_token']) ?>">

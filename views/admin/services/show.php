@@ -280,7 +280,7 @@
         <p class="text-gray-600 mb-4">
             This will activate the service and make it visible to clients. The student will be notified.
         </p>
-        <form method="POST" action="/admin/services/<?php echo e($service['id']) ?>/activate">
+        <form method="POST" action="/admin/services/<?php echo e($service['id']) ?>/activate" data-loading>
             <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token'] ?? '' ?>">
 
             <div class="flex gap-3">
@@ -299,7 +299,7 @@
 <div id="deactivateModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
     <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
         <h3 class="text-xl font-bold text-gray-900 mb-4">Deactivate Service</h3>
-        <form method="POST" action="/admin/services/<?php echo e($service['id']) ?>/deactivate">
+        <form method="POST" action="/admin/services/<?php echo e($service['id']) ?>/deactivate" data-loading>
             <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token'] ?? '' ?>">
 
             <div class="mb-4">
@@ -333,7 +333,7 @@
         <h3 class="text-xl font-bold text-gray-900 mb-4">Delete Service</h3>
         <p class="text-gray-600 mb-4">This action cannot be undone. The service and all associated files will be permanently deleted.</p>
 
-        <form method="POST" action="/admin/services/<?php echo e($service['id']) ?>/delete">
+        <form method="POST" action="/admin/services/<?php echo e($service['id']) ?>/delete" data-loading>
             <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token'] ?? '' ?>">
 
             <div class="mb-4">

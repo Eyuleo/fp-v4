@@ -26,7 +26,7 @@
             </div>
         <?php endif; ?>
 
-        <form action="/client/profile/update" method="POST" enctype="multipart/form-data" class="space-y-6" id="profile-form">
+        <form action="/client/profile/update" method="POST" enctype="multipart/form-data" class="space-y-6" id="profile-form" data-loading>
             <?php echo csrf_field() ?>
 
             <!-- Profile Picture Section -->

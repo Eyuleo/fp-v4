@@ -91,7 +91,7 @@
                     </div>
                 <?php endif; ?>
 
-                <form action="/orders/<?php echo $order['id'] ?>/request-revision" method="POST">
+                <form action="/orders/<?php echo $order['id'] ?>/request-revision" method="POST" data-loading>
                     <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token'] ?>">
 
                     <!-- Revision Reason -->

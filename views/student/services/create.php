@@ -13,7 +13,7 @@
     <?php require __DIR__ . '/../../partials/alert.php'; ?>
 
     <div class="bg-white rounded-lg shadow-md p-6">
-        <form action="/student/services/store" method="POST" enctype="multipart/form-data">
+        <form action="/student/services/store" method="POST" enctype="multipart/form-data" data-loading>
             <?php echo csrf_field()?>
 
             <!-- Title -->

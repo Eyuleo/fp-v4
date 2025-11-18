@@ -41,7 +41,7 @@
 
     <!-- Edit Form -->
     <div class="bg-white rounded-lg shadow-md p-6">
-        <form method="POST" action="/admin/categories/<?php echo e($category['id']) ?>/update">
+        <form method="POST" action="/admin/categories/<?php echo e($category['id']) ?>/update" data-loading>
             <input type="hidden" name="csrf_token" value="<?php echo e($_SESSION['csrf_token'] ?? '') ?>">
 
             <div class="mb-6">

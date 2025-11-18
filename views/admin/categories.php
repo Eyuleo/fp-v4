@@ -141,7 +141,7 @@
     <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
         <div class="mt-3">
             <h3 class="text-lg font-medium text-gray-900 mb-4">Create New Category</h3>
-            <form method="POST" action="/admin/categories/create">
+            <form method="POST" action="/admin/categories/create" data-loading>
                 <input type="hidden" name="csrf_token" value="<?php echo e($_SESSION['csrf_token'] ?? '') ?>">
 
                 <div class="mb-4">

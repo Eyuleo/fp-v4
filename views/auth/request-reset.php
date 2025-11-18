@@ -12,7 +12,7 @@
     </div>
 <?php endif; ?>
 
-<form method="POST" action="/auth/request-reset" class="space-y-6">
+<form method="POST" action="/auth/request-reset" class="space-y-6" data-loading>
     <?php echo csrf_field()?>
 
     <!-- Email -->
