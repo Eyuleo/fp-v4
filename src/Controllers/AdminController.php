@@ -136,7 +136,7 @@ class AdminController
                             LEFT JOIN users u_student ON o.student_id = u_student.id
                             WHERE DATE(o.created_at) BETWEEN :date_from AND :date_to
                             ORDER BY o.created_at DESC
-                            LIMIT 10";
+                            LIMIT 3";
         $recentOrdersStmt = $this->db->prepare($recentOrdersSql);
         $recentOrdersStmt->execute(['date_from' => $dateFrom, 'date_to' => $dateTo]);
         $recentOrders = $recentOrdersStmt->fetchAll();

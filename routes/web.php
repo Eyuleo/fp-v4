@@ -46,7 +46,48 @@ $router->get("/register", function () {
 $router->get(
     "/student/dashboard",
     function () {
-        view("student/dashboard", [], "dashboard");
+        $db = require __DIR__ . "/../config/database.php";
+        require_once __DIR__ . "/../src/Repositories/StudentProfileRepository.php";
+        require_once __DIR__ . "/../src/Repositories/OrderRepository.php";
+
+        $profileRepository = new StudentProfileRepository($db);
+        $orderRepository   = new OrderRepository($db);
+
+        // Get student profile for balance info
+        $profile = $profileRepository->findByUserId(user_id());
+        
+        // Calculate balances - use available_balance column
+        $availableBalance = $profile['available_balance'] ?? 0;
+        
+        // Calculate pending balance from active orders
+        $stmt = $db->prepare("
+            SELECT COALESCE(SUM(price), 0) as pending_balance
+            FROM orders
+            WHERE student_id = :student_id
+            AND status IN ('in_progress', 'delivered', 'revision_requested')
+        ");
+        $stmt->execute(['student_id' => user_id()]);
+        $pendingBalance = $stmt->fetch()['pending_balance'];
+        
+        // Calculate total earned (completed orders)
+        $stmt = $db->prepare("
+            SELECT COALESCE(SUM(price), 0) as total_earned
+            FROM orders
+            WHERE student_id = :student_id
+            AND status = 'completed'
+        ");
+        $stmt->execute(['student_id' => user_id()]);
+        $totalEarned = $stmt->fetch()['total_earned'];
+        
+        // Get recent orders (last 3)
+        $recentOrders = $orderRepository->findByStudentId(user_id(), null, 3);
+
+        view("student/dashboard", [
+            'availableBalance' => $availableBalance,
+            'pendingBalance'   => $pendingBalance,
+            'totalEarned'      => $totalEarned,
+            'recentOrders'     => $recentOrders,
+        ], "dashboard");
     },
     [new AuthMiddleware(), new RoleMiddleware("student")],
 );
@@ -62,7 +103,7 @@ $router->get(
         $orderRepository = new OrderRepository($db);
 
         $user         = $userRepository->findById(user_id());
-        $recentOrders = $orderRepository->findByClientId(user_id(), null, 5);
+        $recentOrders = $orderRepository->findByClientId(user_id(), null, 3);
 
         view(
             "client/dashboard",

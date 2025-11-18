@@ -15,48 +15,65 @@
     </div>
 
     <!-- Quick Actions -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <a href="/services/search" class="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow">
-            <div class="flex items-center">
-                <div class="flex-shrink-0">
-                    <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                    </svg>
-                </div>
-                <div class="ml-4">
-                    <h3 class="text-lg font-semibold text-gray-900">Browse Services</h3>
+    <div class="bg-white rounded-lg shadow-sm p-6">
+        <h3 class="text-xl font-semibold text-gray-900 mb-4">Quick Actions</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <!-- Browse Services -->
+            <a href="/services/search" class="group bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden border border-gray-100 hover:border-blue-500">
+                <div class="p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                            <i class="fas fa-search text-white text-xl"></i>
+                        </div>
+                        <i class="fas fa-arrow-right text-gray-400 group-hover:text-blue-500 group-hover:translate-x-1 transition-all duration-300"></i>
+                    </div>
+                    <h3 class="text-lg font-semibold text-gray-900 mb-2">Browse Services</h3>
                     <p class="text-sm text-gray-600">Find the perfect service</p>
                 </div>
-            </div>
-        </a>
+            </a>
 
-        <a href="/client/orders" class="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow">
-            <div class="flex items-center">
-                <div class="flex-shrink-0">
-                    <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
-                    </svg>
-                </div>
-                <div class="ml-4">
-                    <h3 class="text-lg font-semibold text-gray-900">My Orders</h3>
+            <!-- My Orders -->
+            <a href="/client/orders" class="group bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden border border-gray-100 hover:border-green-500">
+                <div class="p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="w-14 h-14 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                            <i class="fas fa-shopping-cart text-white text-xl"></i>
+                        </div>
+                        <i class="fas fa-arrow-right text-gray-400 group-hover:text-green-500 group-hover:translate-x-1 transition-all duration-300"></i>
+                    </div>
+                    <h3 class="text-lg font-semibold text-gray-900 mb-2">My Orders</h3>
                     <p class="text-sm text-gray-600">Track your orders</p>
                 </div>
-            </div>
-        </a>
+            </a>
 
-        <a href="/messages" class="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow">
-            <div class="flex items-center">
-                <div class="flex-shrink-0">
-                    <svg class="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path>
-                    </svg>
-                </div>
-                <div class="ml-4">
-                    <h3 class="text-lg font-semibold text-gray-900">Messages</h3>
+            <!-- Messages -->
+            <a href="/messages" class="group bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden border border-gray-100 hover:border-purple-500">
+                <div class="p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="w-14 h-14 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                            <i class="fas fa-envelope text-white text-xl"></i>
+                        </div>
+                        <i class="fas fa-arrow-right text-gray-400 group-hover:text-purple-500 group-hover:translate-x-1 transition-all duration-300"></i>
+                    </div>
+                    <h3 class="text-lg font-semibold text-gray-900 mb-2">Messages</h3>
                     <p class="text-sm text-gray-600">Chat with students</p>
                 </div>
-            </div>
-        </a>
+            </a>
+
+            <!-- My Profile -->
+            <a href="/client/profile" class="group bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden border border-gray-100 hover:border-indigo-500">
+                <div class="p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="w-14 h-14 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                            <i class="fas fa-user text-white text-xl"></i>
+                        </div>
+                        <i class="fas fa-arrow-right text-gray-400 group-hover:text-indigo-500 group-hover:translate-x-1 transition-all duration-300"></i>
+                    </div>
+                    <h3 class="text-lg font-semibold text-gray-900 mb-2">My Profile</h3>
+                    <p class="text-sm text-gray-600">View and edit profile</p>
+                </div>
+            </a>
+        </div>
     </div>
 
     <!-- Recent Activity / Orders -->

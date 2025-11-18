@@ -216,7 +216,7 @@ class OrderRepository
      * @param string|null $status Filter by status
      * @return array
      */
-    public function findByStudentId(int $studentId, ?string $status = null): array
+    public function findByStudentId(int $studentId, ?string $status = null, ?int $limit = null): array
     {
         $sql = "SELECT o.*,
                        s.title as service_title,
@@ -235,8 +235,23 @@ class OrderRepository
 
         $sql .= " ORDER BY o.created_at DESC";
 
+        if ($limit !== null) {
+            $sql .= " LIMIT :limit";
+            $params['limit'] = $limit;
+        }
+
         $stmt = $this->db->prepare($sql);
-        $stmt->execute($params);
+        
+        // Bind parameters with correct types
+        foreach ($params as $key => $value) {
+            if ($key === 'limit') {
+                $stmt->bindValue(':' . $key, $value, PDO::PARAM_INT);
+            } else {
+                $stmt->bindValue(':' . $key, $value);
+            }
+        }
+        
+        $stmt->execute();
 
         $orders = $stmt->fetchAll();
 

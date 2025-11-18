@@ -237,7 +237,7 @@ class WithdrawalService
     public function getBalance(int $studentId): array
     {
         $stmt = $this->db->prepare('
-            SELECT available_balance, pending_balance, total_withdrawn
+            SELECT available_balance, total_withdrawn
             FROM student_profiles
             WHERE user_id = :user_id
         ');
@@ -246,12 +246,23 @@ class WithdrawalService
         $balance = $stmt->fetch();
 
         if (! $balance) {
-            return [
+            $balance = [
                 'available_balance' => 0.00,
-                'pending_balance'   => 0.00,
                 'total_withdrawn'   => 0.00,
             ];
         }
+
+        // Calculate pending balance from active orders (excluding cancelled)
+        $stmt = $this->db->prepare("
+            SELECT COALESCE(SUM(price), 0) as pending_balance
+            FROM orders
+            WHERE student_id = :student_id
+            AND status IN ('in_progress', 'delivered', 'revision_requested')
+        ");
+        $stmt->execute(['student_id' => $studentId]);
+        $pendingBalance = $stmt->fetch()['pending_balance'];
+
+        $balance['pending_balance'] = $pendingBalance;
 
         return $balance;
     }
