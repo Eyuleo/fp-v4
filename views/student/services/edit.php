@@ -15,6 +15,39 @@
 
     <?php require __DIR__ . '/../../partials/alert.php'; ?>
 
+    <?php if ($hasActiveOrders && !empty($activeOrders)): ?>
+        <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
+            <div class="flex">
+                <div class="flex-shrink-0">
+                    <svg class="h-5 w-5 text-yellow-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                    </svg>
+                </div>
+                <div class="ml-3">
+                    <h3 class="text-sm font-medium text-yellow-800">
+                        Core Fields Restricted Due to Active Orders
+                    </h3>
+                    <div class="mt-2 text-sm text-yellow-700">
+                        <p class="mb-2">This service has <?php echo count($activeOrders); ?> active <?php echo count($activeOrders) === 1 ? 'order' : 'orders'; ?>. Core service details (price, delivery time, description, category) cannot be changed until these orders are completed:</p>
+                        <ul class="list-disc list-inside space-y-1">
+                            <?php foreach ($activeOrders as $order): ?>
+                                <li>
+                                    Order #<?php echo e($order['id']); ?> - 
+                                    <span class="font-medium"><?php echo ucfirst(str_replace('_', ' ', $order['status'])); ?></span>
+                                    <?php if ($order['is_overdue']): ?>
+                                        <span class="text-red-600 font-semibold">(Overdue)</span>
+                                    <?php endif; ?>
+                                    - Client: <?php echo e($order['client_name']); ?>
+                                </li>
+                            <?php endforeach; ?>
+                        </ul>
+                        <p class="mt-2 text-xs">You can still edit the title, tags, and add sample files.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    <?php endif; ?>
+
     <div class="bg-white rounded-lg shadow-md p-6">
         <form action="/student/services/<?php echo e($service['id'])?>/update" method="POST" enctype="multipart/form-data" data-loading>
             <?php echo csrf_field()?>
@@ -42,12 +75,15 @@
             <div class="mb-6">
                 <label for="category_id" class="block text-sm font-medium text-gray-700 mb-2">
                     Category <span class="text-red-500">*</span>
+                    <?php if ($hasActiveOrders): ?>
+                        <span class="text-xs text-yellow-600">(Locked - Active Orders)</span>
+                    <?php endif; ?>
                 </label>
                 <select
                     id="category_id"
                     name="category_id"
-                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent <?php echo isset($errors['category_id']) ? 'border-red-500' : ''?>"
-                    required
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent <?php echo isset($errors['category_id']) ? 'border-red-500' : ''?> <?php echo $hasActiveOrders ? 'bg-gray-100 cursor-not-allowed' : ''?>"
+                    <?php echo $hasActiveOrders ? 'disabled' : 'required'?>
                 >
                     <option value="">Select a category</option>
                     <?php foreach ($categories as $category): ?>
@@ -65,19 +101,24 @@
             <div class="mb-6">
                 <label for="description" class="block text-sm font-medium text-gray-700 mb-2">
                     Description <span class="text-red-500">*</span>
+                    <?php if ($hasActiveOrders): ?>
+                        <span class="text-xs text-yellow-600">(Locked - Active Orders)</span>
+                    <?php endif; ?>
                 </label>
                 <textarea
                     id="description"
                     name="description"
                     rows="6"
-                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent <?php echo isset($errors['description']) ? 'border-red-500' : ''?>"
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent <?php echo isset($errors['description']) ? 'border-red-500' : ''?> <?php echo $hasActiveOrders ? 'bg-gray-100 cursor-not-allowed' : ''?>"
                     placeholder="Describe your service in detail. What will you deliver? What makes your service unique?"
-                    required
+                    <?php echo $hasActiveOrders ? 'disabled' : 'required'?>
                 ><?php echo e(old('description', $service['description']))?></textarea>
                 <?php if (isset($errors['description'])): ?>
                     <p class="mt-1 text-sm text-red-600"><?php echo e($errors['description'])?></p>
                 <?php endif; ?>
-                <p class="mt-1 text-sm text-gray-500">Minimum 20 characters</p>
+                <?php if (!$hasActiveOrders): ?>
+                    <p class="mt-1 text-sm text-gray-500">Minimum 20 characters</p>
+                <?php endif; ?>
             </div>
 
             <!-- Tags -->
@@ -105,6 +146,9 @@
                 <div>
                     <label for="price" class="block text-sm font-medium text-gray-700 mb-2">
                         Price (USD) <span class="text-red-500">*</span>
+                        <?php if ($hasActiveOrders): ?>
+                            <span class="text-xs text-yellow-600">(Locked - Active Orders)</span>
+                        <?php endif; ?>
                     </label>
                     <div class="relative">
                         <span class="absolute left-4 top-2 text-gray-500">$</span>
@@ -115,9 +159,9 @@
                             value="<?php echo e(old('price', $service['price']))?>"
                             step="0.01"
                             min="0.01"
-                            class="w-full pl-8 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent <?php echo isset($errors['price']) ? 'border-red-500' : ''?>"
+                            class="w-full pl-8 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent <?php echo isset($errors['price']) ? 'border-red-500' : ''?> <?php echo $hasActiveOrders ? 'bg-gray-100 cursor-not-allowed' : ''?>"
                             placeholder="0.00"
-                            required
+                            <?php echo $hasActiveOrders ? 'disabled' : 'required'?>
                         >
                     </div>
                     <?php if (isset($errors['price'])): ?>
@@ -129,6 +173,9 @@
                 <div>
                     <label for="delivery_days" class="block text-sm font-medium text-gray-700 mb-2">
                         Delivery Time (Days) <span class="text-red-500">*</span>
+                        <?php if ($hasActiveOrders): ?>
+                            <span class="text-xs text-yellow-600">(Locked - Active Orders)</span>
+                        <?php endif; ?>
                     </label>
                     <input
                         type="number"
@@ -137,9 +184,9 @@
                         value="<?php echo e(old('delivery_days', $service['delivery_days']))?>"
                         min="1"
                         max="365"
-                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent <?php echo isset($errors['delivery_days']) ? 'border-red-500' : ''?>"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent <?php echo isset($errors['delivery_days']) ? 'border-red-500' : ''?> <?php echo $hasActiveOrders ? 'bg-gray-100 cursor-not-allowed' : ''?>"
                         placeholder="e.g., 3"
-                        required
+                        <?php echo $hasActiveOrders ? 'disabled' : 'required'?>
                     >
                     <?php if (isset($errors['delivery_days'])): ?>
                         <p class="mt-1 text-sm text-red-600"><?php echo e($errors['delivery_days'])?></p>

@@ -12,6 +12,7 @@ require_once __DIR__ . "/../src/Middleware/AuthMiddleware.php";
 require_once __DIR__ . "/../src/Middleware/CsrfMiddleware.php";
 require_once __DIR__ . "/../src/Middleware/RateLimitMiddleware.php";
 require_once __DIR__ . "/../src/Middleware/RoleMiddleware.php";
+require_once __DIR__ . "/../src/Middleware/ServiceEditMiddleware.php";
 
 // Home page
 $router->get("/", "HomeController@home");
@@ -260,10 +261,12 @@ $router->get("/student/services/{id}", "ServiceController@show", [
 $router->get("/student/services/{id}/edit", "ServiceController@edit", [
     new AuthMiddleware(),
     new RoleMiddleware("student"),
+    new ServiceEditMiddleware(),
 ]);
 $router->post("/student/services/{id}/update", "ServiceController@update", [
     new AuthMiddleware(),
     new RoleMiddleware("student"),
+    new ServiceEditMiddleware(),
     new CsrfMiddleware(),
 ]);
 $router->post("/student/services/{id}/delete", "ServiceController@delete", [

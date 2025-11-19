@@ -159,9 +159,17 @@ class ServiceController
 
         $categories = $this->serviceService->getAllCategories();
 
+        // Get active orders info (set by ServiceEditMiddleware)
+        $hasActiveOrders = $_SESSION['service_has_active_orders'] ?? false;
+        $activeOrders = $_SESSION['service_active_orders'] ?? [];
+        unset($_SESSION['service_has_active_orders']);
+        unset($_SESSION['service_active_orders']);
+
         view('student.services.edit', [
             'service'    => $service,
             'categories' => $categories,
+            'hasActiveOrders' => $hasActiveOrders,
+            'activeOrders' => $activeOrders,
         ], 'dashboard');
 
         // Clear old input after rendering
@@ -185,6 +193,11 @@ class ServiceController
         // Check if user can edit this service
         Auth::authorizeOrFail('service', 'edit', $service);
 
+        // Check if service has active orders (set by middleware)
+        $hasActiveOrders = $_SESSION['service_has_active_orders'] ?? false;
+        unset($_SESSION['service_has_active_orders']);
+        unset($_SESSION['service_active_orders']);
+
         // Get form data
         $data = [
             'title'         => $_POST['title'] ?? '',
@@ -194,6 +207,14 @@ class ServiceController
             'price'         => $_POST['price'] ?? '',
             'delivery_days' => $_POST['delivery_days'] ?? '',
         ];
+
+        // If service has active orders, remove restricted fields from update
+        if ($hasActiveOrders) {
+            $restrictedFields = ['price', 'delivery_days', 'description', 'category_id'];
+            foreach ($restrictedFields as $field) {
+                unset($data[$field]);
+            }
+        }
 
         // Get uploaded files
         $files = [];

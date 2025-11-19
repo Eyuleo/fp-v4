@@ -135,6 +135,11 @@ class ServiceRepository
             $params["status"] = $data["status"];
         }
 
+        if (isset($data["last_modified_at"])) {
+            $fields[]                   = "last_modified_at = :last_modified_at";
+            $params["last_modified_at"] = $data["last_modified_at"];
+        }
+
         if (empty($fields)) {
             return false;
         }

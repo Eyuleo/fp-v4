@@ -3,6 +3,7 @@
 require_once __DIR__ . '/../Repositories/ServiceRepository.php';
 require_once __DIR__ . '/../Validators/ServiceValidator.php';
 require_once __DIR__ . '/FileService.php';
+require_once __DIR__ . '/../Models/ServiceEditHistory.php';
 
 /**
  * Service Service
@@ -14,12 +15,14 @@ class ServiceService
     private ServiceRepository $repository;
     private ServiceValidator $validator;
     private FileService $fileService;
+    private ServiceEditHistory $editHistory;
 
     public function __construct(ServiceRepository $repository)
     {
         $this->repository  = $repository;
         $this->validator   = new ServiceValidator();
         $this->fileService = new FileService();
+        $this->editHistory = new ServiceEditHistory($repository->getDb());
     }
 
     /**
@@ -142,6 +145,21 @@ class ServiceService
             }
         }
 
+        // Get current service data for audit logging
+        $currentService = $this->repository->findById($serviceId);
+        if (!$currentService) {
+            return [
+                'success' => false,
+                'errors'  => ['service' => 'Service not found'],
+            ];
+        }
+
+        // Check if service has active orders
+        $hasActiveOrders = $this->repository->hasActiveOrders($serviceId);
+
+        // Get current user ID for audit logging
+        $userId = user_id();
+
         // Process tags
         if (isset($data['tags']) && is_string($data['tags'])) {
             $data['tags'] = array_map('trim', explode(',', $data['tags']));
@@ -188,8 +206,33 @@ class ServiceService
                 }
             }
 
+            // Log changes before updating
+            foreach ($updateData as $field => $newValue) {
+                if ($field === 'sample_files') {
+                    // Skip sample_files from audit log as they're tracked separately
+                    continue;
+                }
+
+                $oldValue = $currentService[$field] ?? null;
+
+                // Only log if value actually changed
+                if ($oldValue != $newValue) {
+                    $this->editHistory->logEdit(
+                        $serviceId,
+                        $userId,
+                        $field,
+                        $oldValue,
+                        $newValue,
+                        $hasActiveOrders
+                    );
+                }
+            }
+
             // Update service
             $success = $this->repository->update($serviceId, $updateData);
+
+            // Update last_modified_at timestamp
+            $this->repository->update($serviceId, ['last_modified_at' => date('Y-m-d H:i:s')]);
 
             // Commit transaction
             $this->repository->commit();
