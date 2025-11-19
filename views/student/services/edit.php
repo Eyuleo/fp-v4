@@ -230,18 +230,37 @@
                     <label class="block text-sm font-medium text-gray-700 mb-2">
                         Current Sample Files
                     </label>
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <?php foreach ($service['sample_files'] as $file): ?>
-                            <div class="border border-gray-300 rounded-lg p-3">
-                                <div class="text-sm text-gray-600 truncate" title="<?php echo e($file['original_name'])?>">
-                                    <?php echo e($file['original_name'])?>
-                                </div>
-                                <div class="text-xs text-gray-500 mt-1">
-                                    <?php echo safe_number_format($file['size'] / 1024, 1)?> KB
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <?php foreach ($service['sample_files'] as $index => $file): ?>
+                            <div class="border border-gray-300 rounded-lg p-3 hover:border-gray-400 transition">
+                                <div class="flex items-start justify-between">
+                                    <div class="flex-1 min-w-0 mr-2">
+                                        <div class="text-sm text-gray-700 truncate font-medium" title="<?php echo e($file['original_name'])?>">
+                                            <?php echo e($file['original_name'])?>
+                                        </div>
+                                        <div class="text-xs text-gray-500 mt-1">
+                                            <?php echo safe_number_format($file['size'] / 1024, 1)?> KB
+                                        </div>
+                                    </div>
+                                    <label class="flex items-center cursor-pointer">
+                                        <input 
+                                            type="checkbox" 
+                                            name="remove_files[]" 
+                                            value="<?php echo e($file['path'])?>"
+                                            class="w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500"
+                                            title="Remove this file"
+                                        >
+                                    </label>
                                 </div>
                             </div>
                         <?php endforeach; ?>
                     </div>
+                    <p class="mt-2 text-xs text-gray-500">
+                        <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        Check the box next to any file you want to remove
+                    </p>
                 </div>
             <?php endif; ?>
 

@@ -123,9 +123,10 @@ class ServiceService
      * @param int $serviceId
      * @param array $data
      * @param array $files
+     * @param array $filesToRemove Array of file paths to remove
      * @return array ['success' => bool, 'errors' => array]
      */
-    public function updateService(int $serviceId, array $data, array $files = []): array
+    public function updateService(int $serviceId, array $data, array $files = [], array $filesToRemove = []): array
     {
         // Validate input data
         if (! $this->validator->validateUpdate($data)) {
@@ -206,18 +207,39 @@ class ServiceService
         $this->repository->beginTransaction();
 
         try {
+            // Get existing files
+            $service       = $this->repository->findById($serviceId);
+            $existingFiles = $service['sample_files'] ?? [];
+
+            // Handle file removal
+            if (! empty($filesToRemove)) {
+                foreach ($filesToRemove as $filePathToRemove) {
+                    // Remove from existing files array
+                    $existingFiles = array_filter($existingFiles, function($file) use ($filePathToRemove) {
+                        return ($file['path'] ?? '') !== $filePathToRemove;
+                    });
+                    
+                    // Delete the actual file
+                    $this->fileService->delete($filePathToRemove);
+                }
+                
+                // Re-index array after filtering
+                $existingFiles = array_values($existingFiles);
+            }
+
             // Handle file uploads if provided
             if (! empty($files)) {
                 $uploadedFiles = $this->handleFileUploads($serviceId, $files);
 
                 if (! empty($uploadedFiles)) {
-                    // Get existing files
-                    $service       = $this->repository->findById($serviceId);
-                    $existingFiles = $service['sample_files'] ?? [];
-
-                    // Merge with new files
-                    $updateData['sample_files'] = array_merge($existingFiles, $uploadedFiles);
+                    // Merge with existing files (after removal)
+                    $existingFiles = array_merge($existingFiles, $uploadedFiles);
                 }
+            }
+
+            // Update sample_files if there were any changes
+            if (! empty($filesToRemove) || ! empty($files)) {
+                $updateData['sample_files'] = $existingFiles;
             }
 
             // Log changes before updating

@@ -216,6 +216,12 @@ class ServiceController
             }
         }
 
+        // Get files to remove
+        $filesToRemove = $_POST['remove_files'] ?? [];
+        if (!is_array($filesToRemove)) {
+            $filesToRemove = [];
+        }
+
         // Get uploaded files
         $files = [];
         if (isset($_FILES['sample_files']) && is_array($_FILES['sample_files']['name'])) {
@@ -233,7 +239,7 @@ class ServiceController
         }
 
         // Update service
-        $result = $this->serviceService->updateService($serviceId, $data, $files);
+        $result = $this->serviceService->updateService($serviceId, $data, $files, $filesToRemove);
 
         if ($result['success']) {
             flash('success', 'Service updated successfully!');
