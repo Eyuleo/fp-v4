@@ -565,6 +565,45 @@ class NotificationService
     }
 
     /**
+     * Send service resubmission notification to administrators
+     */
+    public function notifyAdminsOfServiceResubmission(array $service, array $student, string $previousRejectionReason): void
+    {
+        $appUrl = getenv('APP_URL') ?: 'http://localhost:8000';
+
+        // Get all admin users
+        require_once __DIR__ . '/../Repositories/UserRepository.php';
+        $db             = require __DIR__ . '/../../config/database.php';
+        $userRepository = new UserRepository($db);
+        $admins         = $userRepository->getAllAdmins();
+
+        // Notify each admin
+        foreach ($admins as $admin) {
+            $studentName = $student['name'] ?? $student['email'];
+            $adminName = $admin['name'] ?? $admin['email'];
+            
+            $this->notify(
+                $admin['id'],
+                $admin['email'],
+                'service_resubmitted',
+                'Service Resubmitted for Review',
+                "{$studentName} has resubmitted service '{$service['title']}' after addressing rejection feedback",
+                'emails/service-moderation',
+                [
+                    'admin_name'                 => $adminName,
+                    'student_name'               => $studentName,
+                    'service_title'              => $service['title'],
+                    'action'                     => 'resubmitted',
+                    'reason'                     => $previousRejectionReason,
+                    'previous_rejection_reason'  => $previousRejectionReason,
+                    'service_url'                => $appUrl . '/admin/services/' . $service['id'],
+                ],
+                $appUrl . '/admin/services/' . $service['id']
+            );
+        }
+    }
+
+    /**
      * Log notification events
      */
     private function log(string $level, string $message, array $context = []): void

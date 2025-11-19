@@ -43,7 +43,29 @@
             </span>
         </div>
 
-        <?php if ($order['status'] === 'revision_requested'): ?>
+        <?php if ($order['status'] === 'revision_requested' && !empty($currentRevision)): ?>
+            <div class="mb-4 p-4 border-2 border-orange-300 bg-orange-50 rounded-lg">
+                <div class="flex items-start">
+                    <svg class="w-6 h-6 text-orange-600 mr-3 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                    <div class="flex-1">
+                        <div class="font-bold text-orange-900 text-lg mb-2">Revision Requested</div>
+                        <div class="text-sm text-gray-700 mb-2">
+                            <span class="font-medium">Requested by:</span> <?php echo e($currentRevision['requester_name'] ?? explode('@', $currentRevision['requester_email'] ?? '')[0]) ?>
+                            <span class="text-gray-500 ml-2">on <?php echo date('M d, Y H:i', strtotime($currentRevision['requested_at'])) ?></span>
+                        </div>
+                        <div class="bg-white border border-orange-200 rounded p-3 mt-2">
+                            <div class="text-sm font-medium text-gray-700 mb-1">Revision Reason:</div>
+                            <p class="text-gray-900 whitespace-pre-wrap"><?php echo e($currentRevision['revision_reason']) ?></p>
+                        </div>
+                        <div class="text-xs text-orange-700 mt-2">
+                            Previously delivered files remain visible below.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        <?php elseif ($order['status'] === 'revision_requested'): ?>
             <div class="mb-4 p-4 border border-orange-200 bg-orange-50 rounded">
                 <div class="font-medium text-orange-900">Revision requested</div>
                 <div class="text-sm text-orange-800 mt-1">
@@ -170,32 +192,132 @@
     </div>
 
     <?php if ($order['status'] === 'delivered' || $order['status'] === 'revision_requested' || $order['status'] === 'completed'): ?>
-        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
-            <h2 class="text-xl font-bold text-gray-900 mb-4">Delivery</h2>
-            <?php if (! empty($order['delivery_message'])): ?>
-                <p class="text-gray-700 whitespace-pre-wrap mb-4"><?php echo e($order['delivery_message']) ?></p>
-            <?php endif; ?>
-            <?php if (! empty($order['delivery_files'])): ?>
-                <div>
-                    <h3 class="text-sm font-medium text-gray-700 mb-2">Delivered Files:</h3>
-                    <div class="space-y-2">
-                        <?php foreach ($order['delivery_files'] as $file): ?>
-                            <?php if (empty($file['path'])) {
-                                    continue;
-                                }
-                            ?>
-                            <?php $signedUrl = $fileService->generateSignedUrl($file['path'], 3600); ?>
-                            <a href="<?php echo e($signedUrl) ?>" target="_blank"
-                               class="flex items-center space-x-2 text-sm text-blue-600 hover:text-blue-800 hover:bg-blue-50 p-2 rounded">
-                                <span class="font-medium"><?php echo e($file['original_name']) ?></span>
-                                <span class="text-gray-400">(<?php echo safe_number_format(($file['size'] ?? 0) / 1024, 2) ?> KB)</span>
-                            </a>
-                        <?php endforeach; ?>
-                    </div>
+        <?php if (!empty($deliveryHistory) && count($deliveryHistory) > 0): ?>
+            <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                <h2 class="text-xl font-bold text-gray-900 mb-4">
+                    Delivery History
+                    <?php if (count($deliveryHistory) > 1): ?>
+                        <span class="text-sm font-normal text-gray-500">(<?php echo count($deliveryHistory) ?> deliveries)</span>
+                    <?php endif; ?>
+                </h2>
+                <div class="space-y-6">
+                    <?php foreach ($deliveryHistory as $delivery): ?>
+                        <div class="border <?php echo $delivery['is_current'] ? 'border-purple-300 bg-purple-50' : 'border-gray-200 bg-gray-50' ?> rounded-lg p-4">
+                            <div class="flex items-start justify-between mb-3">
+                                <div class="flex items-center space-x-2">
+                                    <?php if ($delivery['is_current']): ?>
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-600 text-white">
+                                            Current
+                                        </span>
+                                    <?php endif; ?>
+                                    <span class="text-sm font-semibold text-gray-900">
+                                        Delivery #<?php echo e($delivery['delivery_number']) ?>
+                                    </span>
+                                </div>
+                                <div class="text-xs text-gray-500">
+                                    <?php echo date('M d, Y H:i', strtotime($delivery['delivered_at'])) ?>
+                                </div>
+                            </div>
+                            
+                            <?php if (! empty($delivery['delivery_message'])): ?>
+                                <div class="bg-white border <?php echo $delivery['is_current'] ? 'border-purple-200' : 'border-gray-200' ?> rounded p-3 mb-3">
+                                    <div class="text-xs font-medium text-gray-600 mb-1">Message:</div>
+                                    <p class="text-sm text-gray-900 whitespace-pre-wrap"><?php echo e($delivery['delivery_message']) ?></p>
+                                </div>
+                            <?php endif; ?>
+                            
+                            <?php if (! empty($delivery['delivery_files'])): ?>
+                                <div>
+                                    <h3 class="text-xs font-medium text-gray-700 mb-2">Delivered Files:</h3>
+                                    <div class="space-y-1">
+                                        <?php foreach ($delivery['delivery_files'] as $file): ?>
+                                            <?php if (empty($file['path'])) {
+                                                    continue;
+                                                }
+                                            ?>
+                                            <?php $signedUrl = $fileService->generateSignedUrl($file['path'], 3600); ?>
+                                            <a href="<?php echo e($signedUrl) ?>" target="_blank"
+                                               class="flex items-center space-x-2 text-sm text-blue-600 hover:text-blue-800 hover:bg-blue-50 p-2 rounded">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                                </svg>
+                                                <span class="font-medium"><?php echo e($file['original_name']) ?></span>
+                                                <span class="text-gray-400">(<?php echo safe_number_format(($file['size'] ?? 0) / 1024, 2) ?> KB)</span>
+                                            </a>
+                                        <?php endforeach; ?>
+                                    </div>
+                                </div>
+                            <?php else: ?>
+                                <p class="text-xs text-gray-500">No files attached to this delivery.</p>
+                            <?php endif; ?>
+                        </div>
+                    <?php endforeach; ?>
                 </div>
-            <?php else: ?>
-                <p class="text-sm text-gray-500">No delivered files available.</p>
-            <?php endif; ?>
+            </div>
+        <?php elseif ($order['status'] === 'delivered' || $order['status'] === 'revision_requested' || $order['status'] === 'completed'): ?>
+            <!-- Fallback for orders without delivery history (legacy data) -->
+            <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                <h2 class="text-xl font-bold text-gray-900 mb-4">Delivery</h2>
+                <?php if (! empty($order['delivery_message'])): ?>
+                    <p class="text-gray-700 whitespace-pre-wrap mb-4"><?php echo e($order['delivery_message']) ?></p>
+                <?php endif; ?>
+                <?php if (! empty($order['delivery_files'])): ?>
+                    <div>
+                        <h3 class="text-sm font-medium text-gray-700 mb-2">Delivered Files:</h3>
+                        <div class="space-y-2">
+                            <?php foreach ($order['delivery_files'] as $file): ?>
+                                <?php if (empty($file['path'])) {
+                                        continue;
+                                    }
+                                ?>
+                                <?php $signedUrl = $fileService->generateSignedUrl($file['path'], 3600); ?>
+                                <a href="<?php echo e($signedUrl) ?>" target="_blank"
+                                   class="flex items-center space-x-2 text-sm text-blue-600 hover:text-blue-800 hover:bg-blue-50 p-2 rounded">
+                                    <span class="font-medium"><?php echo e($file['original_name']) ?></span>
+                                    <span class="text-gray-400">(<?php echo safe_number_format(($file['size'] ?? 0) / 1024, 2) ?> KB)</span>
+                                </a>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                <?php else: ?>
+                    <p class="text-sm text-gray-500">No delivered files available.</p>
+                <?php endif; ?>
+            </div>
+        <?php endif; ?>
+    <?php endif; ?>
+
+    <?php if (!empty($revisionHistory) && count($revisionHistory) > 0): ?>
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <h2 class="text-xl font-bold text-gray-900 mb-4">Revision History</h2>
+            <div class="space-y-4">
+                <?php foreach ($revisionHistory as $revision): ?>
+                    <div class="border <?php echo $revision['is_current'] ? 'border-orange-300 bg-orange-50' : 'border-gray-200 bg-gray-50' ?> rounded-lg p-4">
+                        <div class="flex items-start justify-between mb-2">
+                            <div class="flex items-center space-x-2">
+                                <?php if ($revision['is_current']): ?>
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-600 text-white">
+                                        Current
+                                    </span>
+                                <?php endif; ?>
+                                <span class="text-sm font-semibold text-gray-900">
+                                    Revision #<?php echo e($revision['revision_number']) ?>
+                                </span>
+                            </div>
+                            <div class="text-xs text-gray-500">
+                                <?php echo date('M d, Y H:i', strtotime($revision['requested_at'])) ?>
+                            </div>
+                        </div>
+                        <div class="text-sm text-gray-700 mb-2">
+                            <span class="font-medium">Requested by:</span> 
+                            <?php echo e($revision['requester_name'] ?? explode('@', $revision['requester_email'] ?? '')[0]) ?>
+                        </div>
+                        <div class="bg-white border <?php echo $revision['is_current'] ? 'border-orange-200' : 'border-gray-200' ?> rounded p-3">
+                            <div class="text-xs font-medium text-gray-600 mb-1">Reason:</div>
+                            <p class="text-sm text-gray-900 whitespace-pre-wrap"><?php echo e($revision['revision_reason']) ?></p>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+            </div>
         </div>
     <?php endif; ?>
 
@@ -282,9 +404,9 @@
                         </button>
                     </form>
                     <?php if (($order['revision_count'] ?? 0) < ($order['max_revisions'] ?? 0)): ?>
-                        <button onclick="showRevisionForm()" class="bg-orange-600 text-white px-6 py-2 rounded-md hover:bg-orange-700">
+                        <a href="/orders/<?php echo e($order['id']) ?>/request-revision" class="inline-block bg-orange-600 text-white px-6 py-2 rounded-md hover:bg-orange-700">
                             Request Revision (<?php echo e(($order['max_revisions'] ?? 0) - ($order['revision_count'] ?? 0)) ?> left)
-                        </button>
+                        </a>
                     <?php endif; ?>
                 <?php endif; ?>
 
@@ -367,19 +489,16 @@
 <script>
 function showCancelModal(){ document.getElementById('cancelModal').classList.remove('hidden'); }
 function hideCancelModal(){ document.getElementById('cancelModal').classList.add('hidden'); }
-function showRevisionForm(){ document.getElementById('revisionModal')?.classList.remove('hidden'); }
-function hideRevisionForm(){ document.getElementById('revisionModal')?.classList.add('hidden'); }
 function showForceCompleteModal(){ document.getElementById('forceCompleteModal').classList.remove('hidden'); }
 function hideForceCompleteModal(){ document.getElementById('forceCompleteModal').classList.add('hidden'); }
 
-['cancelModal','revisionModal','forceCompleteModal']
+['cancelModal','forceCompleteModal']
 .forEach(id=>{
     const el=document.getElementById(id);
     if(!el) return;
     el.addEventListener('click',e=>{
         if(e.target!==el) return;
         if(id==='cancelModal') hideCancelModal();
-        if(id==='revisionModal') hideRevisionForm();
         if(id==='forceCompleteModal') hideForceCompleteModal();
     });
 });

@@ -167,6 +167,31 @@
                     <a href="<?php echo htmlspecialchars($service_url) ?>" class="button">View My Service</a>
                 </center>
 
+            <?php elseif ($action === 'resubmitted'): ?>
+                <p>Hello <?php echo htmlspecialchars($admin_name ?? 'Administrator') ?>,</p>
+
+                <p>A student has resubmitted a service for review after addressing previous rejection feedback.</p>
+
+                <div class="service-info">
+                    <strong>Service Title:</strong>
+                    <?php echo htmlspecialchars($service_title) ?><br>
+                    <strong>Student:</strong>
+                    <?php echo htmlspecialchars($student_name) ?>
+                </div>
+
+                <?php if (!empty($previous_rejection_reason)): ?>
+                    <div class="reason-box">
+                        <h3>📋 Previous Rejection Reason</h3>
+                        <p><?php echo nl2br(htmlspecialchars($previous_rejection_reason)) ?></p>
+                    </div>
+                <?php endif; ?>
+
+                <p>Please review the updated service listing and take appropriate action (approve or reject with feedback).</p>
+
+                <center>
+                    <a href="<?php echo htmlspecialchars($service_url) ?>" class="button">Review Service</a>
+                </center>
+
             <?php else: ?>
                 <p>Your service listing has been <?php echo $action ?> by an administrator.</p>
 

@@ -342,6 +342,139 @@ class OrderRepository
     }
 
     /**
+     * Get revision history for an order
+     *
+     * @param int $orderId
+     * @return array
+     */
+    public function getRevisionHistory(int $orderId): array
+    {
+        $sql = "SELECT rh.*, u.name as requester_name, u.email as requester_email
+                FROM order_revision_history rh
+                LEFT JOIN users u ON rh.requested_by = u.id
+                WHERE rh.order_id = :order_id
+                ORDER BY rh.requested_at ASC";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute(['order_id' => $orderId]);
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * Get current revision for an order
+     *
+     * @param int $orderId
+     * @return array|null
+     */
+    public function getCurrentRevision(int $orderId): ?array
+    {
+        $sql = "SELECT rh.*, u.name as requester_name, u.email as requester_email
+                FROM order_revision_history rh
+                LEFT JOIN users u ON rh.requested_by = u.id
+                WHERE rh.order_id = :order_id AND rh.is_current = 1
+                LIMIT 1";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute(['order_id' => $orderId]);
+
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $result ?: null;
+    }
+
+    /**
+     * Get delivery history for an order
+     *
+     * @param int $orderId
+     * @return array
+     */
+    public function getDeliveryHistory(int $orderId): array
+    {
+        $sql = "SELECT *
+                FROM order_delivery_history
+                WHERE order_id = :order_id
+                ORDER BY delivered_at ASC";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute(['order_id' => $orderId]);
+
+        $deliveries = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        // Decode JSON fields for each delivery
+        foreach ($deliveries as &$delivery) {
+            $delivery['delivery_files'] = $delivery['delivery_files'] ? json_decode($delivery['delivery_files'], true) : [];
+        }
+
+        return $deliveries;
+    }
+
+    /**
+     * Get current delivery for an order
+     *
+     * @param int $orderId
+     * @return array|null
+     */
+    public function getCurrentDelivery(int $orderId): ?array
+    {
+        $sql = "SELECT *
+                FROM order_delivery_history
+                WHERE order_id = :order_id AND is_current = 1
+                LIMIT 1";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute(['order_id' => $orderId]);
+
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        if ($result) {
+            $result['delivery_files'] = $result['delivery_files'] ? json_decode($result['delivery_files'], true) : [];
+        }
+        return $result ?: null;
+    }
+
+    /**
+     * Create delivery history entry
+     *
+     * @param int $orderId
+     * @param string $deliveryMessage
+     * @param array $deliveryFiles
+     * @param int $deliveryNumber
+     * @param bool $isCurrent
+     * @return int The ID of the created delivery history entry
+     */
+    public function createDeliveryHistory(int $orderId, string $deliveryMessage, array $deliveryFiles, int $deliveryNumber, bool $isCurrent = true): int
+    {
+        $sql = "INSERT INTO order_delivery_history (
+            order_id, delivery_message, delivery_files, delivery_number, is_current
+        ) VALUES (
+            :order_id, :delivery_message, :delivery_files, :delivery_number, :is_current
+        )";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([
+            'order_id'         => $orderId,
+            'delivery_message' => $deliveryMessage,
+            'delivery_files'   => json_encode($deliveryFiles),
+            'delivery_number'  => $deliveryNumber,
+            'is_current'       => $isCurrent ? 1 : 0,
+        ]);
+
+        return (int) $this->db->lastInsertId();
+    }
+
+    /**
+     * Mark all deliveries as not current for an order
+     *
+     * @param int $orderId
+     * @return bool
+     */
+    public function markAllDeliveriesNotCurrent(int $orderId): bool
+    {
+        $sql = "UPDATE order_delivery_history SET is_current = 0 WHERE order_id = :order_id";
+        $stmt = $this->db->prepare($sql);
+        return $stmt->execute(['order_id' => $orderId]);
+    }
+
+    /**
      * Get database connection
      *
      * @return PDO

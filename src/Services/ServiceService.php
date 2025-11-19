@@ -188,8 +188,14 @@ class ServiceService
             $updateData['delivery_days'] = (int) $data['delivery_days'];
         }
 
+        // Track if this is a resubmission for notification purposes
+        $isResubmission = false;
+        $previousRejectionReason = null;
+
         // If service is rejected, change status to pending on resubmission
         if ($currentService['status'] === 'rejected') {
+            $isResubmission = true;
+            $previousRejectionReason = $currentService['rejection_reason'] ?? 'No reason provided';
             $updateData['status'] = 'pending';
             $updateData['rejection_reason'] = null;
             $updateData['rejected_at'] = null;
@@ -244,6 +250,34 @@ class ServiceService
 
             // Commit transaction
             $this->repository->commit();
+
+            // Send resubmission notification to admins if this was a resubmission
+            if ($isResubmission && $previousRejectionReason) {
+                // Get student details
+                require_once __DIR__ . '/../Repositories/UserRepository.php';
+                $userRepository = new UserRepository($this->repository->getDb());
+                $student = $userRepository->findById($currentService['student_id']);
+
+                if ($student) {
+                    // Get updated service data
+                    $updatedService = $this->repository->findById($serviceId);
+
+                    // Send notification
+                    require_once __DIR__ . '/NotificationService.php';
+                    require_once __DIR__ . '/MailService.php';
+                    require_once __DIR__ . '/../Repositories/NotificationRepository.php';
+
+                    $mailService = new MailService();
+                    $notificationRepository = new NotificationRepository($this->repository->getDb());
+                    $notificationService = new NotificationService($mailService, $notificationRepository);
+
+                    $notificationService->notifyAdminsOfServiceResubmission(
+                        $updatedService,
+                        $student,
+                        $previousRejectionReason
+                    );
+                }
+            }
 
             return [
                 'success' => $success,

@@ -304,4 +304,18 @@ class UserRepository
             'id'   => $userId,
         ]);
     }
+
+    /**
+     * Get all admin users
+     */
+    public function getAllAdmins(): array
+    {
+        $stmt = $this->db->prepare('SELECT * FROM users WHERE role = :role AND status = :status');
+        $stmt->execute([
+            'role'   => 'admin',
+            'status' => 'active',
+        ]);
+
+        return $stmt->fetchAll();
+    }
 }

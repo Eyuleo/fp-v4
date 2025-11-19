@@ -234,6 +234,10 @@ $router->post("/orders/{id}/deliver", "OrderController@deliver", [
     new RoleMiddleware("student"),
     new CsrfMiddleware(),
 ]);
+$router->get("/orders/{id}/request-revision", "OrderController@showRevisionRequestPage", [
+    new AuthMiddleware(),
+    new RoleMiddleware("client"),
+]);
 $router->post(
     "/orders/{id}/request-revision",
     "OrderController@requestRevision",

@@ -275,6 +275,23 @@ class OrderService
                 throw new Exception('Failed to upload delivery files');
             }
 
+            // Calculate delivery number (current count + 1)
+            $currentDeliveryCount = $order['delivery_count'] ?? 0;
+            $newDeliveryNumber = $currentDeliveryCount + 1;
+            
+            // Mark all previous deliveries as not current
+            $this->orderRepository->markAllDeliveriesNotCurrent($orderId);
+            
+            // Create new delivery history entry
+            $deliveryHistoryId = $this->orderRepository->createDeliveryHistory(
+                $orderId,
+                $deliveryMessage,
+                $uploadedFiles,
+                $newDeliveryNumber,
+                true // is_current
+            );
+
+            // Update order with delivery info and history references
             $this->orderRepository->update($orderId, [
                 'status'              => 'delivered',
                 'delivery_message'    => $deliveryMessage,
@@ -282,6 +299,19 @@ class OrderService
                 'delivered_at'        => $deliveredAt,
                 'review_window_hours' => $reviewWindowHours,
                 'review_deadline'     => $reviewDeadline,
+            ]);
+            
+            // Update current_delivery_id and delivery_count
+            $stmt = $this->db->prepare("
+                UPDATE orders 
+                SET current_delivery_id = :delivery_id, 
+                    delivery_count = :delivery_count 
+                WHERE id = :order_id
+            ");
+            $stmt->execute([
+                'delivery_id'    => $deliveryHistoryId,
+                'delivery_count' => $newDeliveryNumber,
+                'order_id'       => $orderId,
             ]);
 
             try {
@@ -330,11 +360,15 @@ class OrderService
                 'completed_at' => date('Y-m-d H:i:s'),
             ]);
 
-            // Update payment status to succeeded
+            // Update payment status to succeeded and record commission amounts
             $paymentRepository = new PaymentRepository($this->db);
             $payment = $paymentRepository->findByOrderId($orderId);
             if ($payment && $payment['status'] !== 'succeeded') {
-                $paymentRepository->update($payment['id'], ['status' => 'succeeded']);
+                $paymentRepository->update($payment['id'], [
+                    'status'            => 'succeeded',
+                    'commission_amount' => $commissionAmount,
+                    'student_amount'    => $studentEarnings,
+                ]);
             }
 
             $this->orderRepository->addToStudentBalance($order['student_id'], $studentEarnings);
@@ -387,10 +421,43 @@ class OrderService
         $this->orderRepository->beginTransaction();
         try {
             $newRevisionCount = ($order['revision_count'] ?? 0) + 1;
-            $this->orderRepository->update($orderId, [
-                'status'          => 'revision_requested',
-                'revision_count'  => $newRevisionCount,
+            
+            // Mark all previous revisions as not current
+            $stmt = $this->db->prepare("UPDATE order_revision_history SET is_current = 0 WHERE order_id = :order_id");
+            $stmt->execute(['order_id' => $orderId]);
+            
+            // Create new revision history entry
+            $stmt = $this->db->prepare("
+                INSERT INTO order_revision_history (order_id, revision_reason, requested_by, revision_number, is_current)
+                VALUES (:order_id, :revision_reason, :requested_by, :revision_number, 1)
+            ");
+            $stmt->execute([
+                'order_id'        => $orderId,
                 'revision_reason' => $reason,
+                'requested_by'    => $clientId,
+                'revision_number' => $newRevisionCount,
+            ]);
+            
+            $revisionHistoryId = (int) $this->db->lastInsertId();
+            
+            // Update order with new revision info
+            $this->orderRepository->update($orderId, [
+                'status'                 => 'revision_requested',
+                'revision_count'         => $newRevisionCount,
+                'revision_reason'        => $reason,
+            ]);
+            
+            // Update current_revision_id and revision_history_count
+            $stmt = $this->db->prepare("
+                UPDATE orders 
+                SET current_revision_id = :revision_id, 
+                    revision_history_count = :history_count 
+                WHERE id = :order_id
+            ");
+            $stmt->execute([
+                'revision_id'   => $revisionHistoryId,
+                'history_count' => $newRevisionCount,
+                'order_id'      => $orderId,
             ]);
 
             try {
@@ -507,11 +574,15 @@ class OrderService
                 'completed_at' => date('Y-m-d H:i:s'),
             ]);
 
-            // Update payment status to succeeded
+            // Update payment status to succeeded and record commission amounts
             $paymentRepository = new PaymentRepository($this->db);
             $payment = $paymentRepository->findByOrderId($orderId);
             if ($payment && $payment['status'] !== 'succeeded') {
-                $paymentRepository->update($payment['id'], ['status' => 'succeeded']);
+                $paymentRepository->update($payment['id'], [
+                    'status'            => 'succeeded',
+                    'commission_amount' => $commissionAmount,
+                    'student_amount'    => $studentEarnings,
+                ]);
             }
 
             $this->orderRepository->addToStudentBalance($order['student_id'], $studentEarnings);
@@ -586,11 +657,15 @@ class OrderService
                 'auto_completed_at' => date('Y-m-d H:i:s'),
             ]);
 
-            // Update payment status to succeeded
+            // Update payment status to succeeded and record commission amounts
             $paymentRepository = new PaymentRepository($this->db);
             $payment = $paymentRepository->findByOrderId($orderId);
             if ($payment && $payment['status'] !== 'succeeded') {
-                $paymentRepository->update($payment['id'], ['status' => 'succeeded']);
+                $paymentRepository->update($payment['id'], [
+                    'status'            => 'succeeded',
+                    'commission_amount' => $commissionAmount,
+                    'student_amount'    => $studentEarnings,
+                ]);
             }
 
             $this->orderRepository->addToStudentBalance($order['student_id'], $studentEarnings);

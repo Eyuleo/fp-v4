@@ -292,6 +292,15 @@ class OrderController
             $review           = $reviewService->getReviewByOrderId($id);
         }
 
+        // Fetch revision history
+        $orderRepository = new OrderRepository($this->db);
+        $revisionHistory = $orderRepository->getRevisionHistory($id);
+        $currentRevision = $orderRepository->getCurrentRevision($id);
+        
+        // Fetch delivery history
+        $deliveryHistory = $orderRepository->getDeliveryHistory($id);
+        $currentDelivery = $orderRepository->getCurrentDelivery($id);
+
         include __DIR__ . '/../../views/orders/show.php';
     }
 
@@ -457,6 +466,34 @@ class OrderController
         exit;
     }
 
+    public function showRevisionRequestPage(int $id): void
+    {
+        if (! Auth::check()) {
+            $_SESSION['error'] = 'Please login to request revisions';
+            header('Location: /login');
+            exit;
+        }
+        $user = Auth::user();
+        
+        $order = $this->orderService->getOrderById($id);
+        if (! $order) {
+            http_response_code(404);
+            include __DIR__ . '/../../views/errors/404.php';
+            exit;
+        }
+        
+        require_once __DIR__ . '/../Policies/OrderPolicy.php';
+        $policy = new OrderPolicy();
+        if (! $policy->canRequestRevision($user, $order)) {
+            http_response_code(403);
+            $_SESSION['error'] = 'You are not authorized to request revision on this order';
+            header('Location: /orders/' . $id);
+            exit;
+        }
+        
+        include __DIR__ . '/../../views/client/orders/request-revision.php';
+    }
+
     public function requestRevision(int $id): void
     {
         if (! Auth::check()) {
@@ -491,7 +528,7 @@ class OrderController
 
         if (! $result['success']) {
             $_SESSION['error'] = implode(', ', array_values($result['errors']));
-            header('Location: /orders/' . $id);
+            header('Location: /orders/' . $id . '/request-revision');
             exit;
         }
 
