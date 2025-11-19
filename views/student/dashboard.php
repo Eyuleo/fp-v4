@@ -53,7 +53,7 @@
         <div class="flex justify-between items-center mb-4">
             <h3 class="text-xl font-semibold text-gray-900">Recent Orders</h3>
             <?php if (!empty($recentOrders)): ?>
-                <a href="/student/orders" class="text-sm text-blue-600 hover:text-blue-700">View all orders →</a>
+                <a href="/orders" class="text-sm text-blue-600 hover:text-blue-700">View all orders →</a>
             <?php endif; ?>
         </div>
 

@@ -108,7 +108,7 @@ class ServiceController
         $result = $this->serviceService->createService($user['id'], $data, $files);
 
         if ($result['success']) {
-            flash('success', 'Service created successfully! You can now activate it to make it visible to clients.');
+            flash('success', 'Service created successfully! It will be active once admin approves it.');
             redirect('/student/services');
         } else {
             flash('error', 'Failed to create service. Please check the errors below.');
