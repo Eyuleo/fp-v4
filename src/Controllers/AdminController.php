@@ -1021,6 +1021,219 @@ class AdminController
     }
 
     /**
+     * Reject a service
+     *
+     * POST /admin/services/{id}/reject
+     */
+    public function rejectService(int $id): void
+    {
+        // Check authentication
+        if (! Auth::check()) {
+            $_SESSION['error'] = 'Please login to access this page';
+            header('Location: /login');
+            exit;
+        }
+
+        // Check user is an admin
+        $adminUser = Auth::user();
+        if ($adminUser['role'] !== 'admin') {
+            http_response_code(403);
+            include __DIR__ . '/../../views/errors/403.php';
+            exit;
+        }
+
+        // Validate CSRF token
+        if (! isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
+            http_response_code(403);
+            $_SESSION['error'] = 'Invalid request';
+            header('Location: /admin/services/' . $id);
+            exit;
+        }
+
+        // Get the service
+        $service = $this->serviceRepository->findById($id);
+        if (! $service) {
+            $_SESSION['error'] = 'Service not found';
+            header('Location: /admin/services');
+            exit;
+        }
+
+        // Get and validate rejection reason
+        $reason = trim($_POST['reason'] ?? '');
+        if (empty($reason)) {
+            $_SESSION['error'] = 'Rejection reason is required';
+            header('Location: /admin/services/' . $id);
+            exit;
+        }
+
+        // Update service status to rejected
+        $this->serviceRepository->update($id, [
+            'status'           => 'rejected',
+            'rejection_reason' => $reason,
+            'rejected_at'      => date('Y-m-d H:i:s'),
+            'rejected_by'      => $adminUser['id'],
+        ]);
+
+        // Create moderation log entry
+        $stmt = $this->db->prepare('
+            INSERT INTO service_moderation_log (service_id, admin_id, action, reason, created_at)
+            VALUES (:service_id, :admin_id, :action, :reason, NOW())
+        ');
+        $stmt->execute([
+            'service_id' => $id,
+            'admin_id'   => $adminUser['id'],
+            'action'     => 'reject',
+            'reason'     => $reason,
+        ]);
+
+        // Get student details
+        $student = $this->userRepository->findById($service['student_id']);
+
+        // Send rejection notification to student
+        if ($student) {
+            $this->notificationService->sendServiceRejectionEmail($service, $student, $reason);
+        }
+
+        // Log audit entry
+        $this->logAudit($adminUser['id'], 'service_rejected', 'service', $id, [
+            'old_status' => $service['status'],
+            'new_status' => 'rejected',
+            'reason'     => $reason,
+        ]);
+
+        $_SESSION['success'] = 'Service rejected successfully. The student has been notified.';
+        header('Location: /admin/services/' . $id);
+        exit;
+    }
+
+    /**
+     * Approve a service
+     *
+     * POST /admin/services/{id}/approve
+     */
+    public function approveService(int $id): void
+    {
+        // Check authentication
+        if (! Auth::check()) {
+            $_SESSION['error'] = 'Please login to access this page';
+            header('Location: /login');
+            exit;
+        }
+
+        // Check user is an admin
+        $adminUser = Auth::user();
+        if ($adminUser['role'] !== 'admin') {
+            http_response_code(403);
+            include __DIR__ . '/../../views/errors/403.php';
+            exit;
+        }
+
+        // Validate CSRF token
+        if (! isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
+            http_response_code(403);
+            $_SESSION['error'] = 'Invalid request';
+            header('Location: /admin/services/' . $id);
+            exit;
+        }
+
+        // Get the service
+        $service = $this->serviceRepository->findById($id);
+        if (! $service) {
+            $_SESSION['error'] = 'Service not found';
+            header('Location: /admin/services');
+            exit;
+        }
+
+        // Update service status to active
+        $this->serviceRepository->update($id, [
+            'status'           => 'active',
+            'rejection_reason' => null,
+            'rejected_at'      => null,
+            'rejected_by'      => null,
+        ]);
+
+        // Create moderation log entry
+        $stmt = $this->db->prepare('
+            INSERT INTO service_moderation_log (service_id, admin_id, action, reason, created_at)
+            VALUES (:service_id, :admin_id, :action, :reason, NOW())
+        ');
+        $stmt->execute([
+            'service_id' => $id,
+            'admin_id'   => $adminUser['id'],
+            'action'     => 'approve',
+            'reason'     => 'Service approved by administrator',
+        ]);
+
+        // Get student details
+        $student = $this->userRepository->findById($service['student_id']);
+
+        // Send approval notification to student
+        if ($student) {
+            $this->notificationService->sendServiceApprovalEmail($service, $student);
+        }
+
+        // Log audit entry
+        $this->logAudit($adminUser['id'], 'service_approved', 'service', $id, [
+            'old_status' => $service['status'],
+            'new_status' => 'active',
+        ]);
+
+        $_SESSION['success'] = 'Service approved successfully. The student has been notified.';
+        header('Location: /admin/services/' . $id);
+        exit;
+    }
+
+    /**
+     * Get moderation history for a service
+     *
+     * GET /admin/services/{id}/moderation-history
+     */
+    public function getModerationHistory(int $id): void
+    {
+        // Check authentication
+        if (! Auth::check()) {
+            http_response_code(401);
+            echo json_encode(['error' => 'Unauthorized']);
+            exit;
+        }
+
+        // Check user is an admin
+        $adminUser = Auth::user();
+        if ($adminUser['role'] !== 'admin') {
+            http_response_code(403);
+            echo json_encode(['error' => 'Forbidden']);
+            exit;
+        }
+
+        // Get the service
+        $service = $this->serviceRepository->findById($id);
+        if (! $service) {
+            http_response_code(404);
+            echo json_encode(['error' => 'Service not found']);
+            exit;
+        }
+
+        // Get moderation history
+        $stmt = $this->db->prepare('
+            SELECT sml.*, u.name as admin_name, u.email as admin_email
+            FROM service_moderation_log sml
+            LEFT JOIN users u ON sml.admin_id = u.id
+            WHERE sml.service_id = :service_id
+            ORDER BY sml.created_at DESC
+        ');
+        $stmt->execute(['service_id' => $id]);
+        $history = $stmt->fetchAll();
+
+        // Return JSON response
+        header('Content-Type: application/json');
+        echo json_encode([
+            'success' => true,
+            'history' => $history,
+        ]);
+        exit;
+    }
+
+    /**
      * Log an audit entry
      */
     private function logAudit(int $userId, string $action, string $resourceType, int $resourceId, array $data): void

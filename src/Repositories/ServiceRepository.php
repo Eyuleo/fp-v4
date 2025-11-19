@@ -140,6 +140,21 @@ class ServiceRepository
             $params["last_modified_at"] = $data["last_modified_at"];
         }
 
+        if (isset($data["rejection_reason"])) {
+            $fields[]                   = "rejection_reason = :rejection_reason";
+            $params["rejection_reason"] = $data["rejection_reason"];
+        }
+
+        if (isset($data["rejected_at"])) {
+            $fields[]                = "rejected_at = :rejected_at";
+            $params["rejected_at"] = $data["rejected_at"];
+        }
+
+        if (isset($data["rejected_by"])) {
+            $fields[]                = "rejected_by = :rejected_by";
+            $params["rejected_by"] = $data["rejected_by"];
+        }
+
         if (empty($fields)) {
             return false;
         }

@@ -56,6 +56,62 @@
 
     <?php require __DIR__ . '/../../partials/alert.php'; ?>
 
+    <?php if ($service['status'] === 'rejected' && !empty($service['rejection_reason'])): ?>
+        <div class="bg-red-50 border-l-4 border-red-500 p-6 mb-6 rounded-lg">
+            <div class="flex items-start">
+                <div class="flex-shrink-0">
+                    <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                </div>
+                <div class="ml-4 flex-1">
+                    <h3 class="text-lg font-semibold text-red-800 mb-2">
+                        Service Rejected - Action Required
+                    </h3>
+                    <div class="text-sm text-red-700 mb-4">
+                        <p class="font-medium mb-2">Reason for rejection:</p>
+                        <p class="whitespace-pre-wrap bg-white p-3 rounded border border-red-200"><?php echo e($service['rejection_reason']) ?></p>
+                    </div>
+                    <div class="bg-white p-4 rounded border border-red-200">
+                        <p class="text-sm font-semibold text-red-800 mb-2">📋 How to Get Your Service Approved:</p>
+                        <ol class="text-sm text-red-700 space-y-1 list-decimal list-inside">
+                            <li>Review the rejection reason carefully</li>
+                            <li>Click "Edit Service" below to make necessary changes</li>
+                            <li>Address all concerns mentioned in the feedback</li>
+                            <li>Save your changes to automatically resubmit for review</li>
+                        </ol>
+                    </div>
+                    <div class="mt-4">
+                        <a href="/student/services/<?php echo e($service['id']) ?>/edit" class="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                            </svg>
+                            Edit Service Now
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    <?php elseif ($service['status'] === 'pending'): ?>
+        <div class="bg-blue-50 border-l-4 border-blue-500 p-6 mb-6 rounded-lg">
+            <div class="flex items-start">
+                <div class="flex-shrink-0">
+                    <svg class="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                <div class="ml-4">
+                    <h3 class="text-lg font-semibold text-blue-800 mb-1">
+                        Service Pending Review
+                    </h3>
+                    <p class="text-sm text-blue-700">
+                        Your service is currently being reviewed by our team. You'll receive a notification once it's been approved or if any changes are needed.
+                    </p>
+                </div>
+            </div>
+        </div>
+    <?php endif; ?>
+
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <!-- Main Content -->
         <div class="lg:col-span-2 space-y-6">
@@ -67,10 +123,12 @@
                             'active'   => 'bg-green-100 text-green-800',
                             'inactive' => 'bg-gray-100 text-gray-800',
                             'paused'   => 'bg-yellow-100 text-yellow-800',
+                            'pending'  => 'bg-blue-100 text-blue-800',
+                            'rejected' => 'bg-red-100 text-red-800',
                         ];
                         $statusColor = $statusColors[$service['status']] ?? 'bg-gray-100 text-gray-800';
                     ?>
-                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium<?php echo $statusColor ?>">
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium <?php echo $statusColor ?>">
                         <?php echo ucfirst(e($service['status'])) ?>
                     </span>
                 </div>

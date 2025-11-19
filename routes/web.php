@@ -188,6 +188,23 @@ $router->post("/admin/services/{id}/delete", "AdminController@deleteService", [
     new CsrfMiddleware(),
 ]);
 
+$router->post("/admin/services/{id}/reject", "AdminController@rejectService", [
+    new AuthMiddleware(),
+    new RoleMiddleware("admin"),
+    new CsrfMiddleware(),
+]);
+
+$router->post("/admin/services/{id}/approve", "AdminController@approveService", [
+    new AuthMiddleware(),
+    new RoleMiddleware("admin"),
+    new CsrfMiddleware(),
+]);
+
+$router->get("/admin/services/{id}/moderation-history", "AdminController@getModerationHistory", [
+    new AuthMiddleware(),
+    new RoleMiddleware("admin"),
+]);
+
 // Order routes
 $router->get("/orders", "OrderController@index", [new AuthMiddleware()]);
 $router->get("/orders/create", "OrderController@create", [

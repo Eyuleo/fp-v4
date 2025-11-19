@@ -44,16 +44,32 @@
                                 'active'   => 'bg-green-100 text-green-800',
                                 'inactive' => 'bg-gray-100 text-gray-800',
                                 'paused'   => 'bg-yellow-100 text-yellow-800',
+                                'pending'  => 'bg-blue-100 text-blue-800',
+                                'rejected' => 'bg-red-100 text-red-800',
                             ];
                             $statusColor = $statusColors[$service['status']] ?? 'bg-gray-100 text-gray-800';
                         ?>
-                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium<?php echo $statusColor ?>">
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium <?php echo $statusColor ?>">
                             <?php echo ucfirst(e($service['status'])) ?>
                         </span>
                     </div>
 
                     <!-- Service Info -->
                     <div class="p-6">
+                        <?php if ($service['status'] === 'rejected' && !empty($service['rejection_reason'])): ?>
+                            <div class="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                                <div class="flex items-start">
+                                    <svg class="w-5 h-5 text-red-600 mt-0.5 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                                    </svg>
+                                    <div class="flex-1">
+                                        <p class="text-xs font-semibold text-red-800 mb-1">Action Required</p>
+                                        <p class="text-xs text-red-700 line-clamp-2"><?php echo e($service['rejection_reason']) ?></p>
+                                    </div>
+                                </div>
+                            </div>
+                        <?php endif; ?>
+                        
                         <div class="mb-2">
                             <span class="text-xs text-gray-500"><?php echo e($service['category_name']) ?></span>
                         </div>

@@ -188,6 +188,14 @@ class ServiceService
             $updateData['delivery_days'] = (int) $data['delivery_days'];
         }
 
+        // If service is rejected, change status to pending on resubmission
+        if ($currentService['status'] === 'rejected') {
+            $updateData['status'] = 'pending';
+            $updateData['rejection_reason'] = null;
+            $updateData['rejected_at'] = null;
+            $updateData['rejected_by'] = null;
+        }
+
         // Begin transaction
         $this->repository->beginTransaction();
 

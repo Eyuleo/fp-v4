@@ -515,6 +515,56 @@ class NotificationService
     }
 
     /**
+     * Send service rejection notification to student
+     */
+    public function sendServiceRejectionEmail(array $service, array $student, string $rejectionReason): void
+    {
+        $appUrl = getenv('APP_URL') ?: 'http://localhost:8000';
+
+        $this->notify(
+            $student['id'],
+            $student['email'],
+            'service_rejected',
+            'Service Rejected - Action Required',
+            "Your service '{$service['title']}' requires updates before approval",
+            'emails/service-moderation',
+            [
+                'student_name'  => $student['name'] ?? $student['email'],
+                'service_title' => $service['title'],
+                'action'        => 'rejected',
+                'reason'        => $rejectionReason,
+                'service_url'   => $appUrl . '/student/services/' . $service['id'] . '/edit',
+            ],
+            $appUrl . '/student/services/' . $service['id'] . '/edit'
+        );
+    }
+
+    /**
+     * Send service approval notification to student
+     */
+    public function sendServiceApprovalEmail(array $service, array $student): void
+    {
+        $appUrl = getenv('APP_URL') ?: 'http://localhost:8000';
+
+        $this->notify(
+            $student['id'],
+            $student['email'],
+            'service_approved',
+            'Service Approved - Now Live!',
+            "Your service '{$service['title']}' has been approved and is now live",
+            'emails/service-moderation',
+            [
+                'student_name'  => $student['name'] ?? $student['email'],
+                'service_title' => $service['title'],
+                'action'        => 'approved',
+                'reason'        => '',
+                'service_url'   => $appUrl . '/student/services/' . $service['id'],
+            ],
+            $appUrl . '/student/services/' . $service['id']
+        );
+    }
+
+    /**
      * Log notification events
      */
     private function log(string $level, string $message, array $context = []): void
