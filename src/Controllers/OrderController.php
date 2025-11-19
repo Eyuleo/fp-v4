@@ -325,6 +325,34 @@ class OrderController
         exit;
     }
 
+    public function showDeliveryPage(int $id): void
+    {
+        if (! Auth::check()) {
+            $_SESSION['error'] = 'Please login to deliver orders';
+            header('Location: /login');
+            exit;
+        }
+        $user = Auth::user();
+        
+        $order = $this->orderService->getOrderById($id);
+        if (! $order) {
+            http_response_code(404);
+            include __DIR__ . '/../../views/errors/404.php';
+            exit;
+        }
+        
+        require_once __DIR__ . '/../Policies/OrderPolicy.php';
+        $policy = new OrderPolicy();
+        if (! $policy->canDeliver($user, $order)) {
+            http_response_code(403);
+            $_SESSION['error'] = 'You are not authorized to deliver this order';
+            header('Location: /orders/' . $id);
+            exit;
+        }
+        
+        include __DIR__ . '/../../views/student/orders/deliver.php';
+    }
+
     public function deliver(int $id): void
     {
         if (! Auth::check()) {

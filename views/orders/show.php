@@ -268,9 +268,9 @@
                             Deliver Order (Disabled)
                         </button>
                     <?php else: ?>
-                        <button onclick="showDeliverForm()" class="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700">
+                        <a href="/orders/<?php echo e($order['id']) ?>/deliver" class="inline-block bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700">
                             Deliver Order
-                        </button>
+                        </a>
                     <?php endif; ?>
                 <?php endif; ?>
 
@@ -367,21 +367,18 @@
 <script>
 function showCancelModal(){ document.getElementById('cancelModal').classList.remove('hidden'); }
 function hideCancelModal(){ document.getElementById('cancelModal').classList.add('hidden'); }
-function showDeliverForm(){ document.getElementById('deliverModal')?.classList.remove('hidden'); }
-function hideDeliverForm(){ document.getElementById('deliverModal')?.classList.add('hidden'); }
 function showRevisionForm(){ document.getElementById('revisionModal')?.classList.remove('hidden'); }
 function hideRevisionForm(){ document.getElementById('revisionModal')?.classList.add('hidden'); }
 function showForceCompleteModal(){ document.getElementById('forceCompleteModal').classList.remove('hidden'); }
 function hideForceCompleteModal(){ document.getElementById('forceCompleteModal').classList.add('hidden'); }
 
-['cancelModal','deliverModal','revisionModal','forceCompleteModal']
+['cancelModal','revisionModal','forceCompleteModal']
 .forEach(id=>{
     const el=document.getElementById(id);
     if(!el) return;
     el.addEventListener('click',e=>{
         if(e.target!==el) return;
         if(id==='cancelModal') hideCancelModal();
-        if(id==='deliverModal') hideDeliverForm();
         if(id==='revisionModal') hideRevisionForm();
         if(id==='forceCompleteModal') hideForceCompleteModal();
     });

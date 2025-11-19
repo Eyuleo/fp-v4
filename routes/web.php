@@ -203,6 +203,10 @@ $router->get("/orders/payment-success", "OrderController@paymentSuccess", [
     new RoleMiddleware("client"),
 ]);
 $router->get("/orders/{id}", "OrderController@show", [new AuthMiddleware()]);
+$router->get("/orders/{id}/deliver", "OrderController@showDeliveryPage", [
+    new AuthMiddleware(),
+    new RoleMiddleware("student"),
+]);
 $router->post("/orders/{id}/accept", "OrderController@accept", [
     new AuthMiddleware(),
     new CsrfMiddleware(),

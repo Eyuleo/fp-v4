@@ -110,7 +110,7 @@
                             class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                         >
                         <p class="text-sm text-gray-500 mt-1">
-                            Upload your completed work files. Maximum 25MB total. Accepted formats: images, PDFs, documents, archives.
+                            Upload your completed work files. Maximum 700MB total. Accepted formats: images, PDFs, documents, archives.
                         </p>
                     </div>
 

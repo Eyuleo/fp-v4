@@ -38,8 +38,8 @@ class OrderValidator
         $this->errors = [];
 
         $allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'pdf', 'doc', 'docx', 'zip', 'txt'];
-        $maxFileSize       = 10 * 1024 * 1024; // 10MB per file
-        $maxTotalSize      = 25 * 1024 * 1024; // 25MB total
+        $maxFileSize       = 200 * 1024 * 1024; // 200MB per file
+        $maxTotalSize      = 700 * 1024 * 1024; // 700MB total
 
         $totalSize = 0;
 
