@@ -58,6 +58,21 @@ class OrderService
 
     public function createOrder(int $clientId, int $serviceId, array $data): array
     {
+        // Check if client has active suspension
+        $suspensionStatus = $this->userRepository->checkSuspensionStatus($clientId);
+        if ($suspensionStatus['is_suspended']) {
+            $errorMessage = 'Your account is currently suspended and you cannot place orders.';
+            if ($suspensionStatus['suspension_end_date']) {
+                $errorMessage .= ' Your suspension will end on ' . date('F j, Y', strtotime($suspensionStatus['suspension_end_date'])) . '.';
+            }
+            return [
+                'success'  => false,
+                'order_id' => null,
+                'order'    => null,
+                'errors'   => ['suspension' => $errorMessage],
+            ];
+        }
+
         if (! $this->validator->validateCreate($data)) {
             return [
                 'success'  => false,

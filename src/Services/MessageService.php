@@ -69,6 +69,28 @@ class MessageService
      */
     public function sendMessage(int $senderId, int $orderId, string $content, array $attachments = []): array
     {
+        // Check if sender has active suspension
+        $suspensionStatus = $this->userRepository->checkSuspensionStatus($senderId);
+        
+        if ($suspensionStatus['is_suspended']) {
+            $errorMessage = 'Your account is currently suspended and you cannot send messages.';
+            
+            if ($suspensionStatus['suspension_end_date'] !== null) {
+                // Temporary suspension - include end date
+                $endDate = date('F j, Y', strtotime($suspensionStatus['suspension_end_date']));
+                $errorMessage .= ' Your suspension will end on ' . $endDate . '.';
+            } else {
+                // Permanent ban
+                $errorMessage .= ' This suspension is permanent.';
+            }
+            
+            return [
+                'success'    => false,
+                'message_id' => null,
+                'errors'     => ['suspension' => $errorMessage],
+            ];
+        }
+
         // Normalize and validate content/attachments
         $content = trim($content ?? '');
 

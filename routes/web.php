@@ -482,3 +482,51 @@ $router->post("/admin/categories/{id}/delete", "AdminController@deleteCategory",
     new RoleMiddleware("admin"),
     new CsrfMiddleware(),
 ]);
+
+// Admin moderation routes
+$router->get("/admin/moderation/messages", "ModerationController@messagesDashboard", [
+    new AuthMiddleware(),
+    new RoleMiddleware("admin"),
+]);
+$router->get("/admin/moderation/violations/confirm", "ModerationController@showConfirmViolationForm", [
+    new AuthMiddleware(),
+    new RoleMiddleware("admin"),
+]);
+$router->post("/admin/moderation/violations/confirm", "ModerationController@confirmViolation", [
+    new AuthMiddleware(),
+    new RoleMiddleware("admin"),
+    new CsrfMiddleware(),
+]);
+$router->post("/admin/moderation/violations/dismiss", "ModerationController@dismissFlag", [
+    new AuthMiddleware(),
+    new RoleMiddleware("admin"),
+    new CsrfMiddleware(),
+]);
+$router->get("/admin/users/{id}/violations", "ModerationController@viewUserViolations", [
+    new AuthMiddleware(),
+    new RoleMiddleware("admin"),
+]);
+
+// Dispute routes
+$router->get("/disputes/create", "DisputeController@showCreateForm", [
+    new AuthMiddleware(),
+    new RoleMiddleware(["client", "student"]),
+]);
+$router->post("/disputes/create", "DisputeController@create", [
+    new AuthMiddleware(),
+    new RoleMiddleware(["client", "student"]),
+    new CsrfMiddleware(),
+]);
+$router->get("/admin/disputes", "DisputeController@index", [
+    new AuthMiddleware(),
+    new RoleMiddleware("admin"),
+]);
+$router->get("/admin/disputes/{id}", "DisputeController@show", [
+    new AuthMiddleware(),
+    new RoleMiddleware("admin"),
+]);
+$router->post("/admin/disputes/{id}/resolve", "DisputeController@resolve", [
+    new AuthMiddleware(),
+    new RoleMiddleware("admin"),
+    new CsrfMiddleware(),
+]);

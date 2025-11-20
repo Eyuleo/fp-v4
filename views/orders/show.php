@@ -411,6 +411,34 @@
                 <?php endif; ?>
 
                 <?php
+                    // Check if user can open a dispute (for delivered or revision_requested orders)
+                    $canOpenDispute = false;
+                    $hasOpenDispute = false;
+                    if (in_array($order['status'], ['delivered', 'revision_requested'])) {
+                        $currentUserId = Auth::user()['id'];
+                        $isPartyToOrder = ($order['client_id'] === $currentUserId || $order['student_id'] === $currentUserId);
+                        
+                        if ($isPartyToOrder) {
+                            // Check if there's already an open dispute
+                            try {
+                                $db = require __DIR__ . '/../../config/database.php';
+                                require_once __DIR__ . '/../../src/Repositories/DisputeRepository.php';
+                                $disputeRepo = new DisputeRepository($db);
+                                $hasOpenDispute = $disputeRepo->hasOpenDispute($order['id']);
+                                $canOpenDispute = !$hasOpenDispute;
+                            } catch (Exception $e) {
+                                // Silently fail
+                            }
+                        }
+                    }
+                ?>
+                <?php if ($canOpenDispute): ?>
+                    <a href="/disputes/create?order_id=<?php echo e($order['id']) ?>" class="inline-block bg-yellow-600 text-white px-6 py-2 rounded-md hover:bg-yellow-700">
+                        Open Dispute
+                    </a>
+                <?php endif; ?>
+
+                <?php
                     // NEW: Leave a Review button for client when order is completed and no review exists yet
                 ?>
                 <?php if ($order['status'] === 'completed' && $order['client_id'] === Auth::user()['id'] && empty($review)): ?>

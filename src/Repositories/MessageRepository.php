@@ -48,6 +48,33 @@ class MessageRepository
     }
 
     /**
+     * Get a single message by ID
+     *
+     * @param int $messageId
+     * @return array|null
+     */
+    public function findById(int $messageId): ?array
+    {
+        $sql = "SELECT m.*,
+                       u.email as sender_email, u.name as sender_name, u.role as sender_role
+                FROM messages m
+                LEFT JOIN users u ON m.sender_id = u.id
+                WHERE m.id = :message_id";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute(['message_id' => $messageId]);
+
+        $message = $stmt->fetch();
+
+        if ($message) {
+            // Decode JSON fields
+            $message['attachments'] = $message['attachments'] ? json_decode($message['attachments'], true) : [];
+        }
+
+        return $message ?: null;
+    }
+
+    /**
      * Get all messages for an order
      *
      * @param int $orderId

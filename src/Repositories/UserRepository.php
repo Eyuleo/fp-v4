@@ -318,4 +318,103 @@ class UserRepository
 
         return $stmt->fetchAll();
     }
+
+    /**
+     * Set suspension for a user
+     * 
+     * @param int $userId The user ID to suspend
+     * @param int|null $days Number of days for suspension (null for permanent ban)
+     * @return bool True if suspension was set successfully
+     */
+    public function setSuspension(int $userId, ?int $days): bool
+    {
+        $suspensionEndDate = null;
+        
+        if ($days !== null) {
+            // Calculate suspension end date for temporary suspension
+            $suspensionEndDate = date('Y-m-d H:i:s', strtotime("+{$days} days"));
+        }
+        // If $days is null, suspension_end_date remains null (permanent ban)
+
+        $stmt = $this->db->prepare('
+            UPDATE users
+            SET status = :status,
+                suspension_end_date = :suspension_end_date,
+                updated_at = NOW()
+            WHERE id = :id
+        ');
+
+        return $stmt->execute([
+            'status'             => 'suspended',
+            'suspension_end_date' => $suspensionEndDate,
+            'id'                 => $userId,
+        ]);
+    }
+
+    /**
+     * Check if a user's suspension is currently active
+     * 
+     * @param int $userId The user ID to check
+     * @return array ['is_suspended' => bool, 'suspension_end_date' => string|null]
+     */
+    public function checkSuspensionStatus(int $userId): array
+    {
+        $stmt = $this->db->prepare('
+            SELECT status, suspension_end_date
+            FROM users
+            WHERE id = :id
+        ');
+        
+        $stmt->execute(['id' => $userId]);
+        $user = $stmt->fetch();
+
+        if (!$user) {
+            return [
+                'is_suspended'        => false,
+                'suspension_end_date' => null,
+            ];
+        }
+
+        // User is suspended if status is 'suspended' AND either:
+        // 1. suspension_end_date is null (permanent ban), OR
+        // 2. suspension_end_date is in the future
+        $isSuspended = false;
+        
+        if ($user['status'] === 'suspended') {
+            if ($user['suspension_end_date'] === null) {
+                // Permanent ban
+                $isSuspended = true;
+            } else {
+                // Temporary suspension - check if still active
+                $isSuspended = strtotime($user['suspension_end_date']) > time();
+            }
+        }
+
+        return [
+            'is_suspended'        => $isSuspended,
+            'suspension_end_date' => $user['suspension_end_date'],
+        ];
+    }
+
+    /**
+     * Clear suspension and restore user to active status
+     * 
+     * @param int $userId The user ID to restore
+     * @return bool True if suspension was cleared successfully
+     */
+    public function clearSuspension(int $userId): bool
+    {
+        $stmt = $this->db->prepare('
+            UPDATE users
+            SET status = :status,
+                suspension_end_date = NULL,
+                updated_at = NOW()
+            WHERE id = :id
+        ');
+
+        return $stmt->execute([
+            'status' => 'active',
+            'id'     => $userId,
+        ]);
+    }
 }

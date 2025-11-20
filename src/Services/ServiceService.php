@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/../Repositories/ServiceRepository.php';
+require_once __DIR__ . '/../Repositories/UserRepository.php';
 require_once __DIR__ . '/../Validators/ServiceValidator.php';
 require_once __DIR__ . '/FileService.php';
 require_once __DIR__ . '/../Models/ServiceEditHistory.php';
@@ -13,16 +14,18 @@ require_once __DIR__ . '/../Models/ServiceEditHistory.php';
 class ServiceService
 {
     private ServiceRepository $repository;
+    private UserRepository $userRepository;
     private ServiceValidator $validator;
     private FileService $fileService;
     private ServiceEditHistory $editHistory;
 
     public function __construct(ServiceRepository $repository)
     {
-        $this->repository  = $repository;
-        $this->validator   = new ServiceValidator();
-        $this->fileService = new FileService();
-        $this->editHistory = new ServiceEditHistory($repository->getDb());
+        $this->repository     = $repository;
+        $this->userRepository = new UserRepository($repository->getDb());
+        $this->validator      = new ServiceValidator();
+        $this->fileService    = new FileService();
+        $this->editHistory    = new ServiceEditHistory($repository->getDb());
     }
 
     /**
@@ -35,6 +38,20 @@ class ServiceService
      */
     public function createService(int $studentId, array $data, array $files = []): array
     {
+        // Check if student has active suspension
+        $suspensionStatus = $this->userRepository->checkSuspensionStatus($studentId);
+        if ($suspensionStatus['is_suspended']) {
+            $errorMessage = 'Your account is currently suspended and you cannot create service listings.';
+            if ($suspensionStatus['suspension_end_date']) {
+                $errorMessage .= ' Your suspension will end on ' . date('F j, Y', strtotime($suspensionStatus['suspension_end_date'])) . '.';
+            }
+            return [
+                'success'    => false,
+                'service_id' => null,
+                'errors'     => ['suspension' => $errorMessage],
+            ];
+        }
+
         // Validate input data
         if (! $this->validator->validateCreate($data)) {
             return [
