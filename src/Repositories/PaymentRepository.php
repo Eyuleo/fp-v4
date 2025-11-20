@@ -87,6 +87,16 @@ class PaymentRepository
             $params['refund_amount'] = $data['refund_amount'];
         }
 
+        if (isset($data['commission_amount'])) {
+            $fields[]                    = 'commission_amount = :commission_amount';
+            $params['commission_amount'] = $data['commission_amount'];
+        }
+
+        if (isset($data['student_amount'])) {
+            $fields[]                 = 'student_amount = :student_amount';
+            $params['student_amount'] = $data['student_amount'];
+        }
+
         if (isset($data['metadata'])) {
             $fields[]           = 'metadata = :metadata';
             $params['metadata'] = $data['metadata'];
