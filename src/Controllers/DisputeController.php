@@ -89,11 +89,12 @@ class DisputeController
             $countStmt->execute();
             $totalCount = $countStmt->fetch()['total'];
         } else {
-            $disputes = $this->disputeService->getAllOpenDisputes();
+            // Get disputes by specific status
+            $allDisputes = $this->disputeRepository->findByStatus($status);
             
             // Apply pagination
-            $totalCount = count($disputes);
-            $disputes = array_slice($disputes, $offset, $perPage);
+            $totalCount = count($allDisputes);
+            $disputes = array_slice($allDisputes, $offset, $perPage);
         }
 
         $totalPages = ceil($totalCount / $perPage);

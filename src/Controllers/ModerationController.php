@@ -362,7 +362,7 @@ class ModerationController
      *
      * GET /admin/users/{id}/violations
      */
-    public function viewUserViolations(int $userId): void
+    public function viewUserViolations(int $id): void
     {
         // Check authentication
         if (!Auth::check()) {
@@ -380,7 +380,7 @@ class ModerationController
         }
 
         // Get the user
-        $user = $this->userRepository->findById($userId);
+        $user = $this->userRepository->findById($id);
         if (!$user) {
             $_SESSION['error'] = 'User not found';
             header('Location: /admin/users');
@@ -388,7 +388,7 @@ class ModerationController
         }
 
         // Get user violations
-        $violations = $this->violationService->getUserViolations($userId);
+        $violations = $this->violationService->getUserViolations($id);
 
         // Render view
         include __DIR__ . '/../../views/admin/users/violations.php';
