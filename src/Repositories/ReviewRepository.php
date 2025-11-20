@@ -37,7 +37,6 @@ class ReviewRepository
             'student_id'     => $data['student_id'],
             'rating'         => $data['rating'],
             'comment'        => $data['comment'] ?? null,
-            'can_edit_until' => $data['can_edit_until'],
         ]);
 
         return (int) $this->db->lastInsertId();
