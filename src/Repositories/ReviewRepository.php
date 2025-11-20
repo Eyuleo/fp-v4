@@ -24,10 +24,10 @@ class ReviewRepository
     {
         $sql = "INSERT INTO reviews (
             order_id, client_id, student_id, rating, comment,
-            can_edit_until, created_at, updated_at
+             created_at, updated_at
         ) VALUES (
             :order_id, :client_id, :student_id, :rating, :comment,
-            :can_edit_until, NOW(), NOW()
+             NOW(), NOW()
         )";
 
         $stmt = $this->db->prepare($sql);

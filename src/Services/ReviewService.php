@@ -106,8 +106,7 @@ class ReviewService
         $this->reviewRepository->beginTransaction();
 
         try {
-            // Set can_edit_until to 24 hours from now
-            $canEditUntil = date('Y-m-d H:i:s', strtotime('+24 hours'));
+            
 
             // Create review
             $reviewData = [
@@ -116,7 +115,6 @@ class ReviewService
                 'student_id'     => $order['student_id'],
                 'rating'         => $rating,
                 'comment'        => $comment ? trim($comment) : null,
-                'can_edit_until' => $canEditUntil,
             ];
 
             $reviewId = $this->reviewRepository->create($reviewData);
