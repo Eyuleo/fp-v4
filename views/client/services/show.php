@@ -69,63 +69,151 @@
 
                 <!-- Sample Files Gallery -->
                 <?php if (! empty($service['sample_files'])): ?>
-                    <div class="mt-6" x-data="{ selectedImage: null }">
+                    <?php
+                        // Separate image and non-image files
+                        $imageFiles = [];
+                        $otherFiles = [];
+                        $imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+                        
+                        foreach ($service['sample_files'] as $index => $file) {
+                            if (! is_array($file) || empty($file['signed_url'])) {
+                                continue;
+                            }
+                            
+                            $originalName = $file['original_name'] ?? $file['filename'] ?? basename($file['path']);
+                            $extension = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
+                            
+                            if (in_array($extension, $imageExtensions)) {
+                                $imageFiles[] = $file;
+                            } else {
+                                $otherFiles[] = $file;
+                            }
+                        }
+                    ?>
+                    
+                    <div class="mt-6" 
+                         x-data="{
+                            galleryOpen: false,
+                            currentImage: 0,
+                            images: [<?php echo implode(',', array_map(fn($f) => '\'' . e($f['signed_url']) . '\'', $imageFiles)); ?>]
+                         }"
+                         @keydown.escape.window="galleryOpen = false"
+                         @keydown.arrow-left.window="if(galleryOpen) currentImage = currentImage > 0 ? currentImage - 1 : images.length - 1"
+                         @keydown.arrow-right.window="if(galleryOpen) currentImage = currentImage < images.length - 1 ? currentImage + 1 : 0">
                         <h3 class="text-lg font-semibold text-gray-900 mb-3">Sample Work</h3>
-                        <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
-                            <?php foreach ($service['sample_files'] as $index => $file): ?>
-                                <?php
-                                    if (! is_array($file) || empty($file['signed_url'])) {
-                                        continue;
-                                    }
-
-                                    $originalName = $file['original_name'] ?? $file['filename'] ?? basename($file['path']);
-                                    $extension    = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
-                                    $isImage      = in_array($extension, ['jpg', 'jpeg', 'png', 'gif', 'webp']);
-                                ?>
-                                <?php if ($isImage): ?>
-                                    <div class="relative group cursor-pointer"
-                                         @click="selectedImage = '<?php echo e($file['signed_url']) ?>'">
-                                        <img
-                                            src="<?php echo e($file['signed_url']) ?>"
-                                            alt="Sample"
-                                            class="w-full h-48 object-cover rounded-lg shadow-sm group-hover:shadow-md transition-shadow"
-                                        >
-                                        <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-opacity rounded-lg flex items-center justify-center">
-                                            <svg class="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity"
-                                                 fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"/>
-                                            </svg>
+                        
+                        <?php if (! empty($imageFiles)): ?>
+                            <div class="mb-6">
+                                <h4 class="text-sm font-medium text-gray-700 mb-3">Images</h4>
+                                <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                    <?php foreach ($imageFiles as $index => $file): ?>
+                                        <div class="relative group cursor-pointer"
+                                             @click="galleryOpen = true; currentImage = <?php echo (int) $index ?>">
+                                            <img
+                                                src="<?php echo e($file['signed_url']) ?>"
+                                                alt="Sample"
+                                                class="w-full h-48 object-cover rounded-lg shadow-sm group-hover:shadow-md transition-shadow"
+                                            >
+                                            <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-opacity rounded-lg flex items-center justify-center">
+                                                <svg class="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                                                     fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                          d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"/>
+                                                </svg>
+                                            </div>
                                         </div>
-                                    </div>
-                                <?php else: ?>
-                                    <a href="<?php echo e($file['signed_url']) ?>"
-                                       download
-                                       class="flex flex-col items-center justify-center h-48 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">
-                                        <svg class="w-12 h-12 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                  d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
-                                        </svg>
-                                        <span class="text-sm text-gray-600 text-center break-all"><?php echo e($originalName) ?></span>
-                                    </a>
-                                <?php endif; ?>
-                            <?php endforeach; ?>
-                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+                            </div>
+                        <?php endif; ?>
+                        
+                        <?php if (! empty($otherFiles)): ?>
+                            <div>
+                                <h4 class="text-sm font-medium text-gray-700 mb-3">Other Files</h4>
+                                <div class="space-y-2">
+                                    <?php foreach ($otherFiles as $file): ?>
+                                        <?php $originalName = $file['original_name'] ?? $file['filename'] ?? basename($file['path']); ?>
+                                        <a href="<?php echo e($file['signed_url']) ?>"
+                                           download
+                                           class="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                                            <div class="flex items-center space-x-3">
+                                                <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                          d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                                                </svg>
+                                                <span class="text-sm text-gray-600"><?php echo e($originalName) ?></span>
+                                            </div>
+                                            <span class="text-blue-600 hover:text-blue-700 text-sm">Download</span>
+                                        </a>
+                                    <?php endforeach; ?>
+                                </div>
+                            </div>
+                        <?php endif; ?>
 
-                        <!-- Image Modal -->
-                        <div x-show="selectedImage"
-                             x-cloak
-                             @click="selectedImage = null"
-                             class="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center p-4">
-                            <div class="relative max-w-4xl max-h-full">
-                                <img :src="selectedImage" class="max-w-full max-h-screen object-contain rounded-lg">
-                                <button @click.stop="selectedImage = null"
-                                        class="absolute top-4 right-4 text-white bg-black bg-opacity-50 rounded-full p-2 hover:bg-opacity-75">
-                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <!-- Image Gallery Modal -->
+                        <div
+                            x-show="galleryOpen"
+                            x-cloak
+                            class="fixed inset-0 z-50 overflow-hidden">
+                            <!-- Backdrop -->
+                            <div
+                                class="absolute inset-0 bg-black bg-opacity-90"
+                                @click="galleryOpen = false"
+                            ></div>
+
+                            <!-- Modal Content -->
+                            <div class="relative h-full flex items-center justify-center p-4">
+                                <!-- Close Button -->
+                                <button
+                                    @click="galleryOpen = false"
+                                    class="absolute top-4 right-4 text-white hover:text-gray-300 z-10"
+                                >
+                                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                               d="M6 18L18 6M6 6l12 12"/>
                                     </svg>
                                 </button>
+
+                                <!-- Previous Button -->
+                                <button
+                                    @click="currentImage = currentImage > 0 ? currentImage - 1 : images.length - 1"
+                                    class="absolute left-4 text-white hover:text-gray-300 z-10"
+                                    x-show="images.length > 1"
+                                >
+                                    <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                              d="M15 19l-7-7 7-7"/>
+                                    </svg>
+                                </button>
+
+                                <!-- Image -->
+                                <div class="max-w-6xl max-h-full">
+                                    <template x-for="(image, index) in images" :key="index">
+                                        <img
+                                            x-show="currentImage === index"
+                                            :src="image"
+                                            class="max-w-full max-h-[90vh] object-contain"
+                                            alt="Gallery image"
+                                        >
+                                    </template>
+                                </div>
+
+                                <!-- Next Button -->
+                                <button
+                                    @click="currentImage = currentImage < images.length - 1 ? currentImage + 1 : 0"
+                                    class="absolute right-4 text-white hover:text-gray-300 z-10"
+                                    x-show="images.length > 1"
+                                >
+                                    <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                              d="M9 5l7 7-7 7"/>
+                                    </svg>
+                                </button>
+
+                                <!-- Image Counter -->
+                                <div class="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-white text-sm" x-show="images.length > 1">
+                                    <span x-text="currentImage + 1"></span> / <span x-text="images.length"></span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -300,3 +388,9 @@
         </div>
     </div>
 </div>
+
+<style>
+[x-cloak] {
+    display: none !important;
+}
+</style>
