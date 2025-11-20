@@ -48,8 +48,8 @@ class AuthController
             // Name validation
             if (empty($name)) {
                 $errors['name'] = 'Name is required';
-            } elseif (strlen($name) < 2) {
-                $errors['name'] = 'Name must be at least 2 characters';
+            } elseif (strlen($name) < 3) {
+                $errors['name'] = 'Name must be at least 3 characters';
             }
 
             // Email validation

@@ -23,7 +23,7 @@
             value="<?php echo e(old('name')) ?>"
             class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500                                                                                                                          <?php echo isset($_SESSION['errors']['name']) ? 'border-red-500' : '' ?>"
             required
-            minlength="2"
+            minlength="3"
         >
         <?php if (isset($_SESSION['errors']['name'])): ?>
             <p class="mt-1 text-sm text-red-600"><?php echo e($_SESSION['errors']['name']) ?></p>

@@ -20,11 +20,12 @@ class UserRepository
     public function create(array $data): int
     {
         $stmt = $this->db->prepare('
-            INSERT INTO users (email, password_hash, role, status, verification_token, created_at, updated_at)
-            VALUES (:email, :password_hash, :role, :status, :verification_token, NOW(), NOW())
+            INSERT INTO users (name, email, password_hash, role, status, verification_token, created_at, updated_at)
+            VALUES (:name, :email, :password_hash, :role, :status, :verification_token, NOW(), NOW())
         ');
 
         $stmt->execute([
+            'name'               => $data['name'] ?? null,
             'email'              => $data['email'],
             'password_hash'      => $data['password_hash'],
             'role'               => $data['role'],

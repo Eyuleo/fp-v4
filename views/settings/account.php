@@ -56,7 +56,7 @@
                 </div>
 
                 <!-- Role (Read-only) -->
-                <div>
+                <!-- <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">
                         Account Type
                     </label>
@@ -66,7 +66,7 @@
                         value="<?php echo e(ucfirst($user['role'] ?? '')) ?>"
                         disabled
                     >
-                </div>
+                </div> -->
 
                 <div class="flex justify-end">
                     <button
