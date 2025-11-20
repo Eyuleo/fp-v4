@@ -15,6 +15,3 @@ ADD INDEX idx_is_hidden (is_hidden);
 ALTER TABLE reviews
 ADD CONSTRAINT fk_reviews_moderated_by FOREIGN KEY (moderated_by) REFERENCES users(id);
 
--- Remove can_edit_until column
-ALTER TABLE reviews
-DROP COLUMN can_edit_until;
