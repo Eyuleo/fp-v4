@@ -129,6 +129,19 @@ class MessageService
             ];
         }
 
+        // Prevent messaging on completed or cancelled orders
+        if (in_array($order['status'], ['completed', 'cancelled'])) {
+            $statusMessage = $order['status'] === 'completed' 
+                ? 'This order has been completed. Messaging is no longer available.' 
+                : 'This order has been cancelled. Messaging is no longer available.';
+            
+            return [
+                'success'    => false,
+                'message_id' => null,
+                'errors'     => ['order_status' => $statusMessage],
+            ];
+        }
+
         // Check for suspicious content
         $isFlagged = $this->moderateMessage($content);
 

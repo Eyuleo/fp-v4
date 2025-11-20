@@ -117,48 +117,64 @@
 
             <!-- Message Input Form -->
             <div class="border-t p-4">
-                <form action="/messages/send" method="POST" enctype="multipart/form-data" class="space-y-4">
-                    <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token'] ?? '' ?>">
-                    <input type="hidden" name="order_id" value="<?php echo e($order['id']) ?>">
-
-                    <div>
-                        <textarea
-                            name="content"
-                            rows="3"
-                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                            placeholder="Type your message... (or attach files below)"
-                        ></textarea>
-                        <p class="text-xs text-gray-500 mt-1">You can send just attachments without text.</p>
+                <?php if (in_array($order['status'], ['completed', 'cancelled'])): ?>
+                    <div class="bg-gray-50 border border-gray-200 rounded-lg p-6 text-center">
+                        <svg class="w-12 h-12 text-gray-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                        </svg>
+                        <h3 class="text-lg font-medium text-gray-900 mb-2">Messaging Closed</h3>
+                        <p class="text-gray-600">
+                            <?php if ($order['status'] === 'completed'): ?>
+                                This order has been completed. Messaging is no longer available.
+                            <?php else: ?>
+                                This order has been cancelled. Messaging is no longer available.
+                            <?php endif; ?>
+                        </p>
                     </div>
+                <?php else: ?>
+                    <form action="/messages/send" method="POST" enctype="multipart/form-data" class="space-y-4">
+                        <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token'] ?? '' ?>">
+                        <input type="hidden" name="order_id" value="<?php echo e($order['id']) ?>">
 
-                    <div class="flex items-center justify-between">
                         <div>
-                            <label class="flex items-center space-x-2 text-sm text-gray-600 cursor-pointer hover:text-gray-900">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                          d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.586"/>
-                                </svg>
-                                <span>Attach files</span>
-                                <input
-                                    type="file"
-                                    name="attachments[]"
-                                    multiple
-                                    class="hidden"
-                                    accept=".jpg,.jpeg,.png,.gif,.pdf,.doc,.docx,.txt,.zip"
-                                >
-                            </label>
-                            <p class="text-xs text-gray-500 mt-1">Max 10MB per file</p>
-                            <ul id="attachment-preview" class="mt-2 text-xs text-gray-600 space-y-1"></ul>
+                            <textarea
+                                name="content"
+                                rows="3"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                                placeholder="Type your message... (or attach files below)"
+                            ></textarea>
+                            <p class="text-xs text-gray-500 mt-1">You can send just attachments without text.</p>
                         </div>
 
-                        <button
-                            type="submit"
-                            class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                        >
-                            Send Message
-                        </button>
-                    </div>
-                </form>
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <label class="flex items-center space-x-2 text-sm text-gray-600 cursor-pointer hover:text-gray-900">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                              d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.586"/>
+                                    </svg>
+                                    <span>Attach files</span>
+                                    <input
+                                        type="file"
+                                        name="attachments[]"
+                                        multiple
+                                        class="hidden"
+                                        accept=".jpg,.jpeg,.png,.gif,.pdf,.doc,.docx,.txt,.zip"
+                                    >
+                                </label>
+                                <p class="text-xs text-gray-500 mt-1">Max 10MB per file</p>
+                                <ul id="attachment-preview" class="mt-2 text-xs text-gray-600 space-y-1"></ul>
+                            </div>
+
+                            <button
+                                type="submit"
+                                class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                            >
+                                Send Message
+                            </button>
+                        </div>
+                    </form>
+                <?php endif; ?>
             </div>
         </div>
     </div>
