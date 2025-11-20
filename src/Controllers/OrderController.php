@@ -13,18 +13,19 @@ class OrderController
 {
     private OrderService $orderService;
     private PaymentService $paymentService;
+    private OrderRepository $orderRepository;
     private PDO $db;
 
     public function __construct()
     {
         $this->db = getDatabaseConnection();
 
-        $orderRepository   = new OrderRepository($this->db);
-        $serviceRepository = new ServiceRepository($this->db);
-        $paymentRepository = new PaymentRepository($this->db);
+        $this->orderRepository = new OrderRepository($this->db);
+        $serviceRepository     = new ServiceRepository($this->db);
+        $paymentRepository     = new PaymentRepository($this->db);
 
         $this->paymentService = new PaymentService($paymentRepository, $this->db);
-        $this->orderService   = new OrderService($orderRepository, $serviceRepository, $this->paymentService);
+        $this->orderService   = new OrderService($this->orderRepository, $serviceRepository, $this->paymentService);
     }
 
     public function create(): void
@@ -133,12 +134,16 @@ class OrderController
         $successUrl = getenv('APP_URL') . '/orders/payment-success';
         $cancelUrl  = getenv('APP_URL') . '/orders/create?service_id=' . $serviceId;
 
+        // Get commission rate from OrderRepository
+        $commissionRate = $this->orderRepository->getCommissionRate();
+        
         $orderData = [
-            'id'            => 'pending',
-            'service_title' => $service['title'],
-            'price'         => $service['price'],
-            'client_id'     => $user['id'],
-            'student_id'    => $service['student_id'],
+            'id'              => 'pending',
+            'service_title'   => $service['title'],
+            'price'           => $service['price'],
+            'client_id'       => $user['id'],
+            'student_id'      => $service['student_id'],
+            'commission_rate' => $commissionRate,
         ];
 
         $paymentResult = $this->paymentService->createCheckoutSession($orderData, $successUrl, $cancelUrl);
