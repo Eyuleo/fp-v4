@@ -300,7 +300,7 @@ $router->post("/student/services/{id}/delete", "ServiceController@delete", [
 $router->get("/messages", "MessageController@index", [new AuthMiddleware()]);
 $router->get("/messages/thread/{orderId}", "MessageController@thread", [
     new AuthMiddleware(),
-    new RoleMiddleware(["client", "student"]),
+    new RoleMiddleware(["client", "student", "admin"]),
 ]);
 $router->post("/messages/send", "MessageController@send", [
     new AuthMiddleware(),
