@@ -128,35 +128,36 @@
                     $deadlineTimestamp = strtotime($order['deadline']);
                     $currentTimestamp  = time();
                     $timeDiff          = $deadlineTimestamp - $currentTimestamp;
+                    if ($order['status'] !== 'completed'){
+                        if ($timeDiff > 0) {
+                            $days    = floor($timeDiff / 86400);
+                            $hours   = floor(($timeDiff % 86400) / 3600);
+                            $minutes = floor(($timeDiff % 3600) / 60);
 
-                    if ($timeDiff > 0) {
-                        $days    = floor($timeDiff / 86400);
-                        $hours   = floor(($timeDiff % 86400) / 3600);
-                        $minutes = floor(($timeDiff % 3600) / 60);
+                            $timeRemaining = '';
+                            if ($days > 0) {
+                                $timeRemaining = $days . ' day' . ($days > 1 ? 's' : '') . ', ' . $hours . ' hour' . ($hours > 1 ? 's' : '');
+                            } elseif ($hours > 0) {
+                                $timeRemaining = $hours . ' hour' . ($hours > 1 ? 's' : '') . ', ' . $minutes . ' minute' . ($minutes > 1 ? 's' : '');
+                            } else {
+                                $timeRemaining = $minutes . ' minute' . ($minutes > 1 ? 's' : '');
+                            }
 
-                        $timeRemaining = '';
-                        if ($days > 0) {
-                            $timeRemaining = $days . ' day' . ($days > 1 ? 's' : '') . ', ' . $hours . ' hour' . ($hours > 1 ? 's' : '');
-                        } elseif ($hours > 0) {
-                            $timeRemaining = $hours . ' hour' . ($hours > 1 ? 's' : '') . ', ' . $minutes . ' minute' . ($minutes > 1 ? 's' : '');
+                            $urgencyClass = 'text-green-600';
+                            if ($days < 1) {
+                                $urgencyClass = 'text-red-600 font-bold';
+                            } elseif ($days < 2) {
+                                $urgencyClass = 'text-orange-600 font-semibold';
+                            }
+                            echo '<p class="text-sm ' . $urgencyClass . ' mt-1">⏱️ ' . $timeRemaining . ' remaining</p>';
                         } else {
-                            $timeRemaining = $minutes . ' minute' . ($minutes > 1 ? 's' : '');
+                            $daysOverdue  = abs(floor($timeDiff / 86400));
+                            $hoursOverdue = abs(floor(($timeDiff % 86400) / 3600));
+                            $overdueText  = $daysOverdue > 0
+                                ? $daysOverdue . ' day' . ($daysOverdue > 1 ? 's' : '') . ' overdue'
+                                : $hoursOverdue . ' hour' . ($hoursOverdue > 1 ? 's' : '') . ' overdue';
+                            echo '<p class="text-sm text-red-600 font-bold mt-1">🚨 ' . $overdueText . '</p>';
                         }
-
-                        $urgencyClass = 'text-green-600';
-                        if ($days < 1) {
-                            $urgencyClass = 'text-red-600 font-bold';
-                        } elseif ($days < 2) {
-                            $urgencyClass = 'text-orange-600 font-semibold';
-                        }
-                        echo '<p class="text-sm ' . $urgencyClass . ' mt-1">⏱️ ' . $timeRemaining . ' remaining</p>';
-                    } else {
-                        $daysOverdue  = abs(floor($timeDiff / 86400));
-                        $hoursOverdue = abs(floor(($timeDiff % 86400) / 3600));
-                        $overdueText  = $daysOverdue > 0
-                            ? $daysOverdue . ' day' . ($daysOverdue > 1 ? 's' : '') . ' overdue'
-                            : $hoursOverdue . ' hour' . ($hoursOverdue > 1 ? 's' : '') . ' overdue';
-                        echo '<p class="text-sm text-red-600 font-bold mt-1">🚨 ' . $overdueText . '</p>';
                     }
                 ?>
             </div>
