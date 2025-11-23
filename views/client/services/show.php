@@ -129,21 +129,34 @@
                         
                         <?php if (! empty($otherFiles)): ?>
                             <div>
-                                <h4 class="text-sm font-medium text-gray-700 mb-3">Other Files</h4>
+                                <h4 class="text-sm font-medium text-gray-700 mb-3">Documents</h4>
                                 <div class="space-y-2">
                                     <?php foreach ($otherFiles as $file): ?>
-                                        <?php $originalName = $file['original_name'] ?? $file['filename'] ?? basename($file['path']); ?>
+                                        <?php 
+                                            $originalName = $file['original_name'] ?? $file['filename'] ?? basename($file['path']);
+                                            $extension = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
+                                            $isPdf = $extension === 'pdf';
+                                        ?>
                                         <a href="<?php echo e($file['signed_url']) ?>"
                                            download
                                            class="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
                                             <div class="flex items-center space-x-3">
-                                                <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                          d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
-                                                </svg>
-                                                <span class="text-sm text-gray-600"><?php echo e($originalName) ?></span>
+                                                <?php if ($isPdf): ?>
+                                                    <svg class="w-6 h-6 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"/>
+                                                    </svg>
+                                                <?php else: ?>
+                                                    <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                              d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                                                    </svg>
+                                                <?php endif; ?>
+                                                <div>
+                                                    <span class="text-sm text-gray-900 font-medium"><?php echo e($originalName) ?></span>
+                                                    <span class="text-xs text-gray-500 block"><?php echo strtoupper($extension) ?> File</span>
+                                                </div>
                                             </div>
-                                            <span class="text-blue-600 hover:text-blue-700 text-sm">Download</span>
+                                            <span class="text-blue-600 hover:text-blue-700 text-sm font-medium">Download</span>
                                         </a>
                                     <?php endforeach; ?>
                                 </div>

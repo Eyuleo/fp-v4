@@ -124,14 +124,14 @@
                     id="portfolio_files"
                     name="portfolio_files[]"
                     multiple
-                    accept=".jpg,.jpeg,.png,.gif,.pdf,.doc,.docx,.zip"
+                    accept=".jpg,.jpeg,.png,.gif,.pdf"
                     class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     <?php echo isset($_SESSION['errors']['portfolio_files']) ? 'border-red-500' : '' ?>"
                 >
                 <?php if (isset($_SESSION['errors']['portfolio_files'])): ?>
                     <p class="text-red-500 text-sm mt-1"><?php echo e($_SESSION['errors']['portfolio_files']) ?></p>
                 <?php endif; ?>
                 <p class="text-gray-500 text-sm mt-1">
-                    Upload samples of your work. Max 10MB per file. Allowed types: JPG, PNG, GIF, PDF, DOC, DOCX, ZIP
+                    Upload samples of your work. Max 10MB per file. Allowed types: Images (JPG, PNG, GIF) and PDF only
                 </p>
             </div>
 

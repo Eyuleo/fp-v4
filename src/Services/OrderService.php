@@ -371,28 +371,89 @@ class OrderService
 
         $this->orderRepository->beginTransaction();
         try {
+            // Verify payment status before proceeding
+            $paymentRepository = new PaymentRepository($this->db);
+            $payment = $paymentRepository->findByOrderId($orderId);
+            
+            if (!$payment) {
+                $this->orderRepository->rollback();
+                error_log(json_encode([
+                    'error'     => 'Payment not found for order completion',
+                    'order_id'  => $orderId,
+                    'timestamp' => date('Y-m-d H:i:s'),
+                ]));
+                return ['success' => false, 'errors' => ['payment' => 'Payment record not found. Please contact support.']];
+            }
+
+            if ($payment['status'] !== 'succeeded') {
+                $this->orderRepository->rollback();
+                error_log(json_encode([
+                    'error'          => 'Cannot complete order with unconfirmed payment',
+                    'order_id'       => $orderId,
+                    'payment_id'     => $payment['id'],
+                    'payment_status' => $payment['status'],
+                    'timestamp'      => date('Y-m-d H:i:s'),
+                ]));
+                return ['success' => false, 'errors' => ['payment' => 'Payment not confirmed. Cannot complete order.']];
+            }
+
             $orderAmount      = (float) $order['price'];
             $commissionRate   = (float) $order['commission_rate'];
             $commissionAmount = $orderAmount * ($commissionRate / 100);
             $studentEarnings  = $orderAmount - $commissionAmount;
+
+            // Get student's current balance before update
+            $studentProfile = $this->orderRepository->getDb()->prepare(
+                "SELECT available_balance FROM student_profiles WHERE user_id = :student_id"
+            );
+            $studentProfile->execute(['student_id' => $order['student_id']]);
+            $profileData = $studentProfile->fetch(PDO::FETCH_ASSOC);
+            $previousBalance = $profileData ? (float) $profileData['available_balance'] : 0.00;
 
             $this->orderRepository->update($orderId, [
                 'status'       => 'completed',
                 'completed_at' => date('Y-m-d H:i:s'),
             ]);
 
-            // Update payment status to succeeded and record commission amounts
-            $paymentRepository = new PaymentRepository($this->db);
-            $payment = $paymentRepository->findByOrderId($orderId);
-            if ($payment && $payment['status'] !== 'succeeded') {
+            // Update payment commission amounts if not already set
+            if ($payment['commission_amount'] == 0 || $payment['student_amount'] == 0) {
                 $paymentRepository->update($payment['id'], [
-                    'status'            => 'succeeded',
                     'commission_amount' => $commissionAmount,
                     'student_amount'    => $studentEarnings,
                 ]);
             }
 
-            $this->orderRepository->addToStudentBalance($order['student_id'], $studentEarnings);
+            // Update student balance
+            $balanceUpdateSuccess = $this->orderRepository->addToStudentBalance($order['student_id'], $studentEarnings);
+            
+            if (!$balanceUpdateSuccess) {
+                throw new Exception('Failed to update student balance');
+            }
+
+            $newBalance = $previousBalance + $studentEarnings;
+
+            // Log balance update for audit trail
+            error_log(json_encode([
+                'event'            => 'balance_updated',
+                'order_id'         => $orderId,
+                'student_id'       => $order['student_id'],
+                'previous_balance' => $previousBalance,
+                'change_amount'    => $studentEarnings,
+                'new_balance'      => $newBalance,
+                'commission'       => $commissionAmount,
+                'timestamp'        => date('Y-m-d H:i:s'),
+            ]));
+
+            // Create audit log entry for balance transaction
+            $this->createBalanceAuditLog(
+                $order['student_id'],
+                $orderId,
+                $previousBalance,
+                $studentEarnings,
+                $newBalance,
+                $commissionAmount
+            );
+
             $this->orderRepository->incrementStudentOrderCount($order['student_id']);
 
             try {
@@ -411,7 +472,13 @@ class OrderService
             return ['success' => true, 'errors' => []];
         } catch (Exception $e) {
             $this->orderRepository->rollback();
-            error_log('Order completion error: ' . $e->getMessage());
+            error_log(json_encode([
+                'error'     => 'Order completion error',
+                'order_id'  => $orderId,
+                'exception' => $e->getMessage(),
+                'trace'     => $e->getTraceAsString(),
+                'timestamp' => date('Y-m-d H:i:s'),
+            ]));
             return ['success' => false, 'errors' => ['database' => 'Failed to complete order. Please try again.']];
         }
     }
@@ -585,28 +652,94 @@ class OrderService
 
         $this->orderRepository->beginTransaction();
         try {
+            // Verify payment status before proceeding
+            $paymentRepository = new PaymentRepository($this->db);
+            $payment = $paymentRepository->findByOrderId($orderId);
+            
+            if (!$payment) {
+                $this->orderRepository->rollback();
+                error_log(json_encode([
+                    'error'     => 'Payment not found for admin force completion',
+                    'order_id'  => $orderId,
+                    'admin_id'  => $adminUser['id'],
+                    'timestamp' => date('Y-m-d H:i:s'),
+                ]));
+                return ['success' => false, 'errors' => ['payment' => 'Payment record not found. Please contact support.']];
+            }
+
+            if ($payment['status'] !== 'succeeded') {
+                $this->orderRepository->rollback();
+                error_log(json_encode([
+                    'error'          => 'Cannot force complete order with unconfirmed payment',
+                    'order_id'       => $orderId,
+                    'payment_id'     => $payment['id'],
+                    'payment_status' => $payment['status'],
+                    'admin_id'       => $adminUser['id'],
+                    'timestamp'      => date('Y-m-d H:i:s'),
+                ]));
+                return ['success' => false, 'errors' => ['payment' => 'Payment not confirmed. Cannot complete order.']];
+            }
+
             $orderAmount      = (float) $order['price'];
             $commissionRate   = (float) $order['commission_rate'];
             $commissionAmount = $orderAmount * ($commissionRate / 100);
             $studentEarnings  = $orderAmount - $commissionAmount;
+
+            // Get student's current balance before update
+            $studentProfile = $this->orderRepository->getDb()->prepare(
+                "SELECT available_balance FROM student_profiles WHERE user_id = :student_id"
+            );
+            $studentProfile->execute(['student_id' => $order['student_id']]);
+            $profileData = $studentProfile->fetch(PDO::FETCH_ASSOC);
+            $previousBalance = $profileData ? (float) $profileData['available_balance'] : 0.00;
 
             $this->orderRepository->update($orderId, [
                 'status'       => 'completed',
                 'completed_at' => date('Y-m-d H:i:s'),
             ]);
 
-            // Update payment status to succeeded and record commission amounts
-            $paymentRepository = new PaymentRepository($this->db);
-            $payment = $paymentRepository->findByOrderId($orderId);
-            if ($payment && $payment['status'] !== 'succeeded') {
+            // Update payment commission amounts if not already set
+            if ($payment['commission_amount'] == 0 || $payment['student_amount'] == 0) {
                 $paymentRepository->update($payment['id'], [
-                    'status'            => 'succeeded',
                     'commission_amount' => $commissionAmount,
                     'student_amount'    => $studentEarnings,
                 ]);
             }
 
-            $this->orderRepository->addToStudentBalance($order['student_id'], $studentEarnings);
+            // Update student balance
+            $balanceUpdateSuccess = $this->orderRepository->addToStudentBalance($order['student_id'], $studentEarnings);
+            
+            if (!$balanceUpdateSuccess) {
+                throw new Exception('Failed to update student balance');
+            }
+
+            $newBalance = $previousBalance + $studentEarnings;
+
+            // Log balance update for audit trail
+            error_log(json_encode([
+                'event'            => 'balance_updated_admin_force',
+                'order_id'         => $orderId,
+                'student_id'       => $order['student_id'],
+                'admin_id'         => $adminUser['id'],
+                'previous_balance' => $previousBalance,
+                'change_amount'    => $studentEarnings,
+                'new_balance'      => $newBalance,
+                'commission'       => $commissionAmount,
+                'timestamp'        => date('Y-m-d H:i:s'),
+            ]));
+
+            // Create audit log entry for balance transaction
+            $this->createBalanceAuditLog(
+                $order['student_id'],
+                $orderId,
+                $previousBalance,
+                $studentEarnings,
+                $newBalance,
+                $commissionAmount,
+                'admin_force_complete',
+                $adminUser['id']
+            );
+
             $this->orderRepository->incrementStudentOrderCount($order['student_id']);
 
             try {
@@ -625,7 +758,14 @@ class OrderService
             return ['success' => true, 'errors' => []];
         } catch (Exception $e) {
             $this->orderRepository->rollback();
-            error_log('Admin force completion error: ' . $e->getMessage());
+            error_log(json_encode([
+                'error'     => 'Admin force completion error',
+                'order_id'  => $orderId,
+                'admin_id'  => $adminUser['id'],
+                'exception' => $e->getMessage(),
+                'trace'     => $e->getTraceAsString(),
+                'timestamp' => date('Y-m-d H:i:s'),
+            ]));
             return ['success' => false, 'errors' => ['database' => 'Failed to force complete order. Please try again.']];
         }
     }
@@ -742,5 +882,75 @@ class OrderService
             throw new Exception('File upload failed: ' . implode(', ', $result['errors']));
         }
         return $result['files'];
+    }
+
+    /**
+     * Create audit log entry for balance transaction
+     *
+     * @param int $studentId Student user ID
+     * @param int $orderId Order ID
+     * @param float $previousBalance Previous balance amount
+     * @param float $changeAmount Amount added to balance
+     * @param float $newBalance New balance amount
+     * @param float $commissionAmount Commission deducted
+     * @param string $actionType Type of completion action (default: 'order_complete')
+     * @param int|null $adminId Admin user ID if admin-triggered
+     * @return void
+     */
+    private function createBalanceAuditLog(
+        int $studentId,
+        int $orderId,
+        float $previousBalance,
+        float $changeAmount,
+        float $newBalance,
+        float $commissionAmount,
+        string $actionType = 'order_complete',
+        ?int $adminId = null
+    ): void {
+        try {
+            $oldValues = [
+                'available_balance' => $previousBalance,
+            ];
+
+            $newValues = [
+                'available_balance' => $newBalance,
+                'change_amount'     => $changeAmount,
+                'commission'        => $commissionAmount,
+                'order_id'          => $orderId,
+            ];
+
+            if ($adminId !== null) {
+                $newValues['admin_id'] = $adminId;
+            }
+
+            $sql = "INSERT INTO audit_logs (
+                user_id, action, resource_type, resource_id,
+                old_values, new_values, ip_address, user_agent, created_at
+            ) VALUES (
+                :user_id, :action, :resource_type, :resource_id,
+                :old_values, :new_values, :ip_address, :user_agent, NOW()
+            )";
+
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([
+                'user_id'       => $studentId,
+                'action'        => 'balance.' . $actionType,
+                'resource_type' => 'student_profile',
+                'resource_id'   => $orderId,
+                'old_values'    => json_encode($oldValues),
+                'new_values'    => json_encode($newValues),
+                'ip_address'    => $_SERVER['REMOTE_ADDR'] ?? null,
+                'user_agent'    => $_SERVER['HTTP_USER_AGENT'] ?? null,
+            ]);
+        } catch (Exception $e) {
+            // Log error but don't fail the transaction
+            error_log(json_encode([
+                'error'      => 'Failed to create balance audit log',
+                'student_id' => $studentId,
+                'order_id'   => $orderId,
+                'exception'  => $e->getMessage(),
+                'timestamp'  => date('Y-m-d H:i:s'),
+            ]));
+        }
     }
 }

@@ -169,9 +169,28 @@
                                         }
 
                                         $fileUrl = '/storage/file?path=' . urlencode($filePath);
+                                        $extension = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+                                        $isPdf = $extension === 'pdf';
+                                        $isImage = in_array($extension, ['jpg', 'jpeg', 'png', 'gif', 'webp']);
                                     ?>
                                     <li class="flex items-center justify-between p-2 bg-gray-50 rounded">
-                                        <span class="text-gray-900"><?php echo e($fileName) ?></span>
+                                        <div class="flex items-center space-x-2">
+                                            <?php if ($isPdf): ?>
+                                                <svg class="w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"/>
+                                                </svg>
+                                            <?php elseif ($isImage): ?>
+                                                <svg class="w-5 h-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"/>
+                                                </svg>
+                                            <?php else: ?>
+                                                <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                          d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                                                </svg>
+                                            <?php endif; ?>
+                                            <span class="text-gray-900"><?php echo e($fileName) ?></span>
+                                        </div>
                                         <?php if ($filePath): ?>
                                             <a href="<?php echo e($fileUrl) ?>" target="_blank" class="text-blue-600 hover:text-blue-800 text-sm">
                                                 View

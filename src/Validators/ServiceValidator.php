@@ -169,7 +169,7 @@ class ServiceValidator
             return true; // Files are optional
         }
 
-        $allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'pdf', 'doc', 'docx', 'zip'];
+        $allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'pdf'];
         $maxFileSize       = 10 * 1024 * 1024; // 10MB
         $maxFiles          = 5;
 
@@ -193,7 +193,7 @@ class ServiceValidator
             // Check file extension
             $extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
             if (! in_array($extension, $allowedExtensions)) {
-                $this->errors['sample_files'] = 'Invalid file type. Allowed: ' . implode(', ', $allowedExtensions);
+                $this->errors['sample_files'] = 'Invalid file type. Allowed: JPG, JPEG, PNG, GIF, PDF only';
                 return false;
             }
 
@@ -205,13 +205,10 @@ class ServiceValidator
             $allowedMimeTypes = [
                 'image/jpeg', 'image/png', 'image/gif',
                 'application/pdf',
-                'application/msword',
-                'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-                'application/zip',
             ];
 
             if (! in_array($mimeType, $allowedMimeTypes)) {
-                $this->errors['sample_files'] = 'Invalid file type detected';
+                $this->errors['sample_files'] = 'Invalid file type detected. Only images (JPG, PNG, GIF) and PDF files are allowed';
                 return false;
             }
         }

@@ -154,13 +154,13 @@
                     id="sample_files"
                     name="sample_files[]"
                     multiple
-                    accept=".jpg,.jpeg,.png,.gif,.pdf,.doc,.docx,.zip"
+                    accept=".jpg,.jpeg,.png,.gif,.pdf"
                     class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent <?php echo isset($errors['sample_files']) ? 'border-red-500' : ''?>"
                 >
                 <?php if (isset($errors['sample_files'])): ?>
                     <p class="mt-1 text-sm text-red-600"><?php echo e($errors['sample_files'])?></p>
                 <?php endif; ?>
-                <p class="mt-1 text-sm text-gray-500">Upload up to 5 files. Max 10MB per file. Allowed: JPG, PNG, GIF, PDF, DOC, DOCX, ZIP</p>
+                <p class="mt-1 text-sm text-gray-500">Upload up to 5 files. Max 10MB per file. Allowed: Images (JPG, PNG, GIF) and PDF only</p>
             </div>
 
             <!-- Info Box -->
