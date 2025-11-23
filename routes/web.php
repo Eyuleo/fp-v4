@@ -220,6 +220,15 @@ $router->get("/orders/payment-success", "OrderController@paymentSuccess", [
     new AuthMiddleware(),
     new RoleMiddleware("client"),
 ]);
+$router->get("/orders/payment-cancelled", "OrderController@paymentCancelled", [
+    new AuthMiddleware(),
+    new RoleMiddleware("client"),
+]);
+$router->post("/orders/retry-payment", "OrderController@retryPayment", [
+    new AuthMiddleware(),
+    new RoleMiddleware("client"),
+    new CsrfMiddleware(),
+]);
 $router->get("/orders/{id}", "OrderController@show", [new AuthMiddleware()]);
 $router->get("/orders/{id}/deliver", "OrderController@showDeliveryPage", [
     new AuthMiddleware(),

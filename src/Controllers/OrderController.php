@@ -132,7 +132,7 @@ class OrderController
         ];
 
         $successUrl = getenv('APP_URL') . '/orders/payment-success';
-        $cancelUrl  = getenv('APP_URL') . '/orders/create?service_id=' . $serviceId;
+        $cancelUrl  = getenv('APP_URL') . '/orders/payment-cancelled';
 
         // Get commission rate from OrderRepository
         $commissionRate = $this->orderRepository->getCommissionRate();
@@ -685,5 +685,171 @@ class OrderController
         $results = $this->orderService->autoCompleteExpired();
         header('Content-Type: application/json');
         echo json_encode(['processed' => $results]);
+    }
+
+    /**
+     * Show payment cancellation/failure page with retry option
+     */
+    public function paymentCancelled(): void
+    {
+        if (! Auth::check()) {
+            $_SESSION['error'] = 'Please login';
+            header('Location: /login');
+            exit;
+        }
+        
+        $user = Auth::user();
+        if ($user['role'] !== 'client') {
+            http_response_code(403);
+            include __DIR__ . '/../../views/errors/403.php';
+            exit;
+        }
+
+        // Check if there's a pending order to retry
+        if (!isset($_SESSION['pending_order'])) {
+            $_SESSION['error'] = 'No pending order found';
+            header('Location: /services/search');
+            exit;
+        }
+
+        $pendingOrder = $_SESSION['pending_order'];
+        
+        // Verify ownership
+        if ($pendingOrder['client_id'] != $user['id']) {
+            $_SESSION['error'] = 'Invalid order data';
+            unset($_SESSION['pending_order']);
+            header('Location: /services/search');
+            exit;
+        }
+
+        // Get service details for display
+        $serviceRepository = new ServiceRepository($this->db);
+        $service = $serviceRepository->findByIdWithStudent((int) $pendingOrder['service_id']);
+        
+        if (!$service) {
+            $_SESSION['error'] = 'Service not found';
+            unset($_SESSION['pending_order']);
+            header('Location: /services/search');
+            exit;
+        }
+
+        // Check retry attempts
+        $retryAttempts = $pendingOrder['retry_attempts'] ?? 0;
+        $maxRetries = 3;
+        $canRetry = $retryAttempts < $maxRetries;
+
+        include __DIR__ . '/../../views/client/orders/payment-cancelled.php';
+    }
+
+    /**
+     * Retry payment for a failed/cancelled order
+     */
+    public function retryPayment(): void
+    {
+        if (! Auth::check()) {
+            $_SESSION['error'] = 'Please login to retry payment';
+            header('Location: /login');
+            exit;
+        }
+        
+        $user = Auth::user();
+        if ($user['role'] !== 'client') {
+            http_response_code(403);
+            include __DIR__ . '/../../views/errors/403.php';
+            exit;
+        }
+
+        if (! isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
+            http_response_code(403);
+            $_SESSION['error'] = 'Invalid request';
+            header('Location: /services/search');
+            exit;
+        }
+
+        // Check if there's a pending order to retry
+        if (!isset($_SESSION['pending_order'])) {
+            $_SESSION['error'] = 'No pending order found to retry';
+            header('Location: /services/search');
+            exit;
+        }
+
+        $pendingOrder = $_SESSION['pending_order'];
+        
+        // Verify ownership
+        if ($pendingOrder['client_id'] != $user['id']) {
+            $_SESSION['error'] = 'Invalid order data';
+            unset($_SESSION['pending_order']);
+            header('Location: /services/search');
+            exit;
+        }
+
+        // Check retry limit
+        $retryAttempts = $pendingOrder['retry_attempts'] ?? 0;
+        $maxRetries = 3;
+        
+        if ($retryAttempts >= $maxRetries) {
+            $_SESSION['error'] = 'Maximum retry attempts reached. Please contact support if you continue to experience issues.';
+            unset($_SESSION['pending_order']);
+            header('Location: /services/search');
+            exit;
+        }
+
+        // Increment retry counter
+        $pendingOrder['retry_attempts'] = $retryAttempts + 1;
+        $_SESSION['pending_order'] = $pendingOrder;
+
+        // Get service details
+        $serviceRepository = new ServiceRepository($this->db);
+        $service = $serviceRepository->findByIdWithStudent((int) $pendingOrder['service_id']);
+
+        if (!$service || $service['status'] !== 'active') {
+            $_SESSION['error'] = 'Service not found or not available';
+            unset($_SESSION['pending_order']);
+            header('Location: /services/search');
+            exit;
+        }
+
+        // Create new checkout session with preserved order details
+        $successUrl = getenv('APP_URL') . '/orders/payment-success';
+        $cancelUrl = getenv('APP_URL') . '/orders/payment-cancelled';
+
+        $commissionRate = $this->orderRepository->getCommissionRate();
+        
+        $orderData = [
+            'id'              => 'pending',
+            'service_title'   => $service['title'],
+            'price'           => $service['price'],
+            'client_id'       => $user['id'],
+            'student_id'      => $service['student_id'],
+            'service_id'      => $pendingOrder['service_id'],
+            'commission_rate' => $commissionRate,
+        ];
+
+        $paymentResult = $this->paymentService->createCheckoutSession($orderData, $successUrl, $cancelUrl);
+
+        if (!$paymentResult['success']) {
+            $_SESSION['error'] = 'Failed to create payment session: ' . implode(', ', array_values($paymentResult['errors']));
+            header('Location: /orders/payment-cancelled');
+            exit;
+        }
+
+        // Update pending order with new payment info
+        $_SESSION['pending_order']['payment_id'] = $paymentResult['payment_id'];
+        $_SESSION['pending_order']['stripe_session_id'] = $paymentResult['session_id'];
+
+        // Log retry attempt
+        error_log(json_encode([
+            'event'          => 'payment_retry',
+            'client_id'      => $user['id'],
+            'service_id'     => $pendingOrder['service_id'],
+            'retry_attempt'  => $pendingOrder['retry_attempts'],
+            'payment_id'     => $paymentResult['payment_id'],
+            'session_id'     => $paymentResult['session_id'],
+            'timestamp'      => date('Y-m-d H:i:s'),
+        ]));
+
+        // Redirect to Stripe Checkout
+        header('Location: ' . $paymentResult['session_url']);
+        exit;
     }
 }

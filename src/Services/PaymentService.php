@@ -109,6 +109,11 @@ class PaymentService
             // If no order exists yet, store the pending order data for webhook processing
             if ($orderIdForPayment === null && isset($_SESSION['pending_order'])) {
                 $metadata['pending_order_data'] = $_SESSION['pending_order'];
+                
+                // Track retry attempts
+                if (isset($_SESSION['pending_order']['retry_attempts'])) {
+                    $metadata['retry_attempt'] = $_SESSION['pending_order']['retry_attempts'];
+                }
             }
 
             // Create payment record with pending status
@@ -124,7 +129,7 @@ class PaymentService
             ]);
 
             // Log payment creation for audit trail
-            error_log(json_encode([
+            $logData = [
                 'event'      => 'payment_created',
                 'payment_id' => $paymentId,
                 'session_id' => $session->id,
@@ -132,7 +137,15 @@ class PaymentService
                 'client_id'  => $order['client_id'],
                 'student_id' => $order['student_id'],
                 'timestamp'  => date('Y-m-d H:i:s'),
-            ]));
+            ];
+            
+            // Add retry information if this is a retry attempt
+            if (isset($metadata['retry_attempt'])) {
+                $logData['retry_attempt'] = $metadata['retry_attempt'];
+                $logData['is_retry'] = true;
+            }
+            
+            error_log(json_encode($logData));
 
             return [
                 'success'     => true,
