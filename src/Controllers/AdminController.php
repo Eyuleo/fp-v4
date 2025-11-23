@@ -1532,6 +1532,178 @@ class AdminController
     }
 
     /**
+     * Show observability dashboard with payment events, webhooks, and balance updates
+     *
+     * GET /admin/observability
+     */
+    public function observability(): void
+    {
+        // Check authentication
+        if (! Auth::check()) {
+            $_SESSION['error'] = 'Please login to access this page';
+            header('Location: /login');
+            exit;
+        }
+
+        // Check user is an admin
+        $user = Auth::user();
+        if ($user['role'] !== 'admin') {
+            http_response_code(403);
+            include __DIR__ . '/../../views/errors/403.php';
+            exit;
+        }
+
+        // Get filter parameters
+        $eventType = $_GET['event_type'] ?? null;
+        $userId    = isset($_GET['user_id']) && $_GET['user_id'] !== '' ? (int) $_GET['user_id'] : null;
+        $status    = $_GET['status'] ?? null;
+        $dateFrom  = $_GET['date_from'] ?? null;
+        $dateTo    = $_GET['date_to'] ?? null;
+        $page      = isset($_GET['page']) ? (int) $_GET['page'] : 1;
+        $perPage   = 20;
+        $offset    = ($page - 1) * $perPage;
+
+        // Build query for audit logs (payment events, balance updates, etc.)
+        $auditSql = "SELECT
+                        al.*,
+                        u.email as user_email,
+                        u.name as user_name
+                    FROM audit_logs al
+                    LEFT JOIN users u ON al.user_id = u.id
+                    WHERE 1=1";
+
+        $auditParams = [];
+
+        // Filter by event type (action)
+        if ($eventType && in_array($eventType, ['payment_created', 'payment_confirmed', 'balance_updated', 'order_created', 'webhook_processed'])) {
+            $auditSql .= " AND al.action = :event_type";
+            $auditParams['event_type'] = $eventType;
+        }
+
+        // Filter by user
+        if ($userId) {
+            $auditSql .= " AND al.user_id = :user_id";
+            $auditParams['user_id'] = $userId;
+        }
+
+        // Filter by date range
+        if ($dateFrom) {
+            $auditSql .= " AND DATE(al.created_at) >= :date_from";
+            $auditParams['date_from'] = $dateFrom;
+        }
+
+        if ($dateTo) {
+            $auditSql .= " AND DATE(al.created_at) <= :date_to";
+            $auditParams['date_to'] = $dateTo;
+        }
+
+        // Get total count for pagination
+        $countSql  = "SELECT COUNT(*) as total FROM (" . $auditSql . ") as subquery";
+        $countStmt = $this->db->prepare($countSql);
+        $countStmt->execute($auditParams);
+        $totalAuditLogs = $countStmt->fetch()['total'];
+
+        // Add ordering and pagination
+        $auditSql .= " ORDER BY al.created_at DESC LIMIT :limit OFFSET :offset";
+        $auditParams['limit']  = $perPage;
+        $auditParams['offset'] = $offset;
+
+        // Execute audit logs query
+        $auditStmt = $this->db->prepare($auditSql);
+        foreach ($auditParams as $key => $value) {
+            if ($key === 'limit' || $key === 'offset' || $key === 'user_id') {
+                $auditStmt->bindValue(':' . $key, $value, PDO::PARAM_INT);
+            } else {
+                $auditStmt->bindValue(':' . $key, $value);
+            }
+        }
+        $auditStmt->execute();
+        $auditLogs = $auditStmt->fetchAll();
+
+        // Get webhook events
+        $webhookSql = "SELECT * FROM webhook_events WHERE 1=1";
+        $webhookParams = [];
+
+        // Filter by status (processed/unprocessed)
+        if ($status === 'processed') {
+            $webhookSql .= " AND processed = 1";
+        } elseif ($status === 'unprocessed') {
+            $webhookSql .= " AND processed = 0";
+        } elseif ($status === 'error') {
+            $webhookSql .= " AND error IS NOT NULL";
+        }
+
+        // Filter by date range
+        if ($dateFrom) {
+            $webhookSql .= " AND DATE(created_at) >= :date_from";
+            $webhookParams['date_from'] = $dateFrom;
+        }
+
+        if ($dateTo) {
+            $webhookSql .= " AND DATE(created_at) <= :date_to";
+            $webhookParams['date_to'] = $dateTo;
+        }
+
+        // Get total webhook count
+        $webhookCountSql  = "SELECT COUNT(*) as total FROM (" . $webhookSql . ") as subquery";
+        $webhookCountStmt = $this->db->prepare($webhookCountSql);
+        $webhookCountStmt->execute($webhookParams);
+        $totalWebhooks = $webhookCountStmt->fetch()['total'];
+
+        // Add ordering and pagination
+        $webhookSql .= " ORDER BY created_at DESC LIMIT :limit OFFSET :offset";
+        $webhookParams['limit']  = $perPage;
+        $webhookParams['offset'] = $offset;
+
+        // Execute webhook query
+        $webhookStmt = $this->db->prepare($webhookSql);
+        foreach ($webhookParams as $key => $value) {
+            if ($key === 'limit' || $key === 'offset') {
+                $webhookStmt->bindValue(':' . $key, $value, PDO::PARAM_INT);
+            } else {
+                $webhookStmt->bindValue(':' . $key, $value);
+            }
+        }
+        $webhookStmt->execute();
+        $webhooks = $webhookStmt->fetchAll();
+
+        // Calculate total pages
+        $totalPages = ceil(max($totalAuditLogs, $totalWebhooks) / $perPage);
+
+        // Get summary statistics
+        $stats = [
+            'total_audit_logs'      => $totalAuditLogs,
+            'total_webhooks'        => $totalWebhooks,
+            'processed_webhooks'    => 0,
+            'unprocessed_webhooks'  => 0,
+            'webhook_errors'        => 0,
+        ];
+
+        // Get webhook statistics
+        $webhookStatsSql = "SELECT
+                                SUM(CASE WHEN processed = 1 THEN 1 ELSE 0 END) as processed,
+                                SUM(CASE WHEN processed = 0 THEN 1 ELSE 0 END) as unprocessed,
+                                SUM(CASE WHEN error IS NOT NULL THEN 1 ELSE 0 END) as errors
+                            FROM webhook_events";
+        $webhookStatsStmt = $this->db->prepare($webhookStatsSql);
+        $webhookStatsStmt->execute();
+        $webhookStats = $webhookStatsStmt->fetch();
+
+        $stats['processed_webhooks']   = $webhookStats['processed'] ?? 0;
+        $stats['unprocessed_webhooks'] = $webhookStats['unprocessed'] ?? 0;
+        $stats['webhook_errors']       = $webhookStats['errors'] ?? 0;
+
+        // Get all users for filter dropdown
+        $usersSql  = "SELECT id, email, name FROM users ORDER BY email";
+        $usersStmt = $this->db->prepare($usersSql);
+        $usersStmt->execute();
+        $users = $usersStmt->fetchAll();
+
+        // Render view
+        include __DIR__ . '/../../views/admin/observability/index.php';
+    }
+
+    /**
      * Recursively delete a directory and its contents
      */
     private function deleteDirectory(string $dir): bool

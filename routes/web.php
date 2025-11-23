@@ -130,6 +130,12 @@ $router->get("/admin/payments", "AdminController@payments", [
     new RoleMiddleware("admin"),
 ]);
 
+// Admin observability dashboard
+$router->get("/admin/observability", "AdminController@observability", [
+    new AuthMiddleware(),
+    new RoleMiddleware("admin"),
+]);
+
 // Admin order management
 $router->get("/admin/orders", "AdminController@orders", [
     new AuthMiddleware(),
