@@ -219,6 +219,23 @@ class ReviewRepository
         $avgRating    = $this->calculateAverageRating($studentId);
         $totalReviews = $this->countByStudentId($studentId);
 
+        // Ensure student profile exists
+        $checkSql = "SELECT id FROM student_profiles WHERE user_id = :student_id";
+        $checkStmt = $this->db->prepare($checkSql);
+        $checkStmt->execute(['student_id' => $studentId]);
+        
+        if (!$checkStmt->fetch()) {
+            // Create profile if it doesn't exist
+            $createSql = "INSERT INTO student_profiles (user_id, average_rating, total_reviews, created_at, updated_at)
+                          VALUES (:student_id, :average_rating, :total_reviews, NOW(), NOW())";
+            $createStmt = $this->db->prepare($createSql);
+            return $createStmt->execute([
+                'student_id'     => $studentId,
+                'average_rating' => $avgRating,
+                'total_reviews'  => $totalReviews,
+            ]);
+        }
+
         $sql = "UPDATE student_profiles
                 SET average_rating = :average_rating,
                     total_reviews = :total_reviews,

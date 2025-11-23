@@ -147,6 +147,7 @@ class StudentProfileRepository
         $stmt = $this->db->prepare('
             SELECT
                 sp.*,
+                u.name,
                 u.email,
                 u.role,
                 u.status,
