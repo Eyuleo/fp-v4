@@ -159,10 +159,10 @@
                                         name="attachments[]"
                                         multiple
                                         class="hidden"
-                                        accept=".jpg,.jpeg,.png,.gif,.pdf,.doc,.docx,.txt,.zip"
+                                        accept=".jpg,.jpeg,.png,.gif,.pdf"
                                     >
                                 </label>
-                                <p class="text-xs text-gray-500 mt-1">Max 10MB per file</p>
+                                <p class="text-xs text-gray-500 mt-1">Images (JPG, PNG, GIF) and PDFs only • Max 10MB per file</p>
                                 <ul id="attachment-preview" class="mt-2 text-xs text-gray-600 space-y-1"></ul>
                             </div>
 

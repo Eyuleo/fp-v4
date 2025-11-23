@@ -90,6 +90,7 @@ class PaymentService
                     'order_id'   => $orderIdForPayment ?? '', // may be blank if order not yet created
                     'client_id'  => $order['client_id'],
                     'student_id' => $order['student_id'],
+                    'service_id' => $order['service_id'] ?? '',
                 ],
             ]);
 
@@ -97,22 +98,41 @@ class PaymentService
             $commissionAmount = $price * ($commissionRate / 100);
             $studentAmount    = $price - $commissionAmount;
 
+            // Store order creation data in metadata for webhook-based order creation
+            $metadata = [
+                'session_id'      => $session->id,
+                'commission_rate' => $commissionRate,
+                'created_at'      => date('Y-m-d H:i:s'),
+                'has_real_order'  => $orderIdForPayment !== null,
+            ];
+
+            // If no order exists yet, store the pending order data for webhook processing
+            if ($orderIdForPayment === null && isset($_SESSION['pending_order'])) {
+                $metadata['pending_order_data'] = $_SESSION['pending_order'];
+            }
+
             // Create payment record with pending status
             $paymentId = $this->repository->create([
                 'order_id'                   => $orderIdForPayment, // may be NULL and linked later
-                'stripe_payment_intent_id'   => null,               // Will be updated after success (no webhook path)
+                'stripe_payment_intent_id'   => null,               // Will be updated after webhook
                 'stripe_checkout_session_id' => $session->id,
                 'amount'                     => $price,
                 'commission_amount'          => $commissionAmount,
                 'student_amount'             => $studentAmount,
                 'status'                     => 'pending',
-                'metadata'                   => json_encode([
-                    'session_id'      => $session->id,
-                    'commission_rate' => $commissionRate,
-                    'created_at'      => date('Y-m-d H:i:s'),
-                    'has_real_order'  => $orderIdForPayment !== null,
-                ]),
+                'metadata'                   => json_encode($metadata),
             ]);
+
+            // Log payment creation for audit trail
+            error_log(json_encode([
+                'event'      => 'payment_created',
+                'payment_id' => $paymentId,
+                'session_id' => $session->id,
+                'amount'     => $price,
+                'client_id'  => $order['client_id'],
+                'student_id' => $order['student_id'],
+                'timestamp'  => date('Y-m-d H:i:s'),
+            ]));
 
             return [
                 'success'     => true,
@@ -301,24 +321,83 @@ class PaymentService
      */
     private function handleCheckoutSessionCompleted($session): void
     {
+        // Log webhook event for audit trail
+        error_log(json_encode([
+            'event'                => 'webhook_checkout_completed',
+            'session_id'           => $session->id,
+            'payment_intent'       => $session->payment_intent,
+            'payment_status'       => $session->payment_status,
+            'client_id'            => $session->metadata->client_id ?? null,
+            'student_id'           => $session->metadata->student_id ?? null,
+            'timestamp'            => date('Y-m-d H:i:s'),
+        ]));
+
         $rawOrderId = $session->metadata->order_id ?? null;
         $orderId    = (is_numeric($rawOrderId)) ? (int) $rawOrderId : null;
 
-        // Update payment record first
+        // Get payment record to check for pending order data
+        $payment = $this->repository->findByCheckoutSession($session->id);
+        
+        if (!$payment) {
+            error_log(json_encode([
+                'error'      => 'Payment record not found for checkout session',
+                'session_id' => $session->id,
+                'timestamp'  => date('Y-m-d H:i:s'),
+            ]));
+            throw new Exception('Payment record not found for session: ' . $session->id);
+        }
+
+        $metadata = json_decode($payment['metadata'], true) ?? [];
+
+        // Update payment record with webhook confirmation
+        $updatedMetadata = array_merge($metadata, [
+            'session_id'     => $session->id,
+            'payment_intent' => $session->payment_intent,
+            'completed_at'   => date('Y-m-d H:i:s'),
+            'webhook_confirmed' => true,
+        ]);
+
         $this->repository->updateByCheckoutSession($session->id, [
             'stripe_payment_intent_id' => $session->payment_intent,
             'status'                   => 'succeeded',
-            'metadata'                 => json_encode([
-                'session_id'     => $session->id,
-                'payment_intent' => $session->payment_intent,
-                'completed_at'   => date('Y-m-d H:i:s'),
-            ]),
+            'metadata'                 => json_encode($updatedMetadata),
         ]);
 
-        // If we have a real order id, update order status and notify
+        // Log payment confirmation
+        error_log(json_encode([
+            'event'          => 'payment_confirmed',
+            'payment_id'     => $payment['id'],
+            'session_id'     => $session->id,
+            'payment_intent' => $session->payment_intent,
+            'amount'         => $payment['amount'],
+            'timestamp'      => date('Y-m-d H:i:s'),
+        ]));
+
+        // If no order exists yet, create it from pending order data
+        if ($orderId === null && isset($metadata['pending_order_data'])) {
+            $orderId = $this->createOrderFromWebhook($session, $payment, $metadata['pending_order_data']);
+            
+            if ($orderId) {
+                // Link payment to the newly created order
+                $this->repository->update($payment['id'], [
+                    'order_id' => $orderId,
+                ]);
+                
+                // Log order creation
+                error_log(json_encode([
+                    'event'      => 'order_created_from_webhook',
+                    'order_id'   => $orderId,
+                    'payment_id' => $payment['id'],
+                    'session_id' => $session->id,
+                    'timestamp'  => date('Y-m-d H:i:s'),
+                ]));
+            }
+        }
+
+        // If we have an order id (either existing or newly created), update status and notify
         if ($orderId !== null) {
-            // Update order status to pending (payment confirmed, awaiting student acceptance)
-            $this->repository->updateOrderStatus($orderId, 'pending');
+            // Update order status to in_progress (payment confirmed, order active)
+            $this->repository->updateOrderStatus($orderId, 'in_progress');
 
             // Send notification to student about new order
             try {
@@ -334,6 +413,106 @@ class PaymentService
                 // Log error but don't fail the payment processing
                 error_log('Failed to send order placed notification: ' . $e->getMessage());
             }
+        }
+    }
+
+    /**
+     * Create order from webhook after payment confirmation
+     *
+     * @param object $session Stripe session object
+     * @param array $payment Payment record
+     * @param array $pendingOrderData Pending order data from session
+     * @return int|null Created order ID or null on failure
+     */
+    private function createOrderFromWebhook($session, array $payment, array $pendingOrderData): ?int
+    {
+        try {
+            $clientId  = (int) ($session->metadata->client_id ?? $pendingOrderData['client_id']);
+            $serviceId = (int) ($session->metadata->service_id ?? $pendingOrderData['service_id']);
+            
+            // Get service details
+            $service = $this->serviceRepository->findById($serviceId);
+            if (!$service) {
+                error_log(json_encode([
+                    'error'      => 'Service not found for webhook order creation',
+                    'service_id' => $serviceId,
+                    'session_id' => $session->id,
+                    'timestamp'  => date('Y-m-d H:i:s'),
+                ]));
+                return null;
+            }
+
+            // Calculate deadline
+            $deadline = (new DateTime())
+                ->add(new DateInterval('P' . $service['delivery_days'] . 'D'))
+                ->format('Y-m-d H:i:s');
+
+            // Get commission rate and max revisions
+            $commissionRate = $payment['commission_amount'] / $payment['amount'] * 100;
+            $maxRevisions   = $this->orderRepository->getMaxRevisions();
+
+            // Create order
+            $orderData = [
+                'client_id'         => $clientId,
+                'student_id'        => $service['student_id'],
+                'service_id'        => $serviceId,
+                'status'            => 'in_progress',
+                'requirements'      => trim($pendingOrderData['requirements'] ?? ''),
+                'requirement_files' => [],
+                'price'             => $payment['amount'],
+                'commission_rate'   => $commissionRate,
+                'deadline'          => $deadline,
+                'max_revisions'     => $maxRevisions,
+            ];
+
+            $orderId = $this->orderRepository->create($orderData);
+
+            // Handle file uploads if present
+            if (!empty($pendingOrderData['files']) && $orderId) {
+                require_once __DIR__ . '/FileService.php';
+                $fileService = new FileService();
+                
+                $uploadedFiles = [];
+                foreach ($pendingOrderData['files'] as $fileData) {
+                    if (isset($fileData['temp_path']) && file_exists($fileData['temp_path'])) {
+                        $result = $fileService->upload(
+                            [
+                                'name'     => $fileData['original_name'],
+                                'tmp_name' => $fileData['temp_path'],
+                                'size'     => $fileData['size'],
+                                'error'    => UPLOAD_ERR_OK,
+                                'type'     => mime_content_type($fileData['temp_path']),
+                            ],
+                            'orders/requirements',
+                            $orderId
+                        );
+                        
+                        if ($result['success']) {
+                            $uploadedFiles[] = $result['file']['path'];
+                        }
+                        
+                        // Clean up temp file
+                        @unlink($fileData['temp_path']);
+                    }
+                }
+                
+                if (!empty($uploadedFiles)) {
+                    $this->orderRepository->update($orderId, [
+                        'requirement_files' => $uploadedFiles,
+                    ]);
+                }
+            }
+
+            return $orderId;
+        } catch (Exception $e) {
+            error_log(json_encode([
+                'error'      => 'Failed to create order from webhook',
+                'session_id' => $session->id,
+                'payment_id' => $payment['id'],
+                'exception'  => $e->getMessage(),
+                'timestamp'  => date('Y-m-d H:i:s'),
+            ]));
+            return null;
         }
     }
 

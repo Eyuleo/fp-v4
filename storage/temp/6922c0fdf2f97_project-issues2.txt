@@ -1,0 +1,13 @@
+requested revision doesn't appear on the order page, after revision is requested the previous delivred work dissappears
+
+
+remove accept or cancel order from both client and student side because it's not in the project functional requirement. 
+once order is placed it's in progress and if the student fail to deliver on time they don't have an option to deliver the work and admin can refund the client, ofcourse in real work there should be a cron scheduled automation to handle this stuff
+order cancellation doesn't work, Failed to process refund. Please contact support. the orders are placed after succesfull payment
+recent orders on client dashboard doesn't work it says no orders yet even though orders do exist.
+add a name input box to the register page. and replace student email everywhere that's displayed on the ui
+remove review editing and add review moderation
+
+
+search query should match tags as well
+order cancellation displaying 403 the usr is an admin

@@ -132,6 +132,40 @@ class PaymentRepository
     }
 
     /**
+     * Find payment by checkout session ID
+     *
+     * @param string $sessionId
+     * @return array|null
+     */
+    public function findByCheckoutSession(string $sessionId): ?array
+    {
+        $sql  = "SELECT * FROM payments WHERE stripe_checkout_session_id = :session_id";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute(['session_id' => $sessionId]);
+
+        $payment = $stmt->fetch();
+
+        return $payment ?: null;
+    }
+
+    /**
+     * Find payment by ID
+     *
+     * @param int $id
+     * @return array|null
+     */
+    public function findById(int $id): ?array
+    {
+        $sql  = "SELECT * FROM payments WHERE id = :id";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute(['id' => $id]);
+
+        $payment = $stmt->fetch();
+
+        return $payment ?: null;
+    }
+
+    /**
      * Update payment by checkout session ID
      *
      * @param string $sessionId

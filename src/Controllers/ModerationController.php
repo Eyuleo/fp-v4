@@ -7,6 +7,7 @@ require_once __DIR__ . '/../Repositories/OrderRepository.php';
 require_once __DIR__ . '/../Services/ViolationService.php';
 require_once __DIR__ . '/../Services/NotificationService.php';
 require_once __DIR__ . '/../Services/MailService.php';
+require_once __DIR__ . '/../Services/FileService.php';
 require_once __DIR__ . '/../Repositories/NotificationRepository.php';
 require_once __DIR__ . '/../Auth.php';
 require_once __DIR__ . '/../Helpers.php';
@@ -25,6 +26,7 @@ class ModerationController
     private UserRepository $userRepository;
     private OrderRepository $orderRepository;
     private ViolationService $violationService;
+    private FileService $fileService;
 
     public function __construct()
     {
@@ -33,6 +35,7 @@ class ModerationController
         $this->violationRepository = new ViolationRepository($this->db);
         $this->userRepository = new UserRepository($this->db);
         $this->orderRepository = new OrderRepository($this->db);
+        $this->fileService = new FileService();
 
         // Initialize ViolationService
         $mailService = new MailService();
@@ -160,8 +163,9 @@ class ModerationController
         foreach ($messages as &$message) {
             $message['sender_violation_count'] = $this->violationRepository->countByUserId($message['sender_id']);
             
-            // Decode attachments JSON
+            // Decode attachments JSON and format for display
             $message['attachments'] = $message['attachments'] ? json_decode($message['attachments'], true) : [];
+            $message['formatted_attachments'] = $this->formatAttachments($message['attachments']);
         }
 
         // Get conversation thread if viewing a specific message
@@ -392,5 +396,95 @@ class ModerationController
 
         // Render view
         include __DIR__ . '/../../views/admin/users/violations.php';
+    }
+
+    /**
+     * Format attachments for display in moderation UI
+     * Only shows images (jpg, jpeg, png, gif) and PDFs
+     *
+     * @param array|null $attachments Array of attachment metadata
+     * @return string HTML formatted attachment display
+     */
+    private function formatAttachments(?array $attachments): string
+    {
+        // Handle empty attachments
+        if (empty($attachments)) {
+            return '<span class="text-gray-500 text-sm">No attachments</span>';
+        }
+
+        // Allowed file types for moderation UI
+        $allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'pdf'];
+        
+        $html = '<div class="space-y-2">';
+        $hasValidAttachments = false;
+
+        foreach ($attachments as $attachment) {
+            $extension = strtolower($attachment['extension'] ?? '');
+            
+            // Skip non-allowed file types
+            if (!in_array($extension, $allowedExtensions)) {
+                continue;
+            }
+
+            $hasValidAttachments = true;
+            $filename = htmlspecialchars($attachment['original_name'] ?? $attachment['filename'] ?? 'Unknown');
+            $path = $attachment['path'] ?? '';
+            $size = $attachment['size'] ?? 0;
+            $uploadedAt = $attachment['uploaded_at'] ?? null;
+            
+            // Format file size
+            $sizeFormatted = $this->formatFileSize($size);
+            
+            // Determine file type icon and label
+            $isImage = in_array($extension, ['jpg', 'jpeg', 'png', 'gif']);
+            $fileTypeLabel = $isImage ? 'Image' : 'PDF';
+            $iconClass = $isImage ? 'text-blue-600' : 'text-red-600';
+            $icon = $isImage ? '🖼️' : '📄';
+            
+            // Generate signed download URL (30 minute expiration)
+            $downloadUrl = htmlspecialchars($this->fileService->generateSignedUrl($path, 1800));
+            
+            $html .= '<div class="flex items-center gap-2 p-2 bg-gray-50 rounded border border-gray-200">';
+            $html .= '<span class="text-lg">' . $icon . '</span>';
+            $html .= '<div class="flex-1 min-w-0">';
+            $html .= '<div class="flex items-center gap-2">';
+            $html .= '<a href="' . $downloadUrl . '" target="_blank" class="text-blue-600 hover:text-blue-800 font-medium text-sm truncate">' . $filename . '</a>';
+            $html .= '<span class="text-xs px-2 py-0.5 rounded ' . $iconClass . ' bg-opacity-10 whitespace-nowrap">' . $fileTypeLabel . '</span>';
+            $html .= '</div>';
+            $html .= '<div class="text-xs text-gray-500">';
+            $html .= $sizeFormatted;
+            if ($uploadedAt) {
+                $html .= ' • ' . date('M d, Y g:i A', strtotime($uploadedAt));
+            }
+            $html .= '</div>';
+            $html .= '</div>';
+            $html .= '</div>';
+        }
+
+        $html .= '</div>';
+
+        // If no valid attachments were found after filtering
+        if (!$hasValidAttachments) {
+            return '<span class="text-gray-500 text-sm">No attachments (only images and PDFs are displayed)</span>';
+        }
+
+        return $html;
+    }
+
+    /**
+     * Format file size in human-readable format
+     *
+     * @param int $bytes File size in bytes
+     * @return string Formatted file size
+     */
+    private function formatFileSize(int $bytes): string
+    {
+        if ($bytes < 1024) {
+            return $bytes . ' B';
+        } elseif ($bytes < 1048576) {
+            return round($bytes / 1024, 2) . ' KB';
+        } else {
+            return round($bytes / 1048576, 2) . ' MB';
+        }
     }
 }

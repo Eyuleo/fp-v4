@@ -16,6 +16,9 @@ return [
     // Application URL
     'url'        => getenv('APP_URL') ?: 'http://localhost',
 
+    // Timezone configuration
+    'timezone'   => getenv('APP_TIMEZONE') ?: 'UTC',
+
     // Session configuration
     'session'    => [
         'lifetime' => (int) (getenv('SESSION_LIFETIME') ?: 7200),

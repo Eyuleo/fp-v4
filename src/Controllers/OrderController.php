@@ -143,6 +143,7 @@ class OrderController
             'price'           => $service['price'],
             'client_id'       => $user['id'],
             'student_id'      => $service['student_id'],
+            'service_id'      => $serviceId,
             'commission_rate' => $commissionRate,
         ];
 
@@ -188,56 +189,89 @@ class OrderController
             exit;
         }
 
-        $files = [];
-        foreach ($pendingOrder['files'] as $fileData) {
-            if (file_exists($fileData['temp_path'])) {
-                $files[] = [
-                    'name'     => $fileData['original_name'],
-                    'tmp_name' => $fileData['temp_path'],
-                    'size'     => $fileData['size'],
-                    'error'    => UPLOAD_ERR_OK,
-                    'type'     => mime_content_type($fileData['temp_path']),
-                ];
-            }
-        }
+        $paymentId       = $pendingOrder['payment_id'] ?? null;
+        $stripeSessionId = $pendingOrder['stripe_session_id'] ?? null;
 
-        $result = $this->orderService->createOrder(
-            $pendingOrder['client_id'],
-            $pendingOrder['service_id'],
-            [
-                'requirements' => $pendingOrder['requirements'],
-                'files'        => $files,
-            ]
-        );
-
-        if (! $result['success']) {
-            foreach ($pendingOrder['files'] as $fileData) {
-                if (file_exists($fileData['temp_path'])) {
-                    unlink($fileData['temp_path']);
-                }
-            }
+        if (!$paymentId || !$stripeSessionId) {
+            $_SESSION['error'] = 'Payment information missing';
             unset($_SESSION['pending_order']);
-            $_SESSION['error'] = 'Failed to create order: ' . implode(', ', array_values($result['errors']));
             header('Location: /services/search');
             exit;
         }
 
-        $newOrderId      = (int) $result['order_id'];
-        $paymentId       = $pendingOrder['payment_id'] ?? null;
-        $stripeSessionId = $pendingOrder['stripe_session_id'] ?? null;
-
-        if ($paymentId && $stripeSessionId) {
-            try {
-                $this->paymentService->finalizePaymentWithoutWebhook(
-                    (int) $paymentId,
-                    $stripeSessionId,
-                    $newOrderId
-                );
-            } catch (Exception $e) {
-                error_log('Failed to finalize payment without webhook: ' . $e->getMessage());
+        // Wait for webhook confirmation (poll payment status)
+        $maxAttempts = 10;
+        $attempt = 0;
+        $orderId = null;
+        
+        while ($attempt < $maxAttempts) {
+            $paymentRepository = new PaymentRepository($this->db);
+            $payment = $paymentRepository->findByCheckoutSession($stripeSessionId);
+            
+            if ($payment && $payment['status'] === 'succeeded' && $payment['order_id']) {
+                $orderId = $payment['order_id'];
+                break;
+            }
+            
+            $attempt++;
+            if ($attempt < $maxAttempts) {
+                sleep(1); // Wait 1 second before next check
             }
         }
 
+        // If webhook hasn't processed yet, show a waiting page or fallback to old behavior
+        if (!$orderId) {
+            // Fallback: create order immediately (old behavior for reliability)
+            $files = [];
+            foreach ($pendingOrder['files'] as $fileData) {
+                if (file_exists($fileData['temp_path'])) {
+                    $files[] = [
+                        'name'     => $fileData['original_name'],
+                        'tmp_name' => $fileData['temp_path'],
+                        'size'     => $fileData['size'],
+                        'error'    => UPLOAD_ERR_OK,
+                        'type'     => mime_content_type($fileData['temp_path']),
+                    ];
+                }
+            }
+
+            $result = $this->orderService->createOrder(
+                $pendingOrder['client_id'],
+                $pendingOrder['service_id'],
+                [
+                    'requirements' => $pendingOrder['requirements'],
+                    'files'        => $files,
+                ]
+            );
+
+            if (! $result['success']) {
+                foreach ($pendingOrder['files'] as $fileData) {
+                    if (file_exists($fileData['temp_path'])) {
+                        unlink($fileData['temp_path']);
+                    }
+                }
+                unset($_SESSION['pending_order']);
+                $_SESSION['error'] = 'Failed to create order: ' . implode(', ', array_values($result['errors']));
+                header('Location: /services/search');
+                exit;
+            }
+
+            $orderId = (int) $result['order_id'];
+
+            if ($paymentId && $stripeSessionId) {
+                try {
+                    $this->paymentService->finalizePaymentWithoutWebhook(
+                        (int) $paymentId,
+                        $stripeSessionId,
+                        $orderId
+                    );
+                } catch (Exception $e) {
+                    error_log('Failed to finalize payment without webhook: ' . $e->getMessage());
+                }
+            }
+        }
+
+        // Clean up temp files
         foreach ($pendingOrder['files'] as $fileData) {
             if (file_exists($fileData['temp_path'])) {
                 unlink($fileData['temp_path']);
@@ -245,8 +279,8 @@ class OrderController
         }
         unset($_SESSION['pending_order']);
 
-        $_SESSION['success'] = 'Order placed successfully! The student will be notified.';
-        header('Location: /orders/' . $newOrderId);
+        $_SESSION['success'] = 'Payment successful! Your order has been placed and the student will be notified.';
+        header('Location: /orders/' . $orderId);
         exit;
     }
 

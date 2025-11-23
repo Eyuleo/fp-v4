@@ -55,10 +55,13 @@ class FileService
         $size         = $file['size'] ?? 0;
         $extension    = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
 
-        if (! in_array($extension, self::ALLOWED_EXTENSIONS)) {
+        // Context-specific file type restrictions
+        $allowedExtensions = $this->getAllowedExtensionsForContext($context);
+        
+        if (! in_array($extension, $allowedExtensions)) {
             return [
                 'success' => false,
-                'error'   => 'File type not allowed. Allowed: ' . implode(', ', self::ALLOWED_EXTENSIONS),
+                'error'   => 'File type not allowed. Allowed: ' . implode(', ', $allowedExtensions),
             ];
         }
 
@@ -291,5 +294,22 @@ class FileService
         $protocol = (! empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
         $host     = $_SERVER['HTTP_HOST'] ?? 'localhost';
         return $protocol . '://' . $host;
+    }
+
+    /**
+     * Get allowed file extensions based on upload context
+     *
+     * @param string $context Upload context (messages, services, orders, etc.)
+     * @return array Allowed file extensions for this context
+     */
+    private function getAllowedExtensionsForContext(string $context): array
+    {
+        // Messages context: only images and PDFs
+        if ($context === 'messages') {
+            return ['jpg', 'jpeg', 'png', 'gif', 'pdf'];
+        }
+        
+        // Default: all allowed extensions
+        return self::ALLOWED_EXTENSIONS;
     }
 }

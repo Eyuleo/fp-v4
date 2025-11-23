@@ -115,7 +115,13 @@ class OrderService
 
         $commissionRate = $this->orderRepository->getCommissionRate();
         $maxRevisions   = $this->orderRepository->getMaxRevisions();
-        $deadline       = date('Y-m-d H:i:s', strtotime('+' . $service['delivery_days'] . ' days'));
+        
+        // Fix: Use DateTime with DateInterval for accurate deadline calculation
+        $config = require __DIR__ . '/../../config/app.php';
+        $timezone = new DateTimeZone($config['timezone']);
+        $deadline = (new DateTime('now', $timezone))
+            ->add(new DateInterval('P' . $service['delivery_days'] . 'D'))
+            ->format('Y-m-d H:i:s');
 
         $orderData = [
             'client_id'         => $clientId,

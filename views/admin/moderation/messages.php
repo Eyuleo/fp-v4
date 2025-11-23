@@ -152,9 +152,14 @@
                                     <?php endif; ?>
                                 </td>
                                 <td class="px-6 py-4 text-sm text-gray-900 max-w-md">
-                                    <div class="truncate">
+                                    <div class="truncate mb-2">
                                         <?php echo e(substr($message['content'], 0, 100)) ?><?php echo strlen($message['content']) > 100 ? '...' : '' ?>
                                     </div>
+                                    <?php if (!empty($message['attachments'])): ?>
+                                        <div class="text-xs text-gray-600">
+                                            📎 <?php echo count($message['attachments']) ?> attachment<?php echo count($message['attachments']) > 1 ? 's' : '' ?>
+                                        </div>
+                                    <?php endif; ?>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                     <?php echo date('M d, Y', strtotime($message['created_at'])) ?>
@@ -268,8 +273,58 @@
                             </div>
                             <p class="text-gray-700 whitespace-pre-wrap"><?php echo e($msg['content']) ?></p>
                             <?php if (!empty($msg['attachments'])): ?>
-                                <div class="mt-2">
-                                    <span class="text-xs text-gray-500">Attachments: <?php echo count($msg['attachments']) ?></span>
+                                <div class="mt-3">
+                                    <div class="text-xs font-medium text-gray-700 mb-2">Attachments:</div>
+                                    <?php
+                                        // Format attachments for this message
+                                        $allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'pdf'];
+                                        $hasValidAttachments = false;
+                                        
+                                        foreach ($msg['attachments'] as $attachment) {
+                                            $extension = strtolower($attachment['extension'] ?? '');
+                                            if (!in_array($extension, $allowedExtensions)) {
+                                                continue;
+                                            }
+                                            $hasValidAttachments = true;
+                                            
+                                            $filename = htmlspecialchars($attachment['original_name'] ?? $attachment['filename'] ?? 'Unknown');
+                                            $path = htmlspecialchars($attachment['path'] ?? '');
+                                            $size = $attachment['size'] ?? 0;
+                                            
+                                            // Format file size
+                                            if ($size < 1024) {
+                                                $sizeFormatted = $size . ' B';
+                                            } elseif ($size < 1048576) {
+                                                $sizeFormatted = round($size / 1024, 2) . ' KB';
+                                            } else {
+                                                $sizeFormatted = round($size / 1048576, 2) . ' MB';
+                                            }
+                                            
+                                            $isImage = in_array($extension, ['jpg', 'jpeg', 'png', 'gif']);
+                                            $fileTypeLabel = $isImage ? 'Image' : 'PDF';
+                                            $icon = $isImage ? '🖼️' : '📄';
+                                            
+                                            // Generate signed URL for download
+                                            $fileService = new FileService();
+                                            $downloadUrl = htmlspecialchars($fileService->generateSignedUrl($path, 1800));
+                                    ?>
+                                        <div class="flex items-center gap-2 p-2 bg-white rounded border border-gray-200 mb-2">
+                                            <span class="text-lg"><?php echo $icon ?></span>
+                                            <div class="flex-1 min-w-0">
+                                                <div class="flex items-center gap-2">
+                                                    <a href="<?php echo $downloadUrl ?>" target="_blank" class="text-blue-600 hover:text-blue-800 font-medium text-xs truncate"><?php echo $filename ?></a>
+                                                    <span class="text-xs px-2 py-0.5 rounded bg-gray-100 text-gray-700 whitespace-nowrap"><?php echo $fileTypeLabel ?></span>
+                                                </div>
+                                                <div class="text-xs text-gray-500"><?php echo $sizeFormatted ?></div>
+                                            </div>
+                                        </div>
+                                    <?php
+                                        }
+                                        
+                                        if (!$hasValidAttachments) {
+                                            echo '<span class="text-xs text-gray-500">No attachments (only images and PDFs are displayed)</span>';
+                                        }
+                                    ?>
                                 </div>
                             <?php endif; ?>
                             

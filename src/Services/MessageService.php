@@ -94,14 +94,32 @@ class MessageService
         // Normalize and validate content/attachments
         $content = trim($content ?? '');
 
-        // Allow messages that have either text or attachments (or both)
-        $hasAttachments = ! empty($attachments) &&
-            (
-            (isset($attachments['name']) && (! empty($attachments['name']) || (is_array($attachments['name']) && count(array_filter($attachments['name'])) > 0)))
-            || (is_array($attachments) && ! isset($attachments['name']) && count($attachments) > 0)
-        );
+        // Determine if there are actual attachments
+        // Handle both $_FILES structure and already-processed attachment arrays
+        $hasAttachments = false;
+        
+        if (!empty($attachments)) {
+            // Check if this is a $_FILES structure (has 'name' key)
+            if (isset($attachments['name'])) {
+                // Single or multiple file upload from $_FILES
+                if (is_array($attachments['name'])) {
+                    // Multiple files: check if any file was actually uploaded
+                    $hasAttachments = count(array_filter($attachments['name'], function($name) {
+                        return !empty($name);
+                    })) > 0;
+                } else {
+                    // Single file: check if name is not empty
+                    $hasAttachments = !empty($attachments['name']);
+                }
+            } else {
+                // Already-processed attachment array (from FileService)
+                // Check if it's a non-empty array
+                $hasAttachments = is_array($attachments) && count($attachments) > 0;
+            }
+        }
 
-        if ($content === '' && ! $hasAttachments) {
+        // Require either text content or attachments (or both)
+        if ($content === '' && !$hasAttachments) {
             return [
                 'success'    => false,
                 'message_id' => null,
