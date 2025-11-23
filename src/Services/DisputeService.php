@@ -297,7 +297,7 @@ class DisputeService
                 'status' => 'resolved',
                 'resolution' => $resolution,
                 'resolution_notes' => $resolutionNotes,
-                'refund_percentage' => $resolutionData['refund_percentage'] ?? null,
+                'refund_percentage' => !empty($resolutionData['refund_percentage']) ? $resolutionData['refund_percentage'] : null,
                 'admin_notes' => $resolutionData['admin_notes'] ?? null,
                 'resolved_by' => $adminId,
                 'resolved_at' => date('Y-m-d H:i:s'),
