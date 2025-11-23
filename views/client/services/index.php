@@ -13,6 +13,11 @@
                 <!-- Filter Panel -->
                 <div :class="{ 'hidden': !mobileOpen }" class="lg:block bg-white rounded-lg shadow-sm p-6">
                     <form method="GET" action="/services/search" id="filter-form">
+                        <!-- Preserve student_id filter if present -->
+                        <?php if (! empty($studentId)): ?>
+                            <input type="hidden" name="student_id" value="<?php echo e($studentId) ?>">
+                        <?php endif; ?>
+                        
                         <!-- Search Query -->
                         <div class="mb-6">
                             <label for="search" class="block text-sm font-medium text-gray-700 mb-2">Search</label>
@@ -72,7 +77,7 @@
                             <button type="submit" class="flex-1 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
                                 Apply Filters
                             </button>
-                            <a href="/services/search" class="flex-1 text-center bg-gray-200 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400">
+                            <a href="/services/search<?php echo ! empty($studentId) ? '?student_id=' . e($studentId) : '' ?>" class="flex-1 text-center bg-gray-200 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400">
                                 Clear
                             </a>
                         </div>
@@ -87,7 +92,9 @@
                     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                         <div>
                             <h1 class="text-2xl font-bold text-gray-900">
-                                <?php if (! empty($query)): ?>
+                                <?php if (! empty($studentName)): ?>
+                                    Services by <?php echo e($studentName) ?>
+                                <?php elseif (! empty($query)): ?>
                                     Search Results for "<?php echo e($query) ?>"
                                 <?php else: ?>
                                     Browse Services
@@ -238,6 +245,7 @@
         const url = new URL(window.location.href);
         url.searchParams.set('sort', sortValue);
         url.searchParams.set('page', '1'); // Reset to first page when sorting
+        // student_id is automatically preserved in the URL
         window.location.href = url.toString();
     }
 </script>

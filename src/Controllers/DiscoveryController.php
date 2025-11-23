@@ -31,11 +31,13 @@ class DiscoveryController
         $maxPrice    = isset($_GET['max_price']) && $_GET['max_price'] !== '' ? (float) $_GET['max_price'] : null;
         $maxDelivery = isset($_GET['max_delivery']) && $_GET['max_delivery'] !== '' ? (int) $_GET['max_delivery'] : null;
         $minRating   = isset($_GET['min_rating']) && $_GET['min_rating'] !== '' ? (float) $_GET['min_rating'] : null;
+        $studentId   = isset($_GET['student_id']) && $_GET['student_id'] !== '' ? (int) $_GET['student_id'] : null;
         $sortBy      = $_GET['sort'] ?? 'relevance';
         $page        = isset($_GET['page']) && $_GET['page'] > 0 ? (int) $_GET['page'] : 1;
 
-        // Build filters array
+        // Build filters array - student_id filter takes precedence
         $filters = [
+            'student_id'   => $studentId,
             'category_id'  => $categoryId,
             'min_price'    => $minPrice,
             'max_price'    => $maxPrice,
@@ -48,6 +50,12 @@ class DiscoveryController
 
         // Get all categories for filter sidebar
         $categories = $this->searchService->getAllCategories();
+
+        // Get student name if filtering by student
+        $studentName = null;
+        if ($studentId) {
+            $studentName = $result['student_name'] ?? null;
+        }
 
         // Render view
         view('client.services.index', [
@@ -63,6 +71,8 @@ class DiscoveryController
             'maxPrice'         => $maxPrice,
             'maxDelivery'      => $maxDelivery,
             'minRating'        => $minRating,
+            'studentId'        => $studentId,
+            'studentName'      => $studentName,
             'sortBy'           => $sortBy,
         ], 'base');
     }

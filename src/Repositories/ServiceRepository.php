@@ -273,6 +273,12 @@ class ServiceRepository
         $where    = ["s.status = 'active'"];
         $hasQuery = ! empty($query);
 
+        // Student ID filter - takes precedence, applied first
+        if (! empty($filters["student_id"])) {
+            $where[]              = "s.student_id = :student_id";
+            $params["student_id"] = $filters["student_id"];
+        }
+
         // Fulltext search on title and description + tags JSON fallback
         if ($hasQuery) {
             $where[] =
@@ -378,6 +384,12 @@ class ServiceRepository
     {
         $params = [];
         $where  = ["s.status = 'active'"];
+
+        // Student ID filter - takes precedence, applied first
+        if (! empty($filters["student_id"])) {
+            $where[]              = "s.student_id = :student_id";
+            $params["student_id"] = $filters["student_id"];
+        }
 
         // Fulltext search on title and description + tags JSON fallback
         if (! empty($query)) {

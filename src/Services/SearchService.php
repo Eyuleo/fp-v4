@@ -21,7 +21,7 @@ class SearchService
      * Search services with filters and pagination
      *
      * @param string $query Search query
-     * @param array $filters Filters (category_id, min_price, max_price, max_delivery, min_rating)
+     * @param array $filters Filters (student_id, category_id, min_price, max_price, max_delivery, min_rating)
      * @param string $sortBy Sort option (relevance, price_asc, price_desc, rating, delivery)
      * @param int $page Page number
      * @return array Search results with pagination info
@@ -34,13 +34,20 @@ class SearchService
         $services = $this->repository->search($query, $filters, $sortBy, self::PER_PAGE, $offset);
         $total    = $this->repository->countSearch($query, $filters);
 
-        return [
+        $result = [
             'services'    => $services,
             'total'       => $total,
             'page'        => $page,
             'per_page'    => self::PER_PAGE,
             'total_pages' => ceil($total / self::PER_PAGE),
         ];
+
+        // If filtering by student, get student name from first result
+        if (!empty($filters['student_id']) && !empty($services)) {
+            $result['student_name'] = $services[0]['student_name'] ?? null;
+        }
+
+        return $result;
     }
 
     /**
