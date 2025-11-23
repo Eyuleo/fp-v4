@@ -128,7 +128,7 @@
                     $deadlineTimestamp = strtotime($order['deadline']);
                     $currentTimestamp  = time();
                     $timeDiff          = $deadlineTimestamp - $currentTimestamp;
-                    if ($order['status'] !== 'completed'){
+                    if ($order['status'] !== 'completed' && $order['status'] !== 'cancelled') {
                         if ($timeDiff > 0) {
                             $days    = floor($timeDiff / 86400);
                             $hours   = floor(($timeDiff % 86400) / 3600);
@@ -449,7 +449,7 @@
                     </a>
                 <?php endif; ?>
 
-                <?php if (Auth::user()['role'] === 'admin'): ?>
+                <?php if (Auth::user()['role'] === 'admin' && $order['status'] !== 'cancelled' && $order['status'] !== 'completed'): ?>
                     <button onclick="showCancelModal()" class="bg-red-600 text-white px-6 py-2 rounded-md hover:bg-red-700">
                         Cancel Order
                     </button>
