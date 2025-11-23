@@ -523,16 +523,22 @@ class OrderRepository
      */
     public function addToStudentBalance(int $studentId, float $amount): bool
     {
-        $sql = "UPDATE student_profiles
-                SET available_balance = available_balance + :amount,
-                    updated_at = NOW()
-                WHERE user_id = :student_id";
+        // Use UPSERT with distinct parameter names to avoid PDO errors
+        $sql = "INSERT INTO student_profiles (
+                    user_id, available_balance, skills, portfolio_files, created_at, updated_at
+                ) VALUES (
+                    :student_id, :amount_insert, '[]', '[]', NOW(), NOW()
+                )
+                ON DUPLICATE KEY UPDATE
+                    available_balance = available_balance + :amount_update,
+                    updated_at = NOW()";
 
         $stmt = $this->db->prepare($sql);
 
         return $stmt->execute([
-            'amount'     => $amount,
-            'student_id' => $studentId,
+            'student_id'    => $studentId,
+            'amount_insert' => $amount,
+            'amount_update' => $amount,
         ]);
     }
 
