@@ -12,6 +12,7 @@ require_once __DIR__ . '/EmailService.php';
 require_once __DIR__ . '/FileService.php';
 require_once __DIR__ . '/NotificationService.php';
 require_once __DIR__ . '/MailService.php';
+require_once __DIR__ . '/../Repositories/DisputeRepository.php';
 
 class OrderService
 {
@@ -24,6 +25,7 @@ class OrderService
     private FileService $fileService;
     private NotificationService $notificationService;
     private MessageRepository $messageRepository;
+    private DisputeRepository $disputeRepository;
     private PDO $db;
 
     public function __construct(OrderRepository $orderRepository, ServiceRepository $serviceRepository, PaymentService $paymentService = null)
@@ -41,6 +43,7 @@ class OrderService
         $mailService               = new MailService();
         $notificationRepository    = new NotificationRepository($db);
         $this->notificationService = new NotificationService($mailService, $notificationRepository);
+        $this->disputeRepository   = new DisputeRepository($db);
 
         if ($paymentService === null) {
             $paymentRepository    = new PaymentRepository($db);
@@ -264,6 +267,10 @@ class OrderService
             return ['success' => false, 'errors' => ['deadline' => 'This order is past its deadline. Please contact an administrator.']];
         }
 
+        if ($this->disputeRepository->hasOpenDispute($orderId)) {
+            return ['success' => false, 'errors' => ['dispute' => 'Order is currently in dispute. Actions are paused until resolved.']];
+        }
+
         $deliveryMessage = trim($data['delivery_message'] ?? '');
         if ($deliveryMessage === '') {
             return ['success' => false, 'errors' => ['delivery_message' => 'Delivery message is required']];
@@ -367,6 +374,10 @@ class OrderService
         }
         if ($order['status'] !== 'delivered') {
             return ['success' => false, 'errors' => ['status' => 'Order cannot be completed in its current status']];
+        }
+
+        if ($this->disputeRepository->hasOpenDispute($orderId)) {
+            return ['success' => false, 'errors' => ['dispute' => 'Order is currently in dispute. Actions are paused until resolved.']];
         }
 
         $this->orderRepository->beginTransaction();
@@ -499,6 +510,10 @@ class OrderService
         $maxRevisions = $order['max_revisions'] ?? 3;
         if (($order['revision_count'] ?? 0) >= $maxRevisions) {
             return ['success' => false, 'errors' => ['revision_limit' => 'Maximum number of revisions reached. Please open a dispute if needed.']];
+        }
+
+        if ($this->disputeRepository->hasOpenDispute($orderId)) {
+            return ['success' => false, 'errors' => ['dispute' => 'Order is currently in dispute. Actions are paused until resolved.']];
         }
 
         $reason = trim($reason);
