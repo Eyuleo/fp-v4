@@ -250,10 +250,10 @@ class AdminController
 
         // Calculate overall statistics (not just current page)
         $statsSql = "SELECT
-                        SUM(CASE WHEN p.status = 'succeeded' THEN p.amount ELSE 0 END) as total_amount,
-                        SUM(CASE WHEN p.status = 'succeeded' THEN p.commission_amount ELSE 0 END) as total_commission,
+                        SUM(CASE WHEN p.status IN ('succeeded', 'partially_refunded') THEN p.amount ELSE 0 END) as total_amount,
+                        SUM(CASE WHEN p.status IN ('succeeded', 'partially_refunded') THEN p.commission_amount ELSE 0 END) as total_commission,
                         SUM(p.refund_amount) as total_refunded,
-                        COUNT(CASE WHEN p.status = 'succeeded' THEN 1 END) as succeeded_count
+                        COUNT(CASE WHEN p.status IN ('succeeded', 'partially_refunded') THEN 1 END) as succeeded_count
                     FROM payments p
                     INNER JOIN orders o ON p.order_id = o.id
                     INNER JOIN services s ON o.service_id = s.id

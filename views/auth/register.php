@@ -129,7 +129,7 @@
                     type="radio"
                     name="role"
                     value="student"
-                    <?php echo old('role') === 'student' ? 'checked' : '' ?>
+                    <?php echo (old('role') === 'student' || (!old('role') && isset($_GET['role']) && $_GET['role'] === 'student')) ? 'checked' : '' ?>
                     class="mr-3"
                     required
                 >
@@ -143,7 +143,7 @@
                     type="radio"
                     name="role"
                     value="client"
-                    <?php echo old('role') === 'client' ? 'checked' : '' ?>
+                    <?php echo (old('role') === 'client' || (!old('role') && isset($_GET['role']) && $_GET['role'] === 'client')) ? 'checked' : '' ?>
                     class="mr-3"
                     required
                 >
