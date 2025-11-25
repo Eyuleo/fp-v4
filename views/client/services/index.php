@@ -75,7 +75,7 @@
                         <!-- Filter Buttons -->
                         <div class="flex gap-2">
                             <button type="submit" class="flex-1 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                Apply Filters
+                                Search
                             </button>
                             <a href="/services/search<?php echo ! empty($studentId) ? '?student_id=' . e($studentId) : '' ?>" class="flex-1 text-center bg-gray-200 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400">
                                 Clear
@@ -130,8 +130,9 @@
                 <?php else: ?>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <?php foreach ($services as $service): ?>
-                            <div class="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow overflow-hidden">
+                            <div class="bg-white rounded-lg shadow-sm ring-1 ring-gray-200 hover:shadow-md hover:ring-gray-300 transition-shadow overflow-hidden">
                                 <!-- Service Card -->
+                                <a href="/services/<?php echo e($service['id']) ?>">
                                 <div class="p-6">
                                     <!-- Student Info -->
                                     <div class="flex items-center mb-4">
@@ -151,10 +152,8 @@
                                     </div>
 
                                     <!-- Service Title & Description -->
-                                    <h3 class="text-lg font-semibold text-gray-900 mb-2">
-                                        <a href="/services/<?php echo e($service['id']) ?>" class="hover:text-blue-600">
+                                    <h3 class="text-lg font-semibold text-gray-900 mb-2">  
                                             <?php echo e($service['title']) ?>
-                                        </a>
                                     </h3>
                                     <p class="text-gray-600 text-sm mb-4 line-clamp-3">
                                         <?php echo e(substr($service['description'], 0, 150)) ?>...
@@ -192,6 +191,7 @@
                                         </div>
                                     </div>
                                 </div>
+                                </a>
                             </div>
                         <?php endforeach; ?>
                     </div>
