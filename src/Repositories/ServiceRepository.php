@@ -240,6 +240,24 @@ class ServiceRepository
     }
 
     /**
+     * Check if service has any orders (active or inactive)
+     *
+     * @param int $serviceId
+     * @return bool
+     */
+    public function hasOrders(int $serviceId): bool
+    {
+        $sql = "SELECT COUNT(*) as count FROM orders WHERE service_id = :service_id";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute(["service_id" => $serviceId]);
+
+        $result = $stmt->fetch();
+
+        return $result["count"] > 0;
+    }
+
+    /**
      * Get all categories
      *
      * @return array

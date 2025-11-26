@@ -782,9 +782,26 @@ class AdminController
             exit;
         }
 
-        // Check if service has active orders
+        // Check if service has active orders (still prevents deletion if active)
         if ($this->serviceRepository->hasActiveOrders($id)) {
             $_SESSION['error'] = 'Cannot delete service with active orders';
+            header('Location: /admin/services/' . $id);
+            exit;
+        }
+
+        // Check if service has ANY orders (past or cancelled)
+        if ($this->serviceRepository->hasOrders($id)) {
+            // Soft delete (deactivate) instead
+            $this->serviceRepository->update($id, ['status' => 'inactive']);
+            
+            // Log audit entry
+            $this->logAudit($adminUser['id'], 'service_deactivated_batch', 'service', $id, [
+                'old_status' => $service['status'],
+                'new_status' => 'inactive',
+                'reason'     => 'Service has associated orders and cannot be permanently deleted. Deactivated instead.',
+            ]);
+
+            $_SESSION['success'] = 'Service has associated orders and cannot be permanently deleted. It has been deactivated instead.';
             header('Location: /admin/services/' . $id);
             exit;
         }

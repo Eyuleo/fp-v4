@@ -123,7 +123,7 @@
         <label class="block text-sm font-medium text-gray-700 mb-2">
             I want to
         </label>
-        <div class="space-y-2">
+        <div class="space-y-2 md:flex md:items-center md:space-x-4 md:space-y-0">
             <label class="flex items-center p-3 border border-gray-300 rounded-md cursor-pointer hover:bg-gray-50                                                                                                                                                                                                                                                                                                                                                                                                                                                                     <?php echo old('role') === 'student' ? 'bg-blue-50 border-blue-500' : '' ?>">
                 <input
                     type="radio"

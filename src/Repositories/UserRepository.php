@@ -82,10 +82,14 @@ class UserRepository
     {
         $stmt = $this->db->prepare('
             SELECT * FROM users
-            WHERE reset_token = ?
-            AND reset_token_expires_at > NOW()
+            WHERE reset_token = :token
+            AND reset_token_expires_at > :now
         ');
-        $stmt->execute([$token]);
+        
+        $stmt->execute([
+            'token' => $token,
+            'now'   => date('Y-m-d H:i:s')
+        ]);
 
         $user = $stmt->fetch();
 
