@@ -73,35 +73,180 @@
 
                 <!-- Portfolio Section -->
                 <?php if (! empty($profile['portfolio_files']) && is_array($profile['portfolio_files'])): ?>
-                    <div class="bg-white rounded-lg shadow-md p-6">
+                    <script>
+                        document.addEventListener('alpine:init', () => {
+                            Alpine.data('portfolioGallery', (portfolioFiles, userId) => ({
+                                lightboxOpen: false,
+                                currentIndex: 0,
+                                portfolioFiles: portfolioFiles,
+                                userId: userId,
+                                
+                                get imageFiles() {
+                                    return this.portfolioFiles.filter(file => {
+                                        const ext = file.original_name.split('.').pop().toLowerCase();
+                                        return ['jpg', 'jpeg', 'png', 'gif'].includes(ext);
+                                    });
+                                },
+                                
+                                get currentImage() {
+                                    return this.imageFiles[this.currentIndex] || {};
+                                },
+                                
+                                openLightbox(fileIndex) {
+                                    let imageIndex = 0;
+                                    for (let i = 0; i < this.portfolioFiles.length; i++) {
+                                        const ext = this.portfolioFiles[i].original_name.split('.').pop().toLowerCase();
+                                        if (['jpg', 'jpeg', 'png', 'gif'].includes(ext)) {
+                                            if (i === fileIndex) {
+                                                this.currentIndex = imageIndex;
+                                                break;
+                                            }
+                                            imageIndex++;
+                                        }
+                                    }
+                                    this.lightboxOpen = true;
+                                    document.body.style.overflow = 'hidden';
+                                },
+                                
+                                closeLightbox() {
+                                    this.lightboxOpen = false;
+                                    document.body.style.overflow = 'auto';
+                                },
+                                
+                                nextImage() {
+                                    this.currentIndex = (this.currentIndex + 1) % this.imageFiles.length;
+                                },
+                                
+                                previousImage() {
+                                    this.currentIndex = (this.currentIndex - 1 + this.imageFiles.length) % this.imageFiles.length;
+                                }
+                            }));
+                        });
+                    </script>
+                    
+                    <div class="bg-white rounded-lg shadow-md p-6" 
+                         x-data="portfolioGallery(<?php echo htmlspecialchars(json_encode($profile['portfolio_files']), ENT_QUOTES, 'UTF-8') ?>, <?php echo e($profile['user_id']) ?>)"
+                         @keydown.escape.window="lightboxOpen && closeLightbox()"
+                         @keydown.arrow-left.window="lightboxOpen && previousImage()"
+                         @keydown.arrow-right.window="lightboxOpen && nextImage()">
                         <h2 class="text-xl font-bold text-gray-900 mb-4">Portfolio</h2>
                         <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
-                            <?php foreach ($profile['portfolio_files'] as $file): ?>
-                                <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
-                                    <div class="flex items-center justify-center h-32 bg-gray-100 rounded-md mb-2">
-                                        <?php
-                                            $extension = strtolower(pathinfo($file['original_name'] ?? '', PATHINFO_EXTENSION));
-                                            if (in_array($extension, ['jpg', 'jpeg', 'png', 'gif'])):
-                                        ?>
-                                            <img
-                                                src="/storage/file?path=profiles/<?php echo e($profile['user_id']) ?>/<?php echo e($file['filename'] ?? '') ?>"
-                                                alt="<?php echo e($file['original_name'] ?? '') ?>"
-                                                class="max-h-full max-w-full object-contain"
-                                            >
-                                        <?php else: ?>
-                                            <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
-                                            </svg>
-                                        <?php endif; ?>
+                            <?php 
+                                $imageFiles = [];
+                                $pdfFiles = [];
+                                
+                                // Separate images and PDFs
+                                foreach ($profile['portfolio_files'] as $index => $file):
+                                    $extension = strtolower(pathinfo($file['original_name'] ?? '', PATHINFO_EXTENSION));
+                                    if (in_array($extension, ['jpg', 'jpeg', 'png', 'gif'])):
+                                        $imageFiles[] = ['index' => $index, 'file' => $file];
+                                    elseif ($extension === 'pdf'):
+                                        $pdfFiles[] = ['index' => $index, 'file' => $file];
+                                    endif;
+                                endforeach;
+                                
+                                // Display images first
+                                foreach ($imageFiles as $item):
+                                    $file = $item['file'];
+                                    $index = $item['index'];
+                            ?>
+                                <div class="border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
+                                     @click="openLightbox(<?php echo e($index) ?>)">
+                                    <div class="aspect-square bg-gray-100 flex items-center justify-center overflow-hidden">
+                                        <img
+                                            src="/storage/file?path=profiles/<?php echo e($profile['user_id']) ?>/<?php echo e($file['filename'] ?? '') ?>"
+                                            alt="<?php echo e($file['original_name'] ?? '') ?>"
+                                            class="w-full h-full object-cover hover:scale-105 transition-transform duration-200"
+                                        >
                                     </div>
-                                    <p class="text-sm text-gray-700 truncate" title="<?php echo e($file['original_name'] ?? '') ?>">
-                                        <?php echo e($file['original_name'] ?? 'File') ?>
-                                    </p>
-                                    <p class="text-xs text-gray-500">
-                                        <?php echo e(safe_number_format(($file['size'] ?? 0) / 1024, 2)) ?> KB
-                                    </p>
+                                    <div class="p-3 bg-white">
+                                        <p class="text-sm text-gray-700 truncate" title="<?php echo e($file['original_name'] ?? '') ?>">
+                                            <?php echo e($file['original_name'] ?? 'Image') ?>
+                                        </p>
+                                        <p class="text-xs text-gray-500">
+                                            <?php echo e(safe_number_format(($file['size'] ?? 0) / 1024, 2)) ?> KB
+                                        </p>
+                                    </div>
                                 </div>
                             <?php endforeach; ?>
+                            
+                            <?php 
+                                // Display PDFs
+                                foreach ($pdfFiles as $item):
+                                    $file = $item['file'];
+                                    $index = $item['index'];
+                                    
+                                    // Generate signed URL for PDF download
+                                    require_once __DIR__ . '/../../src/Services/FileService.php';
+                                    $fileService = new FileService();
+                                    $pdfPath = 'profiles/' . $profile['user_id'] . '/' . ($file['filename'] ?? '');
+                                    $downloadUrl = $fileService->generateSignedUrl($pdfPath, 3600); // 1 hour expiry
+                            ?>
+                                <div class="border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow">
+                                    <div class="aspect-square bg-gray-100 flex items-center justify-center">
+                                        <svg class="w-16 h-16 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"/>
+                                        </svg>
+                                    </div>
+                                    <div class="p-3 bg-white">
+                                        <p class="text-sm text-gray-700 truncate mb-2" title="<?php echo e($file['original_name'] ?? '') ?>">
+                                            <?php echo e($file['original_name'] ?? 'PDF Document') ?>
+                                        </p>
+                                        <p class="text-xs text-gray-500 mb-3">
+                                            <?php echo e(safe_number_format(($file['size'] ?? 0) / 1024, 2)) ?> KB
+                                        </p>
+                                        <a href="<?php echo e($downloadUrl) ?>" 
+                                           class="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition-colors w-full justify-center"
+                                           download>
+                                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                            </svg>
+                                            Download
+                                        </a>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                        
+                        <!-- Lightbox Modal -->
+                        <div x-show="lightboxOpen" 
+                             x-cloak
+                             class="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center p-4"
+                             style="z-index: 9999;"
+                             @click="closeLightbox()">
+                            <!-- Close Button -->
+                            <button @click="closeLightbox()" 
+                                    class="absolute top-4 right-4 text-white hover:text-gray-300 z-10">
+                                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                </svg>
+                            </button>
+                            
+                            <!-- Previous Button -->
+                            <button @click.stop="previousImage()" 
+                                    class="absolute left-4 text-white hover:text-gray-300 z-10"
+                                    x-show="imageFiles.length > 1">
+                                <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                                </svg>
+                            </button>
+                            
+                            <!-- Next Button -->
+                            <button @click.stop="nextImage()" 
+                                    class="absolute right-4 text-white hover:text-gray-300 z-10"
+                                    x-show="imageFiles.length > 1">
+                                <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                                </svg>
+                            </button>
+                            
+                            <!-- Image Container -->
+                            <div class="max-w-6xl max-h-full flex flex-col items-center" @click.stop>
+                                <img :src="`/storage/file?path=profiles/${userId}/${currentImage.filename}`" 
+                                     :alt="currentImage.original_name"
+                                     class="max-w-full max-h-[80vh] object-contain">
+                                <p class="text-white mt-4 text-center" x-text="currentImage.original_name"></p>
+                            </div>
                         </div>
                     </div>
                 <?php endif; ?>

@@ -309,6 +309,11 @@ class FileService
             return ['jpg', 'jpeg', 'png', 'gif', 'pdf'];
         }
         
+        // Profiles context (portfolio): only images and PDFs
+        if ($context === 'profiles') {
+            return ['jpg', 'jpeg', 'png', 'gif', 'pdf'];
+        }
+        
         // Default: all allowed extensions
         return self::ALLOWED_EXTENSIONS;
     }
