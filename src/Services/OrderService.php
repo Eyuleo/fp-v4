@@ -124,6 +124,7 @@ class OrderService
         $timezone = new DateTimeZone($config['timezone']);
         $deadline = (new DateTime('now', $timezone))
             ->add(new DateInterval('P' . $service['delivery_days'] . 'D'))
+            ->setTimezone(new DateTimeZone('UTC'))
             ->format('Y-m-d H:i:s');
 
         $orderData = [
