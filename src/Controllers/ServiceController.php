@@ -243,7 +243,7 @@ class ServiceController
 
         if ($result['success']) {
             flash('success', 'Service updated successfully!');
-            redirect('/student/services');
+            redirect('/student/services/' . $serviceId);
         } else {
             flash('error', 'Failed to update service. Please check the errors below.');
             flash_input($data);
