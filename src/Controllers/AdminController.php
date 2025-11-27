@@ -288,6 +288,317 @@ class AdminController
     }
 
     /**
+     * Export payments as PDF
+     *
+     * GET /admin/payments/export-pdf
+     */
+    public function exportPaymentsPDF(): void
+    {
+        // Check authentication
+        if (! Auth::check()) {
+            $_SESSION['error'] = 'Please login to access this page';
+            header('Location: /login');
+            exit;
+        }
+
+        // Check user is an admin
+        $user = Auth::user();
+        if ($user['role'] !== 'admin') {
+            http_response_code(403);
+            include __DIR__ . '/../../views/errors/403.php';
+            exit;
+        }
+
+        // Get filter parameters (same as in payments() method)
+        $status   = $_GET['status'] ?? null;
+        $dateFrom = $_GET['date_from'] ?? null;
+        $dateTo   = $_GET['date_to'] ?? null;
+
+        // Build query - get ALL payments matching filters (no pagination)
+        $sql = "SELECT
+                    p.*,
+                    o.status as order_status,
+                    s.title as service_title,
+                    client.email as client_email,
+                    student.email as student_email
+                FROM payments p
+                INNER JOIN orders o ON p.order_id = o.id
+                INNER JOIN services s ON o.service_id = s.id
+                INNER JOIN users client ON o.client_id = client.id
+                INNER JOIN users student ON o.student_id = student.id
+                WHERE 1=1";
+
+        $params = [];
+
+        // Apply status filter
+        if ($status && in_array($status, ['pending', 'succeeded', 'refunded', 'partially_refunded', 'failed'])) {
+            $sql .= " AND p.status = :status";
+            $params['status'] = $status;
+        }
+
+        // Apply date range filter
+        if ($dateFrom) {
+            $sql .= " AND DATE(p.created_at) >= :date_from";
+            $params['date_from'] = $dateFrom;
+        }
+
+        if ($dateTo) {
+            $sql .= " AND DATE(p.created_at) <= :date_to";
+            $params['date_to'] = $dateTo;
+        }
+
+        // Add ordering
+        $sql .= " ORDER BY p.created_at DESC";
+
+        // Execute query
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+        $payments = $stmt->fetchAll();
+
+        // Calculate statistics
+        $statsSql = "SELECT
+                        SUM(CASE WHEN p.status IN ('succeeded', 'partially_refunded') THEN p.amount ELSE 0 END) as total_amount,
+                        SUM(CASE WHEN p.status IN ('succeeded', 'partially_refunded') THEN p.commission_amount ELSE 0 END) as total_commission,
+                        SUM(p.refund_amount) as total_refunded,
+                        COUNT(CASE WHEN p.status IN ('succeeded', 'partially_refunded') THEN 1 END) as succeeded_count
+                    FROM payments p
+                    INNER JOIN orders o ON p.order_id = o.id
+                    WHERE 1=1";
+
+        $statsParams = [];
+
+        if ($status && in_array($status, ['pending', 'succeeded', 'refunded', 'partially_refunded', 'failed'])) {
+            $statsSql .= " AND p.status = :status";
+            $statsParams['status'] = $status;
+        }
+
+        if ($dateFrom) {
+            $statsSql .= " AND DATE(p.created_at) >= :date_from";
+            $statsParams['date_from'] = $dateFrom;
+        }
+
+        if ($dateTo) {
+            $statsSql .= " AND DATE(p.created_at) <= :date_to";
+            $statsParams['date_to'] = $dateTo;
+        }
+
+        $statsStmt = $this->db->prepare($statsSql);
+        $statsStmt->execute($statsParams);
+        $stats = $statsStmt->fetch();
+
+        // Load Dompdf
+        require_once __DIR__ . '/../../vendor/autoload.php';
+        
+        $dompdf = new \Dompdf\Dompdf();
+        
+        // Build HTML for PDF
+        $html = $this->generatePaymentsPDFHTML($payments, $stats, $status, $dateFrom, $dateTo);
+        
+        // Load HTML to Dompdf
+        $dompdf->loadHtml($html);
+        
+        // Set paper size and orientation
+        $dompdf->setPaper('A4', 'landscape');
+        
+        // Render PDF
+        $dompdf->render();
+        
+        // Generate filename with date range if applicable
+        $filename = 'payments_report';
+        if ($dateFrom || $dateTo) {
+            $filename .= '_' . ($dateFrom ?: 'start') . '_to_' . ($dateTo ?: 'end');
+        }
+        $filename .= '_' . date('Y-m-d') . '.pdf';
+        
+        // Output PDF to browser
+        $dompdf->stream($filename, ['Attachment' => true]);
+        exit;
+    }
+
+    /**
+     * Generate HTML for payments PDF export
+     */
+    private function generatePaymentsPDFHTML(array $payments, array $stats, ?string $status, ?string $dateFrom, ?string $dateTo): string
+    {
+        $html = '<!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <title>Payment History Report</title>
+            <style>
+                body {
+                    font-family: Arial, sans-serif;
+                    font-size: 10px;
+                    margin: 20px;
+                }
+                h1 {
+                    font-size: 18px;
+                    margin-bottom: 5px;
+                    color: #1f2937;
+                }
+                .header-info {
+                    font-size: 9px;
+                    color: #6b7280;
+                    margin-bottom: 15px;
+                }
+                .stats {
+                    display: table;
+                    width: 100%;
+                    margin-bottom: 15px;
+                    border-collapse: collapse;
+                }
+                .stat-box {
+                    display: table-cell;
+                    width: 25%;
+                    padding: 8px;
+                    background-color: #f3f4f6;
+                    border: 1px solid #d1d5db;
+                    text-align: center;
+                }
+                .stat-label {
+                    font-size: 8px;
+                    color: #6b7280;
+                    margin-bottom: 3px;
+                }
+                .stat-value {
+                    font-size: 14px;
+                    font-weight: bold;
+                    color: #1f2937;
+                }
+                table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    margin-top: 10px;
+                }
+                th {
+                    background-color: #f9fafb;
+                    border: 1px solid #d1d5db;
+                    padding: 6px 4px;
+                    text-align: left;
+                    font-size: 8px;
+                    font-weight: bold;
+                    color: #374151;
+                }
+                td {
+                    border: 1px solid #e5e7eb;
+                    padding: 5px 4px;
+                    font-size: 8px;
+                    color: #1f2937;
+                }
+                tr:nth-child(even) {
+                    background-color: #f9fafb;
+                }
+                .status-badge {
+                    padding: 2px 6px;
+                    border-radius: 3px;
+                    font-size: 7px;
+                    font-weight: bold;
+                    display: inline-block;
+                }
+                .status-pending { background-color: #fef3c7; color: #92400e; }
+                .status-succeeded  { background-color: #d1fae5; color: #065f46; }
+                .status-refunded { background-color: #fee2e2; color: #991b1b; }
+                .status-partially_refunded { background-color: #fed7aa; color: #9a3412; }
+                .status-failed { background-color: #f3f4f6; color: #374151; }
+                .footer {
+                    margin-top: 20px;
+                    font-size: 8px;
+                    color: #9ca3af;
+                    text-align: center;
+                }
+            </style>
+        </head>
+        <body>';
+        
+        $html .= '<h1>Payment History Report</h1>';
+        $html .= '<div class="header-info">';
+        $html .= 'Generated on: ' . date('F d, Y H:i:s');
+        
+        // Add filter information
+        $filters = [];
+        if ($status) {
+            $filters[] = 'Status: ' . ucfirst(str_replace('_', ' ', $status));
+        }
+        if ($dateFrom) {
+            $filters[] = 'From: ' . date('M d, Y', strtotime($dateFrom));
+        }
+        if ($dateTo) {
+            $filters[] = 'To: ' . date('M d, Y', strtotime($dateTo));
+        }
+        if (!empty($filters)) {
+            $html .= ' | Filters: ' . implode(', ', $filters);
+        }
+        
+        $html .= '</div>';
+        
+        // Statistics
+        $html .= '<div class="stats">';
+        $html .= '<div class="stat-box">';
+        $html .= '<div class="stat-label">Total Volume</div>';
+        $html .= '<div class="stat-value">$' . number_format($stats['total_amount'] ?? 0, 2) . '</div>';
+        $html .= '</div>';
+        $html .= '<div class="stat-box">';
+        $html .= '<div class="stat-label">Total Commission</div>';
+        $html .= '<div class="stat-value">$' . number_format($stats['total_commission'] ?? 0, 2) . '</div>';
+        $html .= '</div>';
+        $html .= '<div class="stat-box">';
+        $html .= '<div class="stat-label">Total Refunded</div>';
+        $html .= '<div class="stat-value">$' . number_format($stats['total_refunded'] ?? 0, 2) . '</div>';
+        $html .= '</div>';
+        $html .= '<div class="stat-box">';
+        $html .= '<div class="stat-label">Successful Payments</div>';
+        $html .= '<div class="stat-value">' . number_format($stats['succeeded_count'] ?? 0) . '</div>';
+        $html .= '</div>';
+        $html .= '</div>';
+        
+        // Payments table
+        $html .= '<table>';
+        $html .= '<thead><tr>';
+        $html .= '<th>ID</th>';
+        $html .= '<th>Order</th>';
+        $html .= '<th>Client</th>';
+        $html .= '<th>Student</th>';
+        $html .= '<th>Amount</th>';
+        $html .= '<th>Commission</th>';
+        $html .= '<th>Status</th>';
+        $html .= '<th>Date</th>';
+        $html .= '</tr></thead>';
+        $html .= '<tbody>';
+        
+        if (empty($payments)) {
+            $html .= '<tr><td colspan="8" style="text-align: center; padding: 20px;">No payments found</td></tr>';
+        } else {
+            foreach ($payments as $payment) {
+                $statusClass = 'status-' . $payment['status'];
+                
+                $html .= '<tr>';
+                $html .= '<td>#' . htmlspecialchars($payment['id']) . '</td>';
+                $html .= '<td>Order #' . htmlspecialchars($payment['order_id']) . '<br><span style="font-size: 7px; color: #6b7280;">' . htmlspecialchars($payment['service_title']) . '</span></td>';
+                $html .= '<td>' . htmlspecialchars($payment['client_email'] ?? 'N/A') . '</td>';
+                $html .= '<td>' . htmlspecialchars($payment['student_email'] ?? 'N/A') . '</td>';
+                $html .= '<td>$' . number_format($payment['amount'], 2);
+                if ($payment['refund_amount'] > 0) {
+                    $html .= '<br><span style="font-size: 7px; color: #dc2626;">Refund: $' . number_format($payment['refund_amount'], 2) . '</span>';
+                }
+                $html .= '</td>';
+                $html .= '<td>$' . number_format($payment['commission_amount'], 2) . '</td>';
+                $html .= '<td><span class="status-badge ' . $statusClass . '">' . ucfirst(str_replace('_', ' ', $payment['status'])) . '</span></td>';
+                $html .= '<td>' . date('M d, Y', strtotime($payment['created_at'])) . '<br><span style="font-size: 7px; color: #6b7280;">' . date('H:i', strtotime($payment['created_at'])) . '</span></td>';
+                $html .= '</tr>';
+            }
+        }
+        
+        $html .= '</tbody>';
+        $html .= '</table>';
+        
+        $html .= '<div class="footer">This report was generated automatically. Total payments: ' . count($payments) . '</div>';
+        
+        $html .= '</body></html>';
+        
+        return $html;
+    }
+
+    /**
      * Show order management interface
      *
      * GET /admin/orders

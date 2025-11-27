@@ -130,6 +130,12 @@ $router->get("/admin/payments", "AdminController@payments", [
     new RoleMiddleware("admin"),
 ]);
 
+// Admin payments export to PDF
+$router->get("/admin/payments/export-pdf", "AdminController@exportPaymentsPDF", [
+    new AuthMiddleware(),
+    new RoleMiddleware("admin"),
+]);
+
 // Admin observability dashboard
 $router->get("/admin/observability", "AdminController@observability", [
     new AuthMiddleware(),

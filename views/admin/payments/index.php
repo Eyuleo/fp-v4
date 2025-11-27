@@ -8,9 +8,18 @@
 ?>
 
 <div class="container mx-auto px-4 py-8">
-    <div class="mb-8">
-        <h1 class="text-3xl font-bold text-gray-900 mb-2">Payment History</h1>
-        <p class="text-gray-600">View and manage all platform payments</p>
+    <div class="mb-8 flex justify-between items-start">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900 mb-2">Payment History</h1>
+            <p class="text-gray-600">View and manage all platform payments</p>
+        </div>
+        <a href="/admin/payments/export-pdf<?php echo isset($_GET['status']) || isset($_GET['date_from']) || isset($_GET['date_to']) ? '?' . http_build_query(['status' => $_GET['status'] ?? null, 'date_from' => $_GET['date_from'] ?? null, 'date_to' => $_GET['date_to'] ?? null]) : '' ?>" 
+           class="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            Export to PDF
+        </a>
     </div>
 
     <!-- Filters -->
@@ -137,10 +146,10 @@
                                     <div class="text-xs text-gray-500"><?php echo e($payment['service_title']) ?></div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                    <?php echo e($payment['client_name'] ?? explode('@', $payment['client_email'] ?? '')[0]) ?>
+                                    <?php echo e($payment['client_email'] ?? 'N/A') ?>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                    <?php echo e($payment['student_name'] ?? explode('@', $payment['student_email'] ?? '')[0]) ?>
+                                    <?php echo e($payment['student_email'] ?? 'N/A') ?>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                     <div class="font-semibold">$<?php echo safe_number_format($payment['amount'], 2) ?></div>
