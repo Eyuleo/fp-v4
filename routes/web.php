@@ -310,6 +310,16 @@ $router->post("/student/services/{id}/delete", "ServiceController@delete", [
     new RoleMiddleware("student"),
     new CsrfMiddleware(),
 ]);
+$router->post("/student/services/{id}/deactivate", "ServiceController@deactivate", [
+    new AuthMiddleware(),
+    new RoleMiddleware("student"),
+    new CsrfMiddleware(),
+]);
+$router->post("/student/services/{id}/activate", "ServiceController@activate", [
+    new AuthMiddleware(),
+    new RoleMiddleware("student"),
+    new CsrfMiddleware(),
+]);
 
 // Message routes
 $router->get("/messages", "MessageController@index", [new AuthMiddleware()]);

@@ -506,7 +506,7 @@ class ServiceRepository
                 LEFT JOIN categories c ON s.category_id = c.id
                 LEFT JOIN users u ON s.student_id = u.id
                 LEFT JOIN student_profiles sp ON u.id = sp.user_id
-                WHERE s.id = :id AND s.status = 'active'";
+                WHERE s.id = :id";
 
         $stmt = $this->db->prepare($sql);
         $stmt->execute(["id" => $id]);

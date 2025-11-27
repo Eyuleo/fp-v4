@@ -298,6 +298,14 @@ class ServiceController
         // Check if user can activate this service
         Auth::authorizeOrFail('service', 'activate', $service);
 
+        // Prevent students from activating inactive or rejected services (must be approved by admin)
+        // Only allow activating 'paused' services
+        if ($service['status'] !== 'paused' && $service['status'] !== 'active') {
+            flash('error', 'This service cannot be activated directly. It may require administrator approval.');
+            redirect('/student/services');
+            return;
+        }
+
         // Activate service
         if ($this->serviceService->activateService($serviceId)) {
             flash('success', 'Service activated successfully! It is now visible to clients.');
@@ -330,6 +338,33 @@ class ServiceController
             flash('success', 'Service paused successfully! It is no longer visible to clients.');
         } else {
             flash('error', 'Failed to pause service');
+        }
+
+        redirect('/student/services');
+    }
+
+    /**
+     * Deactivate a service
+     */
+    public function deactivate($id): void
+    {
+        $serviceId = is_array($id) ? $id['id'] : $id;
+        $service   = $this->serviceService->getServiceById($serviceId);
+
+        if (! $service) {
+            http_response_code(404);
+            require __DIR__ . '/../../views/errors/404.php';
+            return;
+        }
+
+        // Check if user can deactivate this service (same as edit/activate)
+        Auth::authorizeOrFail('service', 'activate', $service);
+
+        // Deactivate service
+        if ($this->serviceService->deactivateService($serviceId)) {
+            flash('success', 'Service deactivated successfully! It is no longer visible to clients.');
+        } else {
+            flash('error', 'Failed to deactivate service');
         }
 
         redirect('/student/services');

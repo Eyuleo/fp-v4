@@ -390,6 +390,17 @@ class ServiceService
     }
 
     /**
+     * Deactivate a service
+     *
+     * @param int $serviceId
+     * @return bool
+     */
+    public function deactivateService(int $serviceId): bool
+    {
+        return $this->repository->update($serviceId, ['status' => 'paused']);
+    }
+
+    /**
      * Get service by ID
      *
      * @param int $serviceId

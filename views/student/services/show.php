@@ -162,7 +162,7 @@
                                 <?php foreach ($imageFiles as $index => $file): ?>
                                     <div
                                         class="relative aspect-square rounded-lg overflow-hidden cursor-pointer hover:opacity-90 transition"
-                                        @click="galleryOpen = true; currentImage =                                                                                                                                                                     <?php echo (int) $index ?>"
+                                        @click="galleryOpen = true; currentImage = <?php echo (int) $index ?>"
                                     >
                                         <img
                                             src="<?php echo e($file['signed_url']) ?>"
@@ -264,6 +264,22 @@
                         Edit Service
                     </a>
 
+                    <?php if ($service['status'] === 'active'): ?>
+                        <form action="/student/services/<?php echo e($service['id']) ?>/deactivate" method="POST" onsubmit="return confirm('Are you sure you want to deactivate this service? It will no longer be visible to clients.');">
+                            <?php echo csrf_field() ?>
+                            <button type="submit" class="w-full px-4 py-2 border border-yellow-300 text-yellow-700 rounded-lg hover:bg-yellow-50 transition">
+                                Deactivate Service
+                            </button>
+                        </form>
+                    <?php elseif ($service['status'] === 'paused'): ?>
+                        <form action="/student/services/<?php echo e($service['id']) ?>/activate" method="POST">
+                            <?php echo csrf_field() ?>
+                            <button type="submit" class="w-full px-4 py-2 border border-green-300 text-green-700 rounded-lg hover:bg-green-50 transition">
+                                Activate Service
+                            </button>
+                        </form>
+                    <?php endif; ?>
+
                     <form action="/student/services/<?php echo e($service['id']) ?>/delete"
                           method="POST"
                           onsubmit="return confirm('Are you sure you want to delete this service? This action cannot be undone.')">
@@ -277,7 +293,12 @@
 
                 <div class="mt-4 p-3 bg-blue-50 rounded-lg">
                     <p class="text-xs text-blue-800">
-                        <strong>Note:</strong> Service activation will be managed by administrators to ensure quality.
+                        <strong>Note:</strong> 
+                        <?php if ($service['status'] === 'inactive' || $service['status'] === 'pending'): ?>
+                            Service activation requires administrator approval.
+                        <?php else: ?>
+                            Deactivating a service will hide it from search results but keep it in your list.
+                        <?php endif; ?>
                     </p>
                 </div>
             </div>

@@ -36,7 +36,8 @@
         <!-- Services Grid -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <?php foreach ($services as $service): ?>
-                <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition">
+                <!-- Service Card (Clickable) -->
+                <a href="/student/services/<?php echo e($service['id']) ?>" class="block bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition group">
                     <!-- Status Badge -->
                     <div class="p-4 border-b border-gray-200">
                         <?php
@@ -109,27 +110,8 @@
                                 </div>
                             </div>
                         </div>
-
-                        <!-- Action Buttons -->
-                        <div class="flex flex-col space-y-2">
-                            <a href="/student/services/<?php echo e($service['id']) ?>" class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm text-center">
-                                View Details
-                            </a>
-
-                            <div class="flex space-x-2">
-                                <a href="/student/services/<?php echo e($service['id']) ?>/edit" class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition text-sm text-center">
-                                    Edit
-                                </a>
-                                <form action="/student/services/<?php echo e($service['id']) ?>/delete" method="POST" class="flex-1" onsubmit="return confirm('Are you sure you want to delete this service? This action cannot be undone.');">
-                                    <?php echo csrf_field() ?>
-                                    <button type="submit" class="w-full px-4 py-2 border border-red-300 text-red-700 rounded-lg hover:bg-red-50 transition text-sm">
-                                        Delete
-                                    </button>
-                                </form>
-                            </div>
-                        </div>
                     </div>
-                </div>
+                </a>
             <?php endforeach; ?>
         </div>
     <?php endif; ?>
