@@ -132,13 +132,14 @@
                         </p>
                     </div>
                 <?php else: ?>
-                    <form action="/messages/send" method="POST" enctype="multipart/form-data" class="space-y-4">
+                    <form action="/messages/send" method="POST" enctype="multipart/form-data" class="space-y-4" id="message-form">
                         <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token'] ?? '' ?>">
                         <input type="hidden" name="order_id" value="<?php echo e($order['id']) ?>">
 
                         <div>
                             <textarea
                                 name="content"
+                                id="message-content"
                                 rows="3"
                                 class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
                                 placeholder="Type your message... (or attach files below)"
@@ -157,6 +158,7 @@
                                     <input
                                         type="file"
                                         name="attachments[]"
+                                        id="attachments-input"
                                         multiple
                                         class="hidden"
                                         accept=".jpg,.jpeg,.png,.gif,.pdf"
@@ -168,9 +170,15 @@
 
                             <button
                                 type="submit"
-                                class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                                id="send-button"
+                                disabled
+                                class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-blue-600 flex items-center space-x-2"
                             >
-                                Send Message
+                                <span id="send-button-text">Send Message</span>
+                                <svg id="send-button-spinner" class="hidden animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
                             </button>
                         </div>
                     </form>
@@ -181,14 +189,43 @@
 </div>
 
 <script>
-document.querySelector('input[name="attachments[]"]').addEventListener('change', function (e) {
-    const list = document.getElementById('attachment-preview');
-    list.innerHTML = '';
+const messageContent = document.getElementById('message-content');
+const attachmentsInput = document.getElementById('attachments-input');
+const sendButton = document.getElementById('send-button');
+const attachmentPreview = document.getElementById('attachment-preview');
+
+function updateSendButtonState() {
+    const hasContent = messageContent && messageContent.value.trim().length > 0;
+    const hasAttachments = attachmentsInput && attachmentsInput.files.length > 0;
+    
+    if (sendButton) {
+        sendButton.disabled = !hasContent && !hasAttachments;
+    }
+}
+
+// Listen for textarea input
+messageContent?.addEventListener('input', updateSendButtonState);
+
+// Listen for file selection
+attachmentsInput?.addEventListener('change', function(e) {
+    attachmentPreview.innerHTML = '';
     [...this.files].forEach(f => {
         const li = document.createElement('li');
         li.textContent = `${f.name} (${(f.size/1024).toFixed(1)} KB)`;
-        list.appendChild(li);
+        attachmentPreview.appendChild(li);
     });
+    updateSendButtonState();
+});
+
+// Handle form submission with loading state
+document.getElementById('message-form')?.addEventListener('submit', function(e) {
+    const buttonText = document.getElementById('send-button-text');
+    const spinner = document.getElementById('send-button-spinner');
+    
+    // Disable button and show loading state
+    sendButton.disabled = true;
+    buttonText.textContent = 'Sending...';
+    spinner.classList.remove('hidden');
 });
 
 function messageThread(orderId, currentUserId) {
