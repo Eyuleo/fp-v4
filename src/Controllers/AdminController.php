@@ -24,6 +24,7 @@ class AdminController
     private ServiceRepository $serviceRepository;
     private CategoryRepository $categoryRepository;
     private NotificationService $notificationService;
+    private ServiceService $serviceService;
 
     public function __construct()
     {
@@ -37,6 +38,7 @@ class AdminController
         $mailService               = new MailService();
         $notificationRepository    = new NotificationRepository($this->db);
         $this->notificationService = new NotificationService($mailService, $notificationRepository);
+        $this->serviceService      = new ServiceService($this->serviceRepository);
     }
 
     /**
@@ -777,6 +779,11 @@ class AdminController
         // Update user status
         $this->userRepository->updateStatus($id, 'suspended');
 
+        // If user is a student, pause all their active services
+        if ($user['role'] === 'student') {
+            $this->serviceService->pauseAllServicesForStudent($id);
+        }
+
         // Log audit entry
         $this->logAudit($adminUser['id'], 'user_suspended', 'user', $id, [
             'old_status' => $user['status'],
@@ -820,6 +827,11 @@ class AdminController
 
         // Update user status
         $this->userRepository->updateStatus($id, 'active');
+
+        // If user is a student, reactivate all their paused services
+        if ($user['role'] === 'student') {
+            $this->serviceService->reactivateAllServicesForStudent($id);
+        }
 
         // Log audit entry
         $this->logAudit($adminUser['id'], 'user_reactivated', 'user', $id, [

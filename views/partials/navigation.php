@@ -163,7 +163,7 @@
                                 <a href="/student/services" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">My Services</a>
                             <?php elseif ($userRole === 'client'): ?>
                                 <a href="/client/dashboard" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Dashboard</a>
-                                <a href="/client/orders" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">My Orders</a>
+                                <a href="/orders" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">My Orders</a>
                             <?php elseif ($userRole === 'admin'): ?>
                                 <a href="/admin/dashboard" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Admin Dashboard</a>
                             <?php endif; ?>

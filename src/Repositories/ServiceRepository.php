@@ -626,6 +626,44 @@ class ServiceRepository
     }
 
     /**
+     * Update status of all active services for a student
+     *
+     * @param int $studentId
+     * @param string $status
+     * @return bool
+     */
+    public function updateStatusByStudentId(int $studentId, string $status): bool
+    {
+        $sql = "UPDATE services SET status = :status, updated_at = NOW() 
+                WHERE student_id = :student_id AND status = 'active'";
+        
+        $stmt = $this->db->prepare($sql);
+        
+        return $stmt->execute([
+            'status'     => $status,
+            'student_id' => $studentId
+        ]);
+    }
+
+    /**
+     * Reactivate all paused services for a student
+     *
+     * @param int $studentId
+     * @return bool
+     */
+    public function activatePausedServicesByStudentId(int $studentId): bool
+    {
+        $sql = "UPDATE services SET status = 'active', updated_at = NOW() 
+                WHERE student_id = :student_id AND status = 'paused'";
+        
+        $stmt = $this->db->prepare($sql);
+        
+        return $stmt->execute([
+            'student_id' => $studentId
+        ]);
+    }
+
+    /**
      * Get database connection
      */
     public function getDb(): PDO

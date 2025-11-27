@@ -401,6 +401,28 @@ class ServiceService
     }
 
     /**
+     * Pause all active services for a student
+     *
+     * @param int $studentId
+     * @return bool
+     */
+    public function pauseAllServicesForStudent(int $studentId): bool
+    {
+        return $this->repository->updateStatusByStudentId($studentId, 'paused');
+    }
+
+    /**
+     * Reactivate all paused services for a student
+     *
+     * @param int $studentId
+     * @return bool
+     */
+    public function reactivateAllServicesForStudent(int $studentId): bool
+    {
+        return $this->repository->activatePausedServicesByStudentId($studentId);
+    }
+
+    /**
      * Get service by ID
      *
      * @param int $serviceId
