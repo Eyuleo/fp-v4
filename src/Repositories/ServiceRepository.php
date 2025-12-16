@@ -8,6 +8,12 @@
 class ServiceRepository
 {
     private PDO $db;
+    
+    /**
+     * Request-scoped cache for categories
+     * Note: Static cache is cleared at the end of each request in PHP-FPM/FastCGI
+     * For true cross-request caching, consider Redis/Memcached
+     */
     private static ?array $categoriesCache = null;
 
     public function __construct(PDO $db)

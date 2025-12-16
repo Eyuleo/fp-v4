@@ -88,6 +88,7 @@ class CategoryRepository
         ]);
 
         // Clear categories cache
+        // TODO: Consider using dependency injection or event system for better decoupling
         if (class_exists('ServiceRepository')) {
             ServiceRepository::clearCategoriesCache();
         }
@@ -134,6 +135,7 @@ class CategoryRepository
         $result = $stmt->execute(['id' => $id]);
 
         // Clear categories cache
+        // TODO: Consider using dependency injection or event system for better decoupling
         if ($result && class_exists('ServiceRepository')) {
             ServiceRepository::clearCategoriesCache();
         }

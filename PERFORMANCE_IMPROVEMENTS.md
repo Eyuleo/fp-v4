@@ -115,12 +115,14 @@ $upsertQuery = "INSERT INTO student_profiles (...) VALUES (...)
 
 **Problem:** The `getAllCategories()` method was called multiple times per request (e.g., in search pages, filter sidebars), causing redundant database queries.
 
-**Solution:** Implemented static in-memory caching for categories with cache invalidation on category modifications.
+**Solution:** Implemented static in-memory caching for categories with cache invalidation on category modifications. Note that this is **request-scoped** caching - the cache is cleared automatically at the end of each request in PHP-FPM/FastCGI environments.
 
 **Performance Gain:** Eliminates redundant category queries within a single request.
 
+**Important:** The static cache is request-scoped only. PHP-FPM creates a new process for each request, so this cache does not persist across requests. For true cross-request caching, consider Redis or Memcached.
+
 ```php
-// Static cache property
+// Static cache property (request-scoped)
 private static ?array $categoriesCache = null;
 
 // Cached retrieval
@@ -162,9 +164,11 @@ public function getAllCategories(): array {
 
 ## Future Optimization Opportunities
 
-1. Implement Redis or Memcached for distributed caching
-2. Add query result caching for complex search queries
-3. Consider read replicas for heavy read workloads
-4. Implement database query logging to identify remaining slow queries
-5. Add pagination to admin pages that list many records
-6. Consider lazy loading or infinite scroll for large result sets
+1. **Caching Infrastructure**: Implement Redis or Memcached for cross-request distributed caching
+2. **Event System**: Replace `class_exists()` checks in CategoryRepository with dependency injection or event system for better decoupling
+3. **Query Result Caching**: Add caching for complex search queries with invalidation strategies
+4. **Database Scaling**: Consider read replicas for heavy read workloads
+5. **Query Monitoring**: Implement database query logging to identify remaining slow queries
+6. **UI Performance**: Add pagination to admin pages that list many records
+7. **Progressive Loading**: Consider lazy loading or infinite scroll for large result sets
+8. **Full-Text Search**: Investigate Elasticsearch or similar for advanced search requirements
