@@ -8,6 +8,7 @@
 class ServiceRepository
 {
     private PDO $db;
+    private static ?array $categoriesCache = null;
 
     public function __construct(PDO $db)
     {
@@ -258,16 +259,23 @@ class ServiceRepository
     }
 
     /**
-     * Get all categories
+     * Get all categories with caching
      *
      * @return array
      */
     public function getAllCategories(): array
     {
+        // Return cached categories if available
+        if (self::$categoriesCache !== null) {
+            return self::$categoriesCache;
+        }
+
         $sql  = "SELECT * FROM categories ORDER BY name ASC";
         $stmt = $this->db->query($sql);
 
-        return $stmt->fetchAll();
+        self::$categoriesCache = $stmt->fetchAll();
+
+        return self::$categoriesCache;
     }
 
     /**
@@ -669,5 +677,15 @@ class ServiceRepository
     public function getDb(): PDO
     {
         return $this->db;
+    }
+
+    /**
+     * Clear the categories cache
+     *
+     * @return void
+     */
+    public static function clearCategoriesCache(): void
+    {
+        self::$categoriesCache = null;
     }
 }
