@@ -88,43 +88,26 @@ class AdminController
                 $dateFrom = date('Y-m-d', strtotime('-30 days'));
         }
 
-        // Calculate GMV (Gross Merchandise Value) - sum of completed order prices
-        $gmvSql = "SELECT COALESCE(SUM(price), 0) as gmv
-                   FROM orders
-                   WHERE status = 'completed'
-                   AND DATE(completed_at) BETWEEN :date_from AND :date_to";
-        $gmvStmt = $this->db->prepare($gmvSql);
-        $gmvStmt->execute(['date_from' => $dateFrom, 'date_to' => $dateTo]);
-        $gmv = $gmvStmt->fetch()['gmv'];
-
-        // Calculate total orders and completion rate
-        $ordersSql = "SELECT
+        // Calculate all statistics in a single optimized query
+        $statsSql = "SELECT
                         COUNT(*) as total_orders,
                         SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed_orders,
-                        SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) as cancelled_orders
+                        SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) as cancelled_orders,
+                        COALESCE(SUM(CASE WHEN status = 'completed' AND DATE(completed_at) BETWEEN :date_from AND :date_to THEN price ELSE 0 END), 0) as gmv,
+                        SUM(CASE WHEN status = 'completed' AND DATE(completed_at) BETWEEN :date_from AND :date_to THEN 1 ELSE 0 END) as total_completed,
+                        SUM(CASE WHEN status = 'completed' AND completed_at <= deadline AND DATE(completed_at) BETWEEN :date_from AND :date_to THEN 1 ELSE 0 END) as on_time_completed
                       FROM orders
                       WHERE DATE(created_at) BETWEEN :date_from AND :date_to";
-        $ordersStmt = $this->db->prepare($ordersSql);
-        $ordersStmt->execute(['date_from' => $dateFrom, 'date_to' => $dateTo]);
-        $ordersData = $ordersStmt->fetch();
+        $statsStmt = $this->db->prepare($statsSql);
+        $statsStmt->execute(['date_from' => $dateFrom, 'date_to' => $dateTo]);
+        $statsData = $statsStmt->fetch();
 
-        $totalOrders     = $ordersData['total_orders'];
-        $completedOrders = $ordersData['completed_orders'];
+        $totalOrders     = $statsData['total_orders'];
+        $completedOrders = $statsData['completed_orders'];
+        $gmv             = $statsData['gmv'];
         $completionRate  = $totalOrders > 0 ? ($completedOrders / $totalOrders) * 100 : 0;
-
-        // Calculate on-time delivery rate (completed before deadline)
-        $onTimeSql = "SELECT
-                        COUNT(*) as total_completed,
-                        SUM(CASE WHEN completed_at <= deadline THEN 1 ELSE 0 END) as on_time_completed
-                      FROM orders
-                      WHERE status = 'completed'
-                      AND DATE(completed_at) BETWEEN :date_from AND :date_to";
-        $onTimeStmt = $this->db->prepare($onTimeSql);
-        $onTimeStmt->execute(['date_from' => $dateFrom, 'date_to' => $dateTo]);
-        $onTimeData = $onTimeStmt->fetch();
-
-        $onTimeRate = $onTimeData['total_completed'] > 0
-            ? ($onTimeData['on_time_completed'] / $onTimeData['total_completed']) * 100
+        $onTimeRate      = $statsData['total_completed'] > 0
+            ? ($statsData['on_time_completed'] / $statsData['total_completed']) * 100
             : 0;
 
         // Get recent orders for display
@@ -223,20 +206,43 @@ class AdminController
             $params['date_to'] = $dateTo;
         }
 
-        // Get total count for pagination
-        $countSql  = "SELECT COUNT(*) as total FROM (" . $sql . ") as subquery";
-        $countStmt = $this->db->prepare($countSql);
-        $countStmt->execute($params);
-        $totalCount = $countStmt->fetch()['total'];
-        $totalPages = ceil($totalCount / $perPage);
+        // Optimize: Use single query with window functions for count and stats
+        $optimizedSql = "SELECT 
+                            p.*,
+                            o.status as order_status,
+                            s.title as service_title,
+                            client.email as client_email,
+                            student.email as student_email,
+                            COUNT(*) OVER() as total_count,
+                            SUM(CASE WHEN p.status IN ('succeeded', 'partially_refunded') THEN p.amount ELSE 0 END) OVER() as total_amount,
+                            SUM(CASE WHEN p.status IN ('succeeded', 'partially_refunded') THEN p.commission_amount ELSE 0 END) OVER() as total_commission,
+                            SUM(p.refund_amount) OVER() as total_refunded,
+                            COUNT(CASE WHEN p.status IN ('succeeded', 'partially_refunded') THEN 1 END) OVER() as succeeded_count
+                        FROM payments p
+                        INNER JOIN orders o ON p.order_id = o.id
+                        INNER JOIN services s ON o.service_id = s.id
+                        INNER JOIN users client ON o.client_id = client.id
+                        INNER JOIN users student ON o.student_id = student.id
+                        WHERE 1=1";
+
+        // Apply same filters
+        if ($status && in_array($status, ['pending', 'succeeded', 'refunded', 'partially_refunded', 'failed'])) {
+            $optimizedSql .= " AND p.status = :status";
+        }
+        if ($dateFrom) {
+            $optimizedSql .= " AND DATE(p.created_at) >= :date_from";
+        }
+        if ($dateTo) {
+            $optimizedSql .= " AND DATE(p.created_at) <= :date_to";
+        }
 
         // Add ordering and pagination
-        $sql .= " ORDER BY p.created_at DESC LIMIT :limit OFFSET :offset";
+        $optimizedSql .= " ORDER BY p.created_at DESC LIMIT :limit OFFSET :offset";
         $params['limit']  = $perPage;
         $params['offset'] = $offset;
 
-        // Execute query
-        $stmt = $this->db->prepare($sql);
+        // Execute optimized query
+        $stmt = $this->db->prepare($optimizedSql);
 
         // Bind parameters with correct types
         foreach ($params as $key => $value) {
@@ -250,40 +256,16 @@ class AdminController
         $stmt->execute();
         $payments = $stmt->fetchAll();
 
-        // Calculate overall statistics (not just current page)
-        $statsSql = "SELECT
-                        SUM(CASE WHEN p.status IN ('succeeded', 'partially_refunded') THEN p.amount ELSE 0 END) as total_amount,
-                        SUM(CASE WHEN p.status IN ('succeeded', 'partially_refunded') THEN p.commission_amount ELSE 0 END) as total_commission,
-                        SUM(p.refund_amount) as total_refunded,
-                        COUNT(CASE WHEN p.status IN ('succeeded', 'partially_refunded') THEN 1 END) as succeeded_count
-                    FROM payments p
-                    INNER JOIN orders o ON p.order_id = o.id
-                    INNER JOIN services s ON o.service_id = s.id
-                    INNER JOIN users client ON o.client_id = client.id
-                    INNER JOIN users student ON o.student_id = student.id
-                    WHERE 1=1";
-
-        $statsParams = [];
-
-        // Apply same filters to stats query
-        if ($status && in_array($status, ['pending', 'succeeded', 'refunded', 'partially_refunded', 'failed'])) {
-            $statsSql .= " AND p.status = :status";
-            $statsParams['status'] = $status;
-        }
-
-        if ($dateFrom) {
-            $statsSql .= " AND DATE(p.created_at) >= :date_from";
-            $statsParams['date_from'] = $dateFrom;
-        }
-
-        if ($dateTo) {
-            $statsSql .= " AND DATE(p.created_at) <= :date_to";
-            $statsParams['date_to'] = $dateTo;
-        }
-
-        $statsStmt = $this->db->prepare($statsSql);
-        $statsStmt->execute($statsParams);
-        $stats = $statsStmt->fetch();
+        // Extract statistics from first row (window functions return same value for all rows)
+        $totalCount = !empty($payments) ? (int) $payments[0]['total_count'] : 0;
+        $totalPages = ceil($totalCount / $perPage);
+        
+        $stats = [
+            'total_amount' => !empty($payments) ? $payments[0]['total_amount'] : 0,
+            'total_commission' => !empty($payments) ? $payments[0]['total_commission'] : 0,
+            'total_refunded' => !empty($payments) ? $payments[0]['total_refunded'] : 0,
+            'succeeded_count' => !empty($payments) ? $payments[0]['succeeded_count'] : 0,
+        ];
 
         // Render view
         include __DIR__ . '/../../views/admin/payments/index.php';
@@ -1286,12 +1268,7 @@ class AdminController
                 c.name as category_name,
                 u.email as student_email, u.name as student_name,
                 sp.average_rating,
-                (
-                    SELECT COUNT(*)
-                    FROM orders
-                    WHERE service_id = s.id
-                      AND status IN ('pending', 'in_progress', 'delivered', 'revision_requested')
-                ) as active_orders_count
+                COUNT(CASE WHEN o.status IN ('pending', 'in_progress', 'delivered', 'revision_requested') THEN 1 END) as active_orders_count
             FROM services s
             LEFT JOIN categories c ON s.category_id = c.id
             LEFT JOIN users u ON s.student_id = u.id
@@ -1301,6 +1278,7 @@ class AdminController
                 FROM student_profiles
                 GROUP BY user_id
             ) sp ON sp.user_id = u.id
+            LEFT JOIN orders o ON o.service_id = s.id
             WHERE 1=1";
 
         $params = [];

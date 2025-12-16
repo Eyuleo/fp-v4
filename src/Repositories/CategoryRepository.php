@@ -87,6 +87,12 @@ class CategoryRepository
             'description' => $data['description'] ?? null,
         ]);
 
+        // Clear categories cache
+        // TODO: Consider using dependency injection or event system for better decoupling
+        if (class_exists('ServiceRepository')) {
+            ServiceRepository::clearCategoriesCache();
+        }
+
         return (int) $this->db->lastInsertId();
     }
 
@@ -103,12 +109,19 @@ class CategoryRepository
 
         $stmt = $this->db->prepare($sql);
 
-        return $stmt->execute([
+        $result = $stmt->execute([
             'id'          => $id,
             'name'        => $data['name'],
             'slug'        => $data['slug'],
             'description' => $data['description'] ?? null,
         ]);
+
+        // Clear categories cache
+        if ($result && class_exists('ServiceRepository')) {
+            ServiceRepository::clearCategoriesCache();
+        }
+
+        return $result;
     }
 
     /**
@@ -119,7 +132,15 @@ class CategoryRepository
         $sql  = "DELETE FROM categories WHERE id = :id";
         $stmt = $this->db->prepare($sql);
 
-        return $stmt->execute(['id' => $id]);
+        $result = $stmt->execute(['id' => $id]);
+
+        // Clear categories cache
+        // TODO: Consider using dependency injection or event system for better decoupling
+        if ($result && class_exists('ServiceRepository')) {
+            ServiceRepository::clearCategoriesCache();
+        }
+
+        return $result;
     }
 
     /**

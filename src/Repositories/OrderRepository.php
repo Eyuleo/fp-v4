@@ -550,23 +550,12 @@ class OrderRepository
      */
     public function incrementStudentOrderCount(int $studentId): bool
     {
-        // Ensure student profile exists
-        $checkSql = "SELECT id, total_orders FROM student_profiles WHERE user_id = :student_id";
-        $checkStmt = $this->db->prepare($checkSql);
-        $checkStmt->execute(['student_id' => $studentId]);
-        $profile = $checkStmt->fetch();
-        
-        if (!$profile) {
-            // Create profile if it doesn't exist
-            $createSql = "INSERT INTO student_profiles (user_id, total_orders, created_at, updated_at)
-                          VALUES (:student_id, 1, NOW(), NOW())";
-            $createStmt = $this->db->prepare($createSql);
-            return $createStmt->execute(['student_id' => $studentId]);
-        }
-        $sql = "UPDATE student_profiles
-                SET total_orders = total_orders + 1,
-                    updated_at = NOW()
-                WHERE user_id = :student_id";
+        // Use UPSERT (INSERT ... ON DUPLICATE KEY UPDATE) for better performance
+        $sql = "INSERT INTO student_profiles (user_id, total_orders, skills, portfolio_files, created_at, updated_at)
+                VALUES (:student_id, 1, '[]', '[]', NOW(), NOW())
+                ON DUPLICATE KEY UPDATE
+                    total_orders = total_orders + 1,
+                    updated_at = NOW()";
 
         $stmt = $this->db->prepare($sql);
 
